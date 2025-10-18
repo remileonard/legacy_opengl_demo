@@ -1,0 +1,8 @@
+{
+    "dependencies": [
+        {
+            "name":"freeglut",
+            "version>=":"3.4.0"
+        }
+    ]
+}

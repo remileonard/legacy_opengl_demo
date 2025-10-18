@@ -1,0 +1,30 @@
+#
+
+newmtl bone
+Kd 1.0 1.0 0.9
+Ns 0
+
+newmtl ns_yellow
+Kd 1.0 1.0 0.0
+Ks 0.0 0.0 0.0
+
+newmtl r_ltblue
+Kd 0.0 0.8 1.0
+
+newmtl ltbrown
+Kd 0.7 0.5 0.3
+
+newmtl fl_black
+Ks 0.0 0.0 0.0
+Kd 0.0 0.0 0.0
+
+newmtl br_grey
+Ks 0.2 0.2 0.2
+Kd 0.7 0.7 0.7
+Ns 0
+
+newmtl tr_brown1
+Kd 0.9 0.2 0.1
+
+newmtl fl_amber
+Kd 0.3 0.6 0.0

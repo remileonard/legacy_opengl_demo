@@ -1,0 +1,5 @@
+newmtl head_chord
+
+Kd 0.0 1.0 0.0
+Ks 0.6 0.6 0.6
+Ns 500

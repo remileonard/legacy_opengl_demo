@@ -1,0 +1,17 @@
+
+set(SIMPLE_EXECUTABLES
+    bounce
+    glutplane
+    scube
+    stars
+)
+
+foreach(target ${SIMPLE_EXECUTABLES})
+    if(EXISTS "${CMAKE_SOURCE_DIR}/src/demos/${target}.c")
+        add_executable(${target} ${target}.c)
+        target_link_libraries(${target} OpenGL::GL GLUT::GLUT)
+        target_include_directories(${target} PRIVATE ${OPENGL_INCLUDE_DIRS} ${GLUT_INCLUDE_DIRS})
+        target_compile_options(${target} PRIVATE ${OPENGL_CFLAGS} ${GLUT_CFLAGS})
+        target_link_options(${target} PRIVATE ${OPENGL_LDFLAGS} ${GLUT_LDFLAGS})
+    endif()
+endforeach()
