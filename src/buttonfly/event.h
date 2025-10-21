@@ -59,8 +59,7 @@ void event(void) ;
  * can generate.
  */
 #define ANY	-1
-#define UP	0
-#define DOWN	1
+
 
 /*
  *	And a few external variables you might find useful
