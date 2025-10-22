@@ -17,16 +17,8 @@
 #include "graph.h"
 
 #ifdef _WIN32
+    #include <process.h>
     #include <shellapi.h>
-    #define popen _popen
-    #define pclose _pclose
-    
-    // Définir timespec pour Windows
-    /*struct timespec {
-        long tv_sec;
-        long tv_nsec;
-    };*/
-    
     #define CLOCK_MONOTONIC 0
     
     static int clock_gettime(int clk_id, struct timespec *spec) {
@@ -46,10 +38,95 @@
         
         return 0;
     }
+    // Structure pour passer les arguments au thread Windows
+    typedef struct {
+        char command[1024];
+    } thread_args_t;
+    
+    // Fonction thread pour Windows - lance uniquement des exécutables
+    static unsigned int __stdcall execute_command_thread(void* arg) {
+        thread_args_t* args = (thread_args_t*)arg;
+        
+        // Analyser la commande pour extraire l'exécutable et les arguments
+        char exe[512] = {0};
+        char params[512] = {0};
+        char* space = strchr(args->command, ' ');
+        
+        if (space) {
+            size_t len = space - args->command;
+            strncpy(exe, args->command, len < 511 ? len : 511);
+            strncpy(params, space + 1, 511);
+        } else {
+            strncpy(exe, args->command, 511);
+        }
+        
+        // ShellExecute lance l'exe directement sans fenêtre de commande
+        HINSTANCE result = ShellExecuteA(NULL, "open", exe, 
+                                       params[0] ? params : NULL, 
+                                       NULL, SW_SHOWNORMAL);
+        if ((INT_PTR)result <= 32) {
+            fprintf(stderr, "ButtonFly: Failed to launch: %s (error: %d)\n", 
+                   exe, (int)(INT_PTR)result);
+        }
+        
+        free(args);
+        return 0;
+    }
+    
+    // Fonction pour exécuter une commande en arrière-plan (Windows)
+    static void execute_async(const char* command) {
+        thread_args_t* args = (thread_args_t*)malloc(sizeof(thread_args_t));
+        if (args) {
+            strncpy(args->command, command, sizeof(args->command) - 1);
+            args->command[sizeof(args->command) - 1] = '\0';
+            
+            printf("ButtonFly: Launching (async): %s\n", command);
+            
+            uintptr_t handle = _beginthreadex(NULL, 0, execute_command_thread, args, 0, NULL);
+            if (handle != 0) {
+                CloseHandle((HANDLE)handle);
+            } else {
+                fprintf(stderr, "ButtonFly: Failed to create thread\n");
+                free(args);
+            }
+        }
+    }
 #else
     #include <time.h>
+    #include <unistd.h>
+    #include <sys/wait.h>
+    
+    // Fonction pour exécuter une commande en arrière-plan (Unix)
+    static void execute_async(const char* command) {
+        pid_t pid = fork();
+        if (pid == 0) {
+            // Processus enfant - parser la commande pour extraire exe et args
+            char* args[64];
+            char cmd_copy[1024];
+            int i = 0;
+            
+            strncpy(cmd_copy, command, sizeof(cmd_copy) - 1);
+            cmd_copy[sizeof(cmd_copy) - 1] = '\0';
+            
+            char* token = strtok(cmd_copy, " ");
+            while (token != NULL && i < 63) {
+                args[i++] = token;
+                token = strtok(NULL, " ");
+            }
+            args[i] = NULL;
+            
+            // Exécuter directement le programme
+            execvp(args[0], args);
+            
+            // Si on arrive ici, exec a échoué
+            fprintf(stderr, "ButtonFly: Failed to launch: %s\n", command);
+            exit(1);
+        } else if (pid < 0) {
+            fprintf(stderr, "ButtonFly: fork() failed\n");
+        }
+        // Le processus parent continue immédiatement
+    }
 #endif
-// ...existing code...
 
 static int esc_pressed = 0;
 static struct timespec esc_press_time;
@@ -132,7 +209,27 @@ void bf_quick(), bf_fly(), do_popup(), toggle_window();
 void bf_escdown(), bf_escup();
 void flyindraw(), flyoutdraw(), selectdraw();
 void parse_args(), doclear();
-
+void  do_popup()
+{
+    short mx, my;
+    button_struct *b;
+    void do_buttons_menu();
+    
+    qread(&mx); qread(&my);
+    b = which_button(mx, my);
+    if (b)
+    {
+        do_buttons_menu(b, mx, my);
+    }
+    else if (path)
+    {
+        do_buttons_menu(path->button, mx, my);
+    }
+    else if (rootbutton->popup)
+    {
+        do_buttons_menu(rootbutton, mx, my);
+    }
+}
 // Fonction idle pour gérer les animations
 void idle_func(void) {
     // Traiter les événements en file d'attente
@@ -519,25 +616,46 @@ void bf_fly()
 }
 
 
-void  do_popup()
+void do_buttons_menu(b, mx, my)
+button_struct *b;
+short mx, my;
 {
-    short mx, my;
-    button_struct *b;
-    void do_buttons_menu();
+    long menu;
+    int i, num;
+    char t[128];
+    popup_struct *scan;
     
-    qread(&mx); qread(&my);
-    b = which_button(mx, my);
-    if (b)
-    {
-        do_buttons_menu(b, mx, my);
+    menu = newpup();
+
+    if (b != rootbutton) {
+        sprintf(t, "Do It");
+            addtopup(menu, t);
     }
-    else if (path)
-    {
-        do_buttons_menu(path->button, mx, my);
+
+    for (num=0, scan=b->popup; scan != NULL; num++, scan=scan->next) {
+
+        sprintf(t, "%s%%x%d", scan->title, num+2);
+        addtopup(menu, t);
     }
-    else if (rootbutton->popup)
-    {
-        do_buttons_menu(rootbutton, mx, my);
+
+    i = dopup(menu);
+    freepup(menu);
+
+    if (i == 1) {	/* Execute button */
+
+        qenter(LEFTMOUSE, UP);
+        qenter(MOUSEX, mx);
+        qenter(MOUSEY, my);
+
+    } else if ((i > 1) && (i <= num+1)) {
+
+        for (num=0, scan=b->popup; num != (i-2);
+             num++, scan=scan->next)
+        ;	/* Keep on scanning... */
+        
+        if (scan && scan->action) {
+            execute_async(scan->action);
+        }
     }
 }
 
@@ -609,52 +727,6 @@ void  toggle_window()
         sizex=XMAXSCREEN; sizey=YMAXSCREEN;
     }
 }
-
-void do_buttons_menu(b, mx, my)
-button_struct *b;
-short mx, my;
-{
-    long menu;
-    int i, num;
-    char t[128];
-    popup_struct *scan;
-    
-    menu = newpup();
-
-    if (b != rootbutton) {
-        sprintf(t, "Do It");
-            addtopup(menu, t);
-    }
-
-    for (num=0, scan=b->popup; scan != NULL; num++, scan=scan->next) {
-
-        sprintf(t, "%s%%x%d", scan->title, num+2);
-        addtopup(menu, t);
-    }
-
-    i = dopup(menu);
-    freepup(menu);
-
-    if (i == 1) {	/* Execute button */
-
-        qenter(LEFTMOUSE, UP);
-        qenter(MOUSEX, mx);
-        qenter(MOUSEY, my);
-
-    } else if ((i > 1) && (i <= num+1)) {
-
-        for (num=0, scan=b->popup; num != (i-2);
-             num++, scan=scan->next)
-        ;	/* Keep on scanning... */
-#ifdef _WIN32
-        system(scan->action);
-#else
-        system(scan->action);
-#endif
-    }
-}
-
-
 void selectdraw()
 {
     // Ne pas redessiner en permanence en mode sélection
@@ -755,32 +827,10 @@ void flyoutdraw()
  */
 void push_button(button_struct *selected)
 {
-    int needpipe;
-    FILE *fp;
-
-    /* Need to open a pipe if submenu == "-" */
-    if ((selected->submenu != NULL) && 
-        (strcmp(selected->submenu, "-") == 0))
-            needpipe = 1;
-    else needpipe = 0;
-
-    /* First, figure out where we'll build submenus from */
-    fp = NULL;
-    if ((selected->action != NULL) && needpipe)
-    {
-#ifdef _WIN32
-        // Construire une commande cmd.exe pour Windows
-        char cmd[1024];
-        snprintf(cmd, sizeof(cmd), "cmd.exe /c %s", selected->action);
-        fp = _popen(cmd, "r");
-#else
-        fp = popen(selected->action, "r");
-#endif
-        if (fp == NULL) {
-            fprintf(stderr, "ButtonFly: Failed to execute command: %s\n", selected->action);
-        }
-    }
-    else if (selected->submenu != NULL)
+    FILE *fp = NULL;
+    
+    /* Charger un fichier de sous-menu si spécifié */
+    if (selected->submenu != NULL)
     {
         fp = fopen(selected->submenu, "r");
         if (fp == NULL) {
@@ -788,41 +838,17 @@ void push_button(button_struct *selected)
         }
     }
     
-    /* Now, do action */
-    if ((selected->action != NULL) && !needpipe)
+    /* Exécuter l'action (toujours en arrière-plan) */
+    if (selected->action != NULL)
     {
-#ifdef _WIN32
-        // Méthode 1 : Utiliser system() simple
-        int result = system(selected->action);
-        if (result != 0 && result != -1) {
-            fprintf(stderr, "ButtonFly: Command failed with code %d: %s\n", result, selected->action);
-        }
-        
-        /* Méthode 2 (alternative) : Utiliser ShellExecute pour ouvrir des fichiers/URLs
-        HINSTANCE result = ShellExecuteA(NULL, "open", selected->action, NULL, NULL, SW_SHOWNORMAL);
-        if ((INT_PTR)result <= 32) {
-            fprintf(stderr, "ButtonFly: ShellExecute failed for: %s\n", selected->action);
-        }
-        */
-#else
-        system(selected->action);
-#endif
+        execute_async(selected->action);
     }
     
-    /* Ok, now build submenus if we can */
+    /* Construire les sous-menus si on a un fichier */
     if (fp != NULL)
     {
         selected->forward = load_buttons(fp);
-        if (needpipe) {
-#ifdef _WIN32
-            _pclose(fp);
-#else
-            pclose(fp);
-#endif
-        }
-        else {
-            fclose(fp);
-        }
+        fclose(fp);
     }
 }
 void draw_buttons(button_struct *buttons)
