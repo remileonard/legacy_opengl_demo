@@ -78,6 +78,9 @@ int flyinflag = 0;
 int flyoutflag = 0;
 int selectflag = 0;
 int exitflag = 0;
+// Ajouter en haut du fichier
+#define TARGET_FPS 60
+#define FRAME_TIME_MS (1000 / TARGET_FPS)
 
 
 void draw_buttons(button_struct *buttons);
@@ -155,7 +158,54 @@ void idle_func(void) {
         selectdraw();
     }
 }
-
+// Remplacer idle_func par cette fonction timer
+void timer_func(int value) {
+    // Traiter les événements en file d'attente
+    static short dev, val;
+    
+    while (qtest()) {
+        dev = qread(&val);
+        
+        switch (dev) {
+        case RIGHTMOUSE:
+            if (val == DOWN) {
+                do_popup();
+            }
+            break;
+        case LEFTMOUSE:
+            if (val == DOWN) {
+                bf_fly();
+            }
+            break;
+        case MIDDLEMOUSE:
+            if (val == DOWN) {
+                bf_deselect();
+            }
+            break;
+        case ESCKEY:
+            if (val == DOWN) {
+                bf_escdown();
+            } else {
+                bf_escup();
+            }
+            break;
+        }
+    }
+    
+    // Gérer les animations
+    if (flyinflag || flyoutflag || selectflag) {
+        if (flyinflag) {
+            flyindraw();
+        } else if (flyoutflag) {
+            flyoutdraw();
+        } else if (selectflag) {
+            selectdraw();
+        }
+    }
+    
+    // Rappeler le timer
+    glutTimerFunc(FRAME_TIME_MS, timer_func, 0);
+}
 void keyboard_handler(unsigned char key, int x, int y) {
     if (key == 27) { // ESC
         bf_escdown();
@@ -319,7 +369,7 @@ int main (int argc, char *argv[]) {
     glutMouseFunc(mouse_click);
     glutMotionFunc(mouse_motion);        // Mouvement avec bouton pressé
     glutPassiveMotionFunc(mouse_motion);  // Mouvement sans bouton
-    glutIdleFunc(idle_func);
+    glutTimerFunc(FRAME_TIME_MS, timer_func, 0);
     glutKeyboardFunc(keyboard_handler);
     glutKeyboardUpFunc(keyboard_up_handler);
 
@@ -621,7 +671,7 @@ void flyindraw()
     }
     
     if (t > 0.2 || !BLOCK_AT_SLOW_FRAME) {
-        t -= 0.0009;  // Changé de 0.02 à 0.01 pour ralentir 2x
+        t -= 0.01;  // Changé de 0.02 à 0.01 pour ralentir 2x
     }
     if (t<=0.0) {
         current_buttons = selected->forward;
@@ -649,7 +699,7 @@ void flyoutdraw()
 
     doclear();
 
-    t += 0.0009;  // Changé de 0.02 à 0.01 pour ralentir 2x
+    t += 0.01;  // Changé de 0.02 à 0.01 pour ralentir 2x
     if (t>=1.0) {
         t = 0.0;
         selected = NULL;
