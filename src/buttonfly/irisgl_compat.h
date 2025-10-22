@@ -28,12 +28,18 @@ extern int g_mouse_buttons[3];
 
 // Fonctions de compatibilité IRISGL
 void qdevice(short dev);
-void qread(short *val);
 void qenter(short dev, short val);
+int qtest(void);
+short qread(short *val);
 long newpup(void);
 void addtopup(long menu, char *str);
 long dopup(long menu);
 void freepup(long menu);
+void close_popup_menu(void);
+void draw_popup_menu(void);
+int popup_mouse_click(int button, int state, int x, int y);
+void popup_mouse_motion(int x, int y);
+int is_popup_active(void);
 
 // Fonctions de gestion de fenêtre
 void winposition(long x1, long x2, long y1, long y2);

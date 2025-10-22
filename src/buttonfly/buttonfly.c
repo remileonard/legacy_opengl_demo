@@ -112,6 +112,39 @@ void parse_args(), doclear();
 
 // Fonction idle pour gérer les animations
 void idle_func(void) {
+    // Traiter les événements en file d'attente
+    static short dev, val;
+    
+    // Simuler le traitement des événements IRIS GL
+    while (qtest()) {
+        dev = qread(&val);
+        
+        switch (dev) {
+        case RIGHTMOUSE:
+            if (val == DOWN) {
+                do_popup();
+            }
+            break;
+        case LEFTMOUSE:
+            if (val == DOWN) {
+                bf_fly();
+            }
+            break;
+        case MIDDLEMOUSE:
+            if (val == DOWN) {
+                bf_deselect();
+            }
+            break;
+        case ESCKEY:
+            if (val == DOWN) {
+                bf_escdown();
+            } else {
+                bf_escup();
+            }
+            break;
+        }
+    }
+    
     // Gérer les animations
     if (flyinflag) {
         flyindraw();
@@ -134,38 +167,91 @@ void keyboard_up_handler(unsigned char key, int x, int y) {
     }
 }
 
+static int g_menu_result = -1;
+
+void mouse_motion(int x, int y) {
+    g_mouse_x = x;
+    g_mouse_y = y;
+    
+    // Gérer le survol du menu popup
+    popup_mouse_motion(x, y);
+}
+
 void mouse_click(int button, int state, int x, int y) {
     // Stocker les coordonnées globales
     g_mouse_x = x;
     g_mouse_y = y;
     
-    // Inverser Y pour correspondre aux coordonnées OpenGL (origine en bas à gauche)
-    // g_mouse_y = glutGet(GLUT_WINDOW_HEIGHT) - y;
+    // D'abord, vérifier si on clique dans un menu popup actif
+    if (is_popup_active()) {
+        int menu_result = popup_mouse_click(button, state, x, y);
+        if (menu_result > 0) {
+            // Un item du menu a été sélectionné
+            if (selected) {
+                popup_struct *scan = selected->popup;
+                
+                // Si c'est "Do It" (item 1), simuler un clic gauche
+                if (menu_result == 1 && selected != rootbutton) {
+                    qenter(LEFTMOUSE, UP);
+                    qenter(MOUSEX, x);
+                    qenter(MOUSEY, y);
+                } 
+                // Sinon, parcourir les items du popup
+                else if (menu_result > 1) {
+                    // Aller à l'item correspondant (menu_result - 2 car "Do It" est à 1)
+                    for (int i = 0; scan && i < (menu_result - 2); i++) {
+                        scan = scan->next;
+                    }
+                    
+                    if (scan && scan->action) {
+                        printf("Executing: %s\n", scan->action);
+#ifdef _WIN32
+                        system(scan->action);
+#else
+                        system(scan->action);
+#endif
+                    }
+                }
+            }
+            return; // Menu géré, sortir
+        } else if (menu_result == -1) {
+            // Menu fermé sans sélection
+            return;
+        }
+        // Si menu_result == 0, continuer le traitement normal
+    }
     
+    // Logique normale des boutons de souris
     switch (button) {
     case GLUT_RIGHT_BUTTON:
         if (state == GLUT_DOWN) {
-            do_popup();
+            g_mouse_buttons[RIGHTMOUSE] = DOWN;
+            qenter(RIGHTMOUSE, DOWN);
+            qenter(MOUSEX, x);
+            qenter(MOUSEY, y);
+        } else {
+            g_mouse_buttons[RIGHTMOUSE] = UP;
+            qenter(RIGHTMOUSE, UP);
         }
         break;
     case GLUT_MIDDLE_BUTTON:
         if (state == GLUT_DOWN) {
             g_mouse_buttons[MIDDLEMOUSE] = DOWN;
-            bf_selecting();
-        }
-        else {
+            qenter(MIDDLEMOUSE, DOWN);
+        } else {
             g_mouse_buttons[MIDDLEMOUSE] = UP;
-            bf_quick();
+            qenter(MIDDLEMOUSE, UP);
         }
         break;
     case GLUT_LEFT_BUTTON:
         if (state == GLUT_DOWN) {
             g_mouse_buttons[LEFTMOUSE] = DOWN;
-            bf_selecting();
-        }
-        else {
+            qenter(LEFTMOUSE, DOWN);
+            qenter(MOUSEX, x);
+            qenter(MOUSEY, y);
+        } else {
             g_mouse_buttons[LEFTMOUSE] = UP;
-            bf_fly();
+            qenter(LEFTMOUSE, UP);
         }
         break;
     }
@@ -192,7 +278,7 @@ int main (int argc, char *argv[]) {
     glEnable(GL_DEPTH_TEST);
     
     // Améliorer la précision du depth test
-    glDepthFunc(GL_LEQUAL);  // Au lieu de GL_LESS par défaut
+    glDepthFunc(GL_LEQUAL);
     glClearDepth(1.0);
 
     // Configuration de l'éclairage
@@ -207,6 +293,8 @@ int main (int argc, char *argv[]) {
     // Enregistrer les callbacks GLUT
     glutDisplayFunc(bf_redraw);
     glutMouseFunc(mouse_click);
+    glutMotionFunc(mouse_motion);        // Mouvement avec bouton pressé
+    glutPassiveMotionFunc(mouse_motion);  // Mouvement sans bouton
     glutIdleFunc(idle_func);
     glutKeyboardFunc(keyboard_handler);
     glutKeyboardUpFunc(keyboard_up_handler);
@@ -214,8 +302,7 @@ int main (int argc, char *argv[]) {
     // Configuration de la projection avec near/far optimisés
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    // Augmenter le near plane pour améliorer la précision du depth buffer
-    gluPerspective(45.0, (float)XMAXSCREEN / YMAXSCREEN, 0.1, 10.0); // Au lieu de THICK et 9.0
+    gluPerspective(45.0, (float)XMAXSCREEN / YMAXSCREEN, 0.1, 10.0);
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
     glTranslatef(0.0, 0.0, -5.0/4.0);
@@ -547,6 +634,7 @@ void bf_redraw()
     
     doclear();
     draw_buttons(current_buttons);
+    draw_popup_menu();
     glutSwapBuffers();
     // Ne pas appeler glutPostRedisplay() ici pour éviter les boucles infinies
 }
