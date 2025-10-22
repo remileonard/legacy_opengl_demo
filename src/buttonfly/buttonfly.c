@@ -174,16 +174,7 @@ int flyinflag = 0;
 int flyoutflag = 0;
 int selectflag = 0;
 int exitflag = 0;
-// Ajouter en haut du fichier
-#define TARGET_FPS 60
-#define FRAME_TIME_MS (1000 / TARGET_FPS)
 
-
-void draw_buttons(button_struct *buttons);
-void draw_button(button_struct * button);
-void push_button(button_struct *selected);
-button_struct *load_buttons(), *which_button();
-extern button_struct *new_button(char *);
 
 button_struct *current_buttons=NULL, *selected=NULL, *secret_buttons=NULL;
 
@@ -204,11 +195,7 @@ float tv[4][4] = {
     {0.0, 0.0, 0.0, 0.0},
 };
 
-void bf_redraw(), bf_exit(), bf_selecting(), bf_deselect();
-void bf_quick(), bf_fly(), do_popup(), toggle_window();
-void bf_escdown(), bf_escup();
-void flyindraw(), flyoutdraw(), selectdraw();
-void parse_args(), doclear();
+
 void  do_popup()
 {
     short mx, my;
@@ -863,10 +850,7 @@ void draw_buttons(button_struct *buttons)
         }
     }
 }
-draw_selected_button(button, t)
-button_struct *button;
-float t;
-{
+void draw_selected_button(button_struct *button,float t) {
     float gls, glc;
     GLfloat ax, ay, az;
     float tx, ty, tz;
@@ -960,7 +944,7 @@ float t;
 }
 
 
-draw_edge() {
+void draw_edge() {
     
     glEnable(GL_POLYGON_OFFSET_FILL);
     glPolygonOffset(-0.5f, -0.5f);
@@ -992,9 +976,7 @@ void bf_redraw()
     glutSwapBuffers();
     // Ne pas appeler glutPostRedisplay() ici pour éviter les boucles infinies
 }
-draw_front(button)
-button_struct *button;
-{
+void draw_front(button_struct *button) {
     
     glEnable(GL_POLYGON_OFFSET_FILL);
     glPolygonOffset(-0.25f, -0.25f);
@@ -1067,8 +1049,7 @@ button_struct *button;
     }
 }
 
-button_struct *load_buttons(fp)
-FILE *fp;
+button_struct *load_buttons(FILE *fp)
 {
 	button_struct *scan;
 	int nb, i;
@@ -1167,8 +1148,7 @@ char *str;
         glEnd();
     }
 }
-draw_button_label(button)
-button_struct *button;
+void draw_button_label(button_struct *button)
 {
     // Sauvegarder l'état actuel
     glPushMatrix();
@@ -1233,9 +1213,7 @@ button_struct *button;
     glEnable(GL_LIGHTING);
     glPopMatrix();
 }
-button_struct *which_button(mx, my)
-int mx, my;
-{
+button_struct *which_button(int mx, int my) {
     float x, y;
     button_struct *button;
 
@@ -1264,10 +1242,7 @@ int mx, my;
     return(NULL);
 }
 
-add_button_to_path(current, button)
-button_struct *current;
-button_struct *button;
-{
+void add_button_to_path(button_struct *current, button_struct *button) {
     path_struct *step;
 
     step = (path_struct *)malloc(sizeof(path_struct));
