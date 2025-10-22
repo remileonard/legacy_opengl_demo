@@ -621,7 +621,7 @@ void flyindraw()
     }
     
     if (t > 0.2 || !BLOCK_AT_SLOW_FRAME) {
-        t -= 0.00009;  // Changé de 0.02 à 0.01 pour ralentir 2x
+        t -= 0.0009;  // Changé de 0.02 à 0.01 pour ralentir 2x
     }
     if (t<=0.0) {
         current_buttons = selected->forward;
@@ -1169,7 +1169,7 @@ button_struct *button;
 }
 
 void doclear() {
-    glClearColor(0, 0, 1.0, 1.0);
+    glClearColor(0, 0, 0, 1.0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
     
     // S'assurer que le depth buffer est bien configuré
