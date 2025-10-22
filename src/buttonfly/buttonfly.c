@@ -53,6 +53,7 @@
 
 static int esc_pressed = 0;
 static struct timespec esc_press_time;
+static button_struct *hovered_button = NULL;  // Bouton actuellement survolé
 
 static double diff_timespecs(struct timespec *t1, struct timespec *t2) {
     return (t1->tv_sec - t2->tv_sec) + (t1->tv_nsec - t2->tv_nsec)/1000000000.0;
@@ -175,6 +176,22 @@ void mouse_motion(int x, int y) {
     
     // Gérer le survol du menu popup
     popup_mouse_motion(x, y);
+    
+    // Activer le mode sélection au premier mouvement de souris
+    if (!selectflag && !flyinflag && !flyoutflag && !is_popup_active()) {
+        qenter(MOUSEX, x);
+        qenter(MOUSEY, y);
+        bf_selecting();
+    }
+    
+    // Mettre à jour le bouton survolé en mode sélection
+    if (selectflag) {
+        button_struct *new_hovered = which_button(x, y);
+        if (new_hovered != hovered_button) {
+            hovered_button = new_hovered;
+            glutPostRedisplay();  // Redessiner pour afficher le changement
+        }
+    }
 }
 
 void mouse_click(int button, int state, int x, int y) {
@@ -375,6 +392,7 @@ void bf_quick()
     qread(&mx); qread(&my);	/* Yank off queue */
 
     selectflag = flyinflag = flyoutflag = FALSE;
+    hovered_button = NULL;  // Réinitialiser le bouton survolé
     selected = which_button(mx, my);
     if (selected) {
         push_button(selected);
@@ -405,6 +423,7 @@ void bf_fly()
     qread(&mx); qread(&my);	/* Yank off queue */
 
     selectflag = flyinflag = flyoutflag = FALSE;
+    hovered_button = NULL;  // Réinitialiser le bouton survolé
     selected = which_button(mx, my);
     if (selected) {
         push_button(selected);
@@ -429,6 +448,7 @@ void bf_fly()
         else curbackcolor=rootbutton->backcolor;
     }
 }
+
 
 void  do_popup()
 {
@@ -572,10 +592,23 @@ void selectdraw()
     if (!selectflag) return;
     
     doclear();
-    draw_buttons(current_buttons);
     
-    // Utiliser les coordonnées stockées de la souris
-    draw_highlighted_button(which_button(g_mouse_x, g_mouse_y));
+    // Dessiner tous les boutons sauf celui survolé
+    if (current_buttons) {
+        button_struct *scan = current_buttons;
+        while (scan) {
+            if (scan != hovered_button) {
+                draw_button(scan);
+            }
+            scan = scan->next;
+        }
+    }
+    
+    // Dessiner le bouton survolé avec l'effet de sélection
+    if (hovered_button) {
+        draw_selected_button(hovered_button, 1.0);
+    }
+    
     glutSwapBuffers();
 }
 void flyindraw()
@@ -761,15 +794,15 @@ float t;
 
     // CORRECTION : Utiliser la vraie couleur du bouton
     GLfloat mat_diffuse[4];
-    mat_diffuse[0] = button->color[0];
-    mat_diffuse[1] = button->color[1];
-    mat_diffuse[2] = button->color[2];
+    mat_diffuse[0] = button->highcolor[0];
+    mat_diffuse[1] = button->highcolor[1];
+    mat_diffuse[2] = button->highcolor[2];
     mat_diffuse[3] = 1.0f;
     
     GLfloat mat_ambient[4];
-    mat_ambient[0] = button->color[0] * 0.3f;
-    mat_ambient[1] = button->color[1] * 0.3f;
-    mat_ambient[2] = button->color[2] * 0.3f;
+    mat_ambient[0] = button->highcolor[0] * 0.3f;
+    mat_ambient[1] = button->highcolor[1] * 0.3f;
+    mat_ambient[2] = button->highcolor[2] * 0.3f;
     mat_ambient[3] = 1.0f;
     
     glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, mat_diffuse);
