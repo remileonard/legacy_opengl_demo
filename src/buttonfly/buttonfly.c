@@ -290,6 +290,13 @@ int main (int argc, char *argv[]) {
     glLightfv(GL_LIGHT0, GL_AMBIENT, light_ambient);
     glLightfv(GL_LIGHT0, GL_DIFFUSE, light_diffuse);
 
+    glEnable(GL_LIGHTING);
+    glEnable(GL_LIGHT0);
+    glEnable(GL_NORMALIZE);
+    
+    // CORRECTION : Activer l'éclairage sur les deux faces
+    glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE);
+    glColor4f(0.0f, 1.0f, 0.0f, 1.0f);  // BLANC pour le texte
     // Enregistrer les callbacks GLUT
     glutDisplayFunc(bf_redraw);
     glutMouseFunc(mouse_click);
@@ -581,7 +588,7 @@ void flyindraw()
     }
     
     if (t > 0.2 || !BLOCK_AT_SLOW_FRAME) {
-        t -= 0.0009;  // Changé de 0.02 à 0.01 pour ralentir 2x
+        t -= 0.00009;  // Changé de 0.02 à 0.01 pour ralentir 2x
     }
     if (t<=0.0) {
         current_buttons = selected->forward;
@@ -593,7 +600,6 @@ void flyindraw()
         draw_buttons(current_buttons);
     } else {
         doclear();
-        draw_buttons(current_buttons);
         draw_selected_button(selected, t);
     }
     glutSwapBuffers();
@@ -718,9 +724,15 @@ void push_button(button_struct *selected)
 }
 void draw_buttons(button_struct *buttons)
 {
-    if (buttons) do {
-		if (buttons!=selected) draw_button(buttons);
-    } while((buttons=buttons->next) != 0);
+    if (buttons) {
+        button_struct *scan = buttons;
+        while (scan) {
+            if (scan != selected) {
+                draw_button(scan);
+            }
+            scan = scan->next;
+        }
+    }
 }
 draw_selected_button(button, t)
 button_struct *button;
@@ -747,20 +759,22 @@ float t;
     glRotatef(.1*ay, 0.0f, 1.0f, 0.0f);
     glRotatef(.1*az, 0.0f, 0.0f, 1.0f);
 
+    // CORRECTION : Utiliser la vraie couleur du bouton
     GLfloat mat_diffuse[4];
-    if (flyinflag) {
-        mat_diffuse[0] = button->highcolor[0];
-        mat_diffuse[1] = button->highcolor[1];
-        mat_diffuse[2] = button->highcolor[2];
-    } else {
-        mat_diffuse[0] = button->color[0];
-        mat_diffuse[1] = button->color[1];
-        mat_diffuse[2] = button->color[2];
-    }
+    mat_diffuse[0] = button->color[0];
+    mat_diffuse[1] = button->color[1];
+    mat_diffuse[2] = button->color[2];
     mat_diffuse[3] = 1.0f;
     
-    glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_diffuse);
-    glMaterialfv(GL_FRONT, GL_AMBIENT, mat_diffuse);
+    GLfloat mat_ambient[4];
+    mat_ambient[0] = button->color[0] * 0.3f;
+    mat_ambient[1] = button->color[1] * 0.3f;
+    mat_ambient[2] = button->color[2] * 0.3f;
+    mat_ambient[3] = 1.0f;
+    
+    glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, mat_diffuse);
+    glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, mat_ambient);
+        
         
     draw_edge();
 
@@ -773,31 +787,40 @@ float t;
         for (i=0; i<3; i++)
             bc[i] = (int)(t*255.0 + (1.0-t)*selected->backcolor[i]*255.0);
 
-        // Désactiver l'éclairage et utiliser les couleurs directes
-        glDisable(GL_LIGHTING);
+        // CORRECTION: Désactiver complètement le polygon offset pour le fond
         glDisable(GL_POLYGON_OFFSET_FILL);
         
-        glColor3ub(bc[0], bc[1], bc[2]);
-
-        // Dessiner le fond du bouton (panneau arrière)
+        // Normaliser bc[] pour OpenGL (0-1 au lieu de 0-255)
+        GLfloat mat_diffuse_back[4];
+        mat_diffuse_back[0] = 1.0f;
+        mat_diffuse_back[1] = 1.0f;
+        mat_diffuse_back[2] = 1.0f;
+        mat_diffuse_back[3] = 1.0f;
+        
+        glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_diffuse_back);
+        glMaterialfv(GL_FRONT, GL_AMBIENT, mat_diffuse_back);
+        // Dessiner le fond du bouton LÉGÈREMENT EN ARRIÈRE
         glBegin(GL_POLYGON);
-            glVertex3fv(back_polys[0][0]);
-            glVertex3fv(back_polys[0][1]);
-            glVertex3fv(back_polys[0][2]);
-            glVertex3fv(back_polys[0][3]);
+            glNormal3f(0.0f, 0.0f, -1.0f);
+            glVertex3f(back_polys[0][0][0], back_polys[0][0][1], back_polys[0][0][2]-0.01f);
+            glVertex3f(back_polys[0][1][0], back_polys[0][1][1], back_polys[0][1][2]-0.01f);
+            glVertex3f(back_polys[0][2][0], back_polys[0][2][1], back_polys[0][2][2]-0.01f);
+            glVertex3f(back_polys[0][3][0], back_polys[0][3][1], back_polys[0][3][2]-0.01f);
         glEnd();
 
-        // Transformations pour positionner les boutons sur le panneau arrière
+        // Transformations pour positionner les boutons
         glTranslatef(0.0, 0.0, THICK);
         glTranslatef(0.0, 0.0, SCREEN);
         glMultMatrixf((GLfloat*)tv);
         glTranslatef(0.0, 0.0, -SCREEN-THICK);
 
-        // Réactiver l'éclairage pour les boutons en arrière-plan
-        
+        // Dessiner les boutons en arrière-plan
+        glPushAttrib(GL_LIGHTING_BIT);
+        GLfloat light_position[] = { 0.0, 0.0, 1.0, 0.0 };  // Lumière directionnelle vers l'avant
+        glLightfv(GL_LIGHT0, GL_POSITION, light_position);
         
         draw_buttons(button->forward);
-		glEnable(GL_LIGHTING);
+        glPopAttrib();
         glPopMatrix();
 
     } else {
@@ -807,19 +830,15 @@ float t;
     glPopMatrix();
 }
 
+
 draw_edge() {
-    int i;
-
-    glEnable(GL_LIGHTING);
-    glEnable(GL_LIGHT0);
     
-    // Réduire le polygon offset pour les bords
     glEnable(GL_POLYGON_OFFSET_FILL);
-    glPolygonOffset(-0.5f, -0.5f);  // Réduit de 2.0 à 0.5
+    glPolygonOffset(-0.5f, -0.5f);
 
-    for (i=0; i<8; i++) {
+    for (int i=0; i<8; i++) {
+        glNormal3fv(edge_normals[i]);
         glBegin(GL_POLYGON);
-            glNormal3fv(edge_normals[i]);
             glVertex3fv(edge_polys[i][0]);
             glVertex3fv(edge_polys[i][1]);
             glVertex3fv(edge_polys[i][2]);
@@ -828,21 +847,16 @@ draw_edge() {
     }
     
     glDisable(GL_POLYGON_OFFSET_FILL);
-    glDisable(GL_LIGHTING);
 }
 
 draw_front(button)
 button_struct *button;
 {
-    glEnable(GL_LIGHTING);
-    glEnable(GL_LIGHT0);
-
-    // Réduire aussi l'offset pour la face avant
+    
     glEnable(GL_POLYGON_OFFSET_FILL);
-    glPolygonOffset(-0.25f, -0.25f);  // Réduit de 1.0 à 0.25
-
+    glPolygonOffset(-0.25f, -0.25f);
+    glNormal3f(0.0, 0.0, -1.0);
     glBegin(GL_POLYGON);
-        glNormal3fv(front_normals[0]);
         glVertex3fv(front_polys[0][0]);
         glVertex3fv(front_polys[0][1]);
         glVertex3fv(front_polys[0][2]);
@@ -850,10 +864,9 @@ button_struct *button;
     glEnd();
 
     glDisable(GL_POLYGON_OFFSET_FILL);
-    glDisable(GL_LIGHTING);
 
     // Translater pour dessiner le texte
-    glTranslatef(0.0, 0.0, -THICK - 0.005f);  // Réduit de 0.01f à 0.005f
+    glTranslatef(0.0, 0.0, -THICK - 0.005f);
 
     draw_button_label(button);
 }
@@ -861,19 +874,30 @@ void draw_button(button_struct * button)
 {
     glPushMatrix();
 
-    // lmdef remplacé par glMaterialfv
-    GLfloat mat_diffuse[] = {button->color[0], button->color[1], button->color[2], 1.0f};
-    glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_diffuse);
-    glMaterialfv(GL_FRONT, GL_AMBIENT, mat_diffuse);
-
+    // IMPORTANT : Chaque bouton définit son propre matériau
+    
     glTranslatef(button->tx, button->ty, button->tz);
 
     glRotatef(.1*button->ax, 1.0f, 0.0f, 0.0f);
     glRotatef(.1*button->ay, 0.0f, 1.0f, 0.0f);
     glRotatef(.1*button->az, 0.0f, 0.0f, 1.0f);
 
-    draw_edge();
-    draw_front(button);
+    GLfloat mat_diffuse[] = {button->color[0], button->color[1], button->color[2], 1.0f};
+    GLfloat mat_ambient[] = {button->color[0] * 0.3f, button->color[1] * 0.3f, button->color[2] * 0.3f, 1.0f};
+    
+    glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, mat_diffuse);
+    glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, mat_ambient);
+
+    if (flyinflag) {
+        draw_front(button);
+    } else if (flyoutflag) {
+        draw_front(button);
+    } else {
+        draw_edge();
+        draw_front(button);
+    }
+    
+    
 
     glPopMatrix();
 }
@@ -1063,7 +1087,7 @@ button_struct *button;
     
     // Réactiver le test de profondeur
     glEnable(GL_DEPTH_TEST);
-    
+    glEnable(GL_LIGHTING);
     glPopMatrix();
 }
 button_struct *which_button(mx, my)
@@ -1112,7 +1136,7 @@ button_struct *button;
 }
 
 void doclear() {
-    glClearColor(curbackcolor[0], curbackcolor[1], curbackcolor[2], 1.0);
+    glClearColor(0, 0, 1.0, 1.0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
     
     // S'assurer que le depth buffer est bien configuré
