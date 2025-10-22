@@ -58,7 +58,26 @@ static button_struct *hovered_button = NULL;  // Bouton actuellement survolé
 static double diff_timespecs(struct timespec *t1, struct timespec *t2) {
     return (t1->tv_sec - t2->tv_sec) + (t1->tv_nsec - t2->tv_nsec)/1000000000.0;
 }
+static struct timespec last_frame_time;
+static int time_initialized = 0;
 
+// Fonction pour calculer le delta time
+static double get_delta_time() {
+    struct timespec now;
+    double delta;
+    
+    if (!time_initialized) {
+        clock_gettime(CLOCK_MONOTONIC, &last_frame_time);
+        time_initialized = 1;
+        return 0.0;
+    }
+    
+    clock_gettime(CLOCK_MONOTONIC, &now);
+    delta = diff_timespecs(&now, &last_frame_time);
+    last_frame_time = now;
+    
+    return delta;
+}
 // Stop at the slow frame in the animation so we can analyze it.
 #define BLOCK_AT_SLOW_FRAME 0
 
@@ -664,20 +683,28 @@ void selectdraw()
 void flyindraw()
 {
     static float t = 1.0;
+    static double accumulated_time = 0.0;
     
     if (!flyinflag) {
         t = 1.0;
+        accumulated_time = 0.0;
         return;
     }
     
-    if (t > 0.2 || !BLOCK_AT_SLOW_FRAME) {
-        t -= 0.01;  // Changé de 0.02 à 0.01 pour ralentir 2x
-    }
-    if (t<=0.0) {
+    // Obtenir le temps écoulé depuis la dernière frame
+    double delta = get_delta_time();
+    accumulated_time += delta;
+    
+    // Vitesse de l'animation : 1.0 -> 0.0 en 2 secondes
+    const double ANIMATION_DURATION = 2.0; // secondes
+    t = 1.0 - (accumulated_time / ANIMATION_DURATION);
+    
+    if (t <= 0.0 || accumulated_time >= ANIMATION_DURATION) {
         current_buttons = selected->forward;
-        selected=NULL;
+        selected = NULL;
         flyinflag = 0;
-        t=1.0;
+        t = 1.0;
+        accumulated_time = 0.0;
         curbackcolor = path->button->backcolor;
         doclear();
         draw_buttons(current_buttons);
@@ -691,17 +718,27 @@ void flyindraw()
 void flyoutdraw()
 {
     static float t = 0.0;
+    static double accumulated_time = 0.0;
 
     if (!flyoutflag) {
         t = 0.0;
+        accumulated_time = 0.0;
         return;
     }
 
+    // Obtenir le temps écoulé depuis la dernière frame
+    double delta = get_delta_time();
+    accumulated_time += delta;
+    
+    // Vitesse de l'animation : 0.0 -> 1.0 en 2 secondes
+    const double ANIMATION_DURATION = 2.0; // secondes
+    t = accumulated_time / ANIMATION_DURATION;
+
     doclear();
 
-    t += 0.01;  // Changé de 0.02 à 0.01 pour ralentir 2x
-    if (t>=1.0) {
+    if (t >= 1.0 || accumulated_time >= ANIMATION_DURATION) {
         t = 0.0;
+        accumulated_time = 0.0;
         selected = NULL;
         flyoutflag = 0;
         draw_buttons(current_buttons);
@@ -711,23 +748,6 @@ void flyoutdraw()
     }
     glutSwapBuffers();
 }
-
-void bf_redraw()
-{
-    originx = 0;
-    originy = 0;
-    sizex = glutGet(GLUT_WINDOW_WIDTH);
-    sizey = glutGet(GLUT_WINDOW_HEIGHT);
-    
-    glViewport(0, 0, sizex, sizey);
-    
-    doclear();
-    draw_buttons(current_buttons);
-    draw_popup_menu();
-    glutSwapBuffers();
-    // Ne pas appeler glutPostRedisplay() ici pour éviter les boucles infinies
-}
-
 
 /*
  *	This is called to do whatever action is required when a button is
@@ -931,7 +951,21 @@ draw_edge() {
     
     glDisable(GL_POLYGON_OFFSET_FILL);
 }
-
+void bf_redraw()
+{
+    originx = 0;
+    originy = 0;
+    sizex = glutGet(GLUT_WINDOW_WIDTH);
+    sizey = glutGet(GLUT_WINDOW_HEIGHT);
+    
+    glViewport(0, 0, sizex, sizey);
+    
+    doclear();
+    draw_buttons(current_buttons);
+    draw_popup_menu();
+    glutSwapBuffers();
+    // Ne pas appeler glutPostRedisplay() ici pour éviter les boucles infinies
+}
 draw_front(button)
 button_struct *button;
 {
