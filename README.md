@@ -2,6 +2,7 @@
 
 A collection of classic OpenGL/GLUT demonstration programs showcasing various graphics techniques and effects from the early era of 3D computer graphics.
 
+![data/screen.png](data/screen.png)
 ## Overview
 
 This project contains several vintage OpenGL demos originally developed by Silicon Graphics, Inc. and other contributors in the 1990s. These demos demonstrate fundamental 3D graphics concepts using the fixed-function OpenGL pipeline and GLUT (OpenGL Utility Toolkit).
