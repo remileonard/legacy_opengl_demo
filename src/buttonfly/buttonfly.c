@@ -1,132 +1,14 @@
-#include <Windows.h>
-#include <GL/GL.h>
-#include <GL/GLU.h>
-#include <GL/glut.h>
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <math.h>
-#include <time.h>
+#include "buttonfly.h"
 
 #include "irisgl_compat.h"
 #include "event.h"
 #include "bartfont.h"
-#include "buttonfly.h"
+
 #include "data.h"
 #include "graph.h"
 
-#ifdef _WIN32
-    #include <process.h>
-    #include <shellapi.h>
-    #define CLOCK_MONOTONIC 0
-    
-    static int clock_gettime(int clk_id, struct timespec *spec) {
-        static LARGE_INTEGER frequency;
-        static int initialized = 0;
-        LARGE_INTEGER count;
-        
-        if (!initialized) {
-            QueryPerformanceFrequency(&frequency);
-            initialized = 1;
-        }
-        
-        QueryPerformanceCounter(&count);
-        
-        spec->tv_sec = (long)(count.QuadPart / frequency.QuadPart);
-        spec->tv_nsec = (long)(((count.QuadPart % frequency.QuadPart) * 1000000000LL) / frequency.QuadPart);
-        
-        return 0;
-    }
-    // Structure pour passer les arguments au thread Windows
-    typedef struct {
-        char command[1024];
-    } thread_args_t;
-    
-    // Fonction thread pour Windows - lance uniquement des exécutables
-    static unsigned int __stdcall execute_command_thread(void* arg) {
-        thread_args_t* args = (thread_args_t*)arg;
-        
-        // Analyser la commande pour extraire l'exécutable et les arguments
-        char exe[512] = {0};
-        char params[512] = {0};
-        char* space = strchr(args->command, ' ');
-        
-        if (space) {
-            size_t len = space - args->command;
-            strncpy(exe, args->command, len < 511 ? len : 511);
-            strncpy(params, space + 1, 511);
-        } else {
-            strncpy(exe, args->command, 511);
-        }
-        
-        // ShellExecute lance l'exe directement sans fenêtre de commande
-        HINSTANCE result = ShellExecuteA(NULL, "open", exe, 
-                                       params[0] ? params : NULL, 
-                                       NULL, SW_SHOWNORMAL);
-        if ((INT_PTR)result <= 32) {
-            fprintf(stderr, "ButtonFly: Failed to launch: %s (error: %d)\n", 
-                   exe, (int)(INT_PTR)result);
-        }
-        
-        free(args);
-        return 0;
-    }
-    
-    // Fonction pour exécuter une commande en arrière-plan (Windows)
-    static void execute_async(const char* command) {
-        thread_args_t* args = (thread_args_t*)malloc(sizeof(thread_args_t));
-        if (args) {
-            strncpy(args->command, command, sizeof(args->command) - 1);
-            args->command[sizeof(args->command) - 1] = '\0';
-            
-            printf("ButtonFly: Launching (async): %s\n", command);
-            
-            uintptr_t handle = _beginthreadex(NULL, 0, execute_command_thread, args, 0, NULL);
-            if (handle != 0) {
-                CloseHandle((HANDLE)handle);
-            } else {
-                fprintf(stderr, "ButtonFly: Failed to create thread\n");
-                free(args);
-            }
-        }
-    }
-#else
-    #include <time.h>
-    #include <unistd.h>
-    #include <sys/wait.h>
-    
-    // Fonction pour exécuter une commande en arrière-plan (Unix)
-    static void execute_async(const char* command) {
-        pid_t pid = fork();
-        if (pid == 0) {
-            // Processus enfant - parser la commande pour extraire exe et args
-            char* args[64];
-            char cmd_copy[1024];
-            int i = 0;
-            
-            strncpy(cmd_copy, command, sizeof(cmd_copy) - 1);
-            cmd_copy[sizeof(cmd_copy) - 1] = '\0';
-            
-            char* token = strtok(cmd_copy, " ");
-            while (token != NULL && i < 63) {
-                args[i++] = token;
-                token = strtok(NULL, " ");
-            }
-            args[i] = NULL;
-            
-            // Exécuter directement le programme
-            execvp(args[0], args);
-            
-            // Si on arrive ici, exec a échoué
-            fprintf(stderr, "ButtonFly: Failed to launch: %s\n", command);
-            exit(1);
-        } else if (pid < 0) {
-            fprintf(stderr, "ButtonFly: fork() failed\n");
-        }
-        // Le processus parent continue immédiatement
-    }
-#endif
+
 
 static int esc_pressed = 0;
 static struct timespec esc_press_time;
@@ -156,15 +38,7 @@ static double get_delta_time() {
     return delta;
 }
 // Stop at the slow frame in the animation so we can analyze it.
-#define BLOCK_AT_SLOW_FRAME 0
 
-#define X 0
-#define Y 1
-#define Z 2
-
-#define M_PI 3.14159265358979323846
-#define XMAXSCREEN 1024
-#define YMAXSCREEN 768
 
 short dev,val;
 long originx, originy, sizex, sizey;
@@ -636,9 +510,8 @@ short mx, my;
 
     } else if ((i > 1) && (i <= num+1)) {
 
-        for (num=0, scan=b->popup; num != (i-2);
-             num++, scan=scan->next)
-        ;	/* Keep on scanning... */
+        for (num=0, scan=b->popup; num != (i-2); num++, scan=scan->next);
+        	/* Keep on scanning... */
         
         if (scan && scan->action) {
             execute_async(scan->action);
@@ -687,8 +560,7 @@ void bf_deselect()
     }
 }
 
-#define BIG	0
-#define LITTLE	1
+
 void  toggle_window()
 {
     static int size=LITTLE;
@@ -714,10 +586,7 @@ void  toggle_window()
         sizex=XMAXSCREEN; sizey=YMAXSCREEN;
     }
 }
-void selectdraw()
-{
-    // Ne pas redessiner en permanence en mode sélection
-    if (!selectflag) return;
+void selectdraw() {
     
     doclear();
     
@@ -974,7 +843,6 @@ void bf_redraw()
     draw_buttons(current_buttons);
     draw_popup_menu();
     glutSwapBuffers();
-    // Ne pas appeler glutPostRedisplay() ici pour éviter les boucles infinies
 }
 void draw_front(button_struct *button) {
     
@@ -990,7 +858,6 @@ void draw_front(button_struct *button) {
 
     glDisable(GL_POLYGON_OFFSET_FILL);
 
-    // Translater pour dessiner le texte
     glTranslatef(0.0, 0.0, -THICK - 0.005f);
 
     draw_button_label(button);
@@ -999,8 +866,6 @@ void draw_button(button_struct * button)
 {
     glPushMatrix();
 
-    // IMPORTANT : Chaque bouton définit son propre matériau
-    
     glTranslatef(button->tx, button->ty, button->tz);
 
     glRotatef(.1*button->ax, 1.0f, 0.0f, 0.0f);
@@ -1027,9 +892,7 @@ void draw_button(button_struct * button)
     glPopMatrix();
 }
 
-draw_highlighted_button(button)
-button_struct *button;
-{
+void draw_highlighted_button(button_struct *button) {
     if (button) {
         GLfloat mat_diffuse[] = {button->highcolor[0], button->highcolor[1], button->highcolor[2], 1.0f};
         glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_diffuse);
@@ -1085,10 +948,9 @@ button_struct *load_buttons(FILE *fp)
 	return buttons_input;
 }
 
-stroke(str)
-char *str;
+void stroke(char *str)
 {
-    register int i, j;
+    int i, j;
     int x = 0, y = 0;  // Position courante
     int in_stroke = 0;
 

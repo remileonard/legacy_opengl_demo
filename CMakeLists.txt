@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.26.0)
-project("OpenGL/Glut Legacy Demos" VERSION 1.0.0 LANGUAGES C CXX)
+project("OpenGL Glut Legacy Demos" VERSION 1.0.0 LANGUAGES C CXX)
 set(CMAKE_C_STANDARD 99)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 

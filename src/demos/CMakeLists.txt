@@ -8,7 +8,8 @@ set(SIMPLE_EXECUTABLES
 
 foreach(target ${SIMPLE_EXECUTABLES})
     if(EXISTS "${CMAKE_SOURCE_DIR}/src/demos/${target}.c")
-        add_executable(${target} ${target}.c)
+        add_executable(${target} WIN32  ${target}.c)
+        set_target_properties( ${target} PROPERTIES LINK_FLAGS "/ENTRY:\"mainCRTStartup\"" )
         target_link_libraries(${target} OpenGL::GL GLUT::GLUT)
         target_include_directories(${target} PRIVATE ${OPENGL_INCLUDE_DIRS} ${GLUT_INCLUDE_DIRS})
         target_compile_options(${target} PRIVATE ${OPENGL_CFLAGS} ${GLUT_CFLAGS})
