@@ -562,6 +562,10 @@ void unqdevice(Device dev) {
 }
 
 Boolean qtest(void) {
+    // Process any pending GLUT events to populate the queue
+    // This is crucial for window events and display callbacks
+    glutMainLoopEvent();
+    
     return (event_queue_head != event_queue_tail) ? TRUE : FALSE;
 }
 
