@@ -6,6 +6,8 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 find_package(OpenGL REQUIRED)
 find_package(GLUT REQUIRED)
 
+add_subdirectory(src/libtk)
+
 add_subdirectory(src/smooth)
 add_subdirectory(src/ideas)
 add_subdirectory(src/atlantis)
@@ -15,3 +17,4 @@ add_subdirectory(src/distort)
 add_subdirectory(src/gl_puzzle)
 add_subdirectory(src/demos)
 add_subdirectory(src/buttonfly)
+

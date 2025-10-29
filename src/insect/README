@@ -1,0 +1,20 @@
+
+                   toolbox/src/demos/OpenGL/insect README
+
+              classic sgi insect demo moves into OpenGL space
+
+    
+    To Run:
+           % insect
+           LEFTMOUSE   - pan left or right depending upon "x-location"
+                         of cursor (ie, left of window center, pan left)
+           MIDDLEMOUSE - pan up or down depdning upon "y-location".
+                       - both of the above move faster the further away
+                         the mouse is from the window center.
+           f/F         - toggle's movement of the eye
+           ESC         - exit program
+
+    Demonstrates:
+           Lighting, Colormap (includin 8-bit machines),  display lists 
+           (hierarchically-defined insect model) animation capabilities.
+

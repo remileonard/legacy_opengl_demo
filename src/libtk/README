@@ -1,0 +1,31 @@
+
+                    toolbox/src/demos/OpenGL/libtk README
+
+
+                THIS CODE RUNS/COMPILES ON 5.1 Irix OR LATER
+                THIS CODE WILL NOT RUN ON LESS THAN 5.1 Irix
+
+
+
+                       Nano Window Toolkit library
+
+
+  
+      This library was created to help OpenGL Application writers who 
+      suddenly find themselves without simple window support they found 
+      in IrisGL.
+
+      The library provides simple windowing functions (creating and 
+      closing windows), event handling (keyboard and mouse events) via 
+      callback functions and a few extra goodies (cursor control, 
+      simple geometric shape creations, fonts, etc.).
+
+      The library can also be used as a reference for those needing 
+      sample code.  The routines found in the library can be integrated 
+      into your application and expanded if found lacking.
+
+      The complete API can be found in tk.h as well as defines, 
+      enumerates and structure definitions.  Each functionality set in 
+      the library is separated into files for easier understanding.
+
+      The current library assumes the X windowing system.
