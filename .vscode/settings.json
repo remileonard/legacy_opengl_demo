@@ -21,5 +21,9 @@
         "titleBar.inactiveBackground": "#4186c499",
         "titleBar.inactiveForeground": "#e7e7e799"
     },
-    "peacock.color": "#4186c4"
+    "peacock.color": "#4186c4",
+    "files.associations": {
+        "stdio.h": "c",
+        "gl.h": "c"
+    }
 }

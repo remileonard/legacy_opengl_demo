@@ -37,6 +37,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <windows.h>
 #include <GL/glut.h>
 #include "tk.h"
 #include "private.h"
@@ -55,10 +56,7 @@ WINDOW_REC w = {
 
 /******************************************************************************/
 
-Display *xDisplay = 0;
 int xScreen = 0; 
-Window wRoot = 0;
-Atom deleteWindowAtom;
 WINDOW_REC w = {
     0, 0, 300, 300, TK_RGB|TK_SINGLE|TK_DIRECT
 };
@@ -267,19 +265,6 @@ void tkInitPosition(int x, int y, int width, int height)
 }
 
 /******************************************************************************/
-
-static int ErrorHandler(Display *xDisplay, XErrorEvent *event)
-{
-    char buf[80];
-
-    printf("\nReceived X error!\n");
-    printf("\tError code   : %d\n", event->error_code);
-    printf("\tRequest code : %d\n", event->request_code);
-    printf("\tMinor code   : %d\n\n", event->minor_code);
-    XGetErrorText(xDisplay, event->error_code, buf, 80);
-    printf("\tError text : '%s'\n\n", buf);
-    return 0;
-}
 
 static unsigned int ConvertTkModeToGlut(GLenum type)
 {

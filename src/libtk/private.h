@@ -34,9 +34,11 @@
  *
  * OpenGL(TM) is a trademark of Silicon Graphics, Inc.
  */
-#include <X11/Xlib.h>
-#include <X11/Xutil.h>
-#include <GL/glx.h>
+#include <windows.h>
+#include <GL/gl.h>   // Minuscules pour la compatibilité multiplateforme
+#include <GL/glu.h>
+#include <GL/glut.h>
+
 
 #if defined(__cplusplus) || defined(c_plusplus)
 #define class c_class
@@ -46,18 +48,13 @@
 typedef struct _WINDOW_REC {
     int x, y, w, h;
     GLenum type;
-    Window wMain, wOverlay;
-    XVisualInfo *vInfoMain, *vInfoOverlay;
-    Colormap cMapMain, cMapOverlay;
-    GLXContext cMain, cOverlay;
+    int glutWindowID;           // ID de la fenêtre GLUT
+    int glutWindowIDOverlay;    // ID pour overlay (si supporté)
 } WINDOW_REC;
 
 
-extern Display *xDisplay;
-extern int xScreen; 
-extern Window wRoot;
+// Plus besoin de xDisplay, xScreen, wRoot, deleteWindowAtom avec GLUT
 extern WINDOW_REC w;
-extern Atom deleteWindowAtom;
 
 extern void (*ExposeFunc)(int, int);
 extern void (*ReshapeFunc)(int, int);
@@ -71,4 +68,3 @@ extern void (*IdleFunc)(void);
 extern GLenum drawAllowFlag;
 
 extern int cursorNum;
-
