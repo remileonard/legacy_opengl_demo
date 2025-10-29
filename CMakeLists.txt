@@ -18,4 +18,4 @@ add_subdirectory(src/gl_puzzle)
 add_subdirectory(src/demos)
 add_subdirectory(src/buttonfly)
 add_subdirectory(src/insect)
-
+add_subdirectory(src/cycles)

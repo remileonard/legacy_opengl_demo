@@ -1,0 +1,188 @@
+
+     CYCLES(1)         UNIX System V (January 1994)          CYCLES(1)
+
+     NAME
+          cycles - solo or multiplayer motorcycle game
+
+     SYNOPSIS
+          cycles [ -i ifaddr ] [ -t ttl ]
+
+     DESCRIPTION
+          You are riding your motorcycle against psychotic humans and
+          robots.  Avoid crashing into all bikes, trails and walls.
+          Points are awarded for excessive speed and making others
+          crash near you or into your trail.  You can jump over trails
+          and other cycles.
+
+     CONTROLS
+          Use the right mouse button to turn right, left mouse button
+          to turn left. Hold down the middle mouse button or the A-key
+          to accelerate and release to decelerate.  There is no mode
+          to keep your speed constant for this is an action sport and
+          you have to be on your toes.  You will notice that you slow
+          down at a greater rate than you accelerate. Use the Space
+          Bar to jump, and the left and right arrow keys to look
+          around you. The H-key toggles "heads-up" instructions, and
+          the ESC key exits the game at any time.
+
+     PLAYING
+          Upon startup, cycles provides three information pages.  The
+          first briefly describes the game.  The second page is for
+          the user to choose options and to change their name from the
+          default. The third screen is a help page with instructions
+          for playing. Press return (or click the left mouse button)
+          to go from one screen to the next.
+
+          There are three playing layers distinguished by their
+          colours (red, green and blue) and the scenery upon that
+          level.  Each player begins on a random level at a random
+          position. There are holes from each level to the others.
+          Simply ride over the hole of the appropriate colour to go to
+          that level. However, each player sees only their own holes
+          which move to another random location after either you or
+          one of your robots have used them.  Hence you may be
+          following a player who mysteriously disappears - never fear
+          they have just gone down one of their own holes to another
+          level.  Their trail will remain behind them upon the level
+          they just left.
+
+          Robot players are distinguished from humans by the "remote
+          control" flags that are displayed upon robot bikes. Robots
+          also tend to play better than most people. This may be
+          partly because they can turn whilst in the air (us real
+          players can't) but hey, they're only dumb machines and need
+          all the help they can get.
+
+     Page 1                                          (printed 4/11/94)
+
+     CYCLES(1)         UNIX System V (January 1994)          CYCLES(1)
+
+          During the game, the instrument panel on your cycle shows
+          your speed as a bar graph and your score. The colour of your
+          instrument panel is your trail colour.  There is also a
+          proximity alert indicator, which flashes red when you are
+          close to running into something.
+
+          All players and robots are listed in the top left of the
+          screen.  The name of each player is written in their trail
+          colour. If a player has just been killed then their name
+          turns white whilst they are exploding.  The coloured square
+          to the left of the players name indicates which level of the
+          game they are currently riding on.  Additionally, robots
+          have an R next to their name which is written in the colour
+          of their owners trail. A + sign next to the R indicates a
+          super psychotic robot. These + robots will actively attempt
+          to destroy any person in their vicinity and will also track
+          you across levels. Mean huh?
+
+          If there are too many robots in the game (causing it to go
+          slowly or to refuse to let real people play - see BUGS
+          below) then you can identify who is running the offending
+          robots by the colour of the R.
+
+          If you have used the arrow keys to look around, then the
+          direction you are looking in (left, right or rear) is
+          displayed in the top right corner of the screen.
+
+          Multicast communications are used to play between different
+          machines.  See mrouted(1M) and COMMAND LINE OPTIONS below
+          for information on multicast tunneling between machines not
+          on the same sub-net.
+
+     OPTIONS
+          These are all available from the startup options screen.
+
+          You can choose the number of robots that run on your
+          machine. Your robots are tagged with a flag the colour of
+          your trail. Be aware that the greater the number of robots
+          you run on your machine, the slower the response of your
+          machine will be. Players are by default given a random trail
+          colour unless they choose their own by selecting a colour
+          circle.
+
+          A demo mode is available which lets you see a robot's eye
+          view of the game. In this mode you can still look around you
+          with the arrow keys and jump (so you can see better), but
+          nothing else.
+
+          You can choose to play solo or network mode. In network
+          mode, two or more players on different machines may play
+          each other and their respective robots.  Solo mode is the
+          same as network, but you play alone with your robots.
+
+     Page 2                                          (printed 4/11/94)
+
+     CYCLES(1)         UNIX System V (January 1994)          CYCLES(1)
+
+     SCORING AND SCORE SCREEN
+          You score between 5 and 10 points per second depending on
+          your speed. 3000 points is awarded when someone crashes into
+          your trail and 10,000 points for causing someone to crash
+          near you.
+
+          The score screen, which is shown each time you crash,
+          includes the total number of kills and trail crashes you
+          caused, your points for the game you have just played, and
+          the total number of games. An average score is also
+          displayed which is your total score divided by the number of
+          games you have played.  The hardest thing to do is to keep
+          this average score high.  The three level display showing
+          the continuing riders and their trails, rotates serenely on
+          your screen hiding the mayhem that is taking place.
+
+     SOUND
+          Audio is selectable if you are running cycles on a machine
+          that supports sound. Don't worry about de-selecting sound if
+          you don't have it as cycles should auto-detect whether your
+          machine supports sound.  If your sound files are in an area
+          other than the default /usr/demos/IndiZone/.data/cycles then
+          you may set an environment variable CYCLESOUND that points
+          to the directory where your .aiff sounds are kept.
+
+     COMMAND LINE OPTIONS
+          See also the TCP/IP User's Guide and mrouted(1M).
+
+          -i ifaddr   select the outgoing interface address (if you
+                      have multiple network interfaces)
+
+          -t ttl      select the time to live of multicast packets
+                      (default 1).
+
+     BUGS
+          There is a limit of twenty players (human plus robot) that
+          cycles can hold.  If you attempt to play the game with more
+          players, you will receive the message, "sorry, the game is
+          full".
+
+          You cannot run more than one network game of cycles from a
+          single host without specifying different network interfaces
+          (I think).
+
+          Iconifying the window causes cycles to get very confused.
+
+          Trails are limited to 50 segments per bike. When all
+          segments have been used up the oldest trail segments will be
+          removed.
+
+     AUTHORS
+          Robin Humble (rjh@pixel.maths.monash.edu.au)
+
+     Page 3                                          (printed 4/11/94)
+
+     CYCLES(1)         UNIX System V (January 1994)          CYCLES(1)
+
+          Alan Lipton (alan.j.lipton@eng.monash.edu.au)
+
+          Nick Fitton (fitton@artemis.earth.monash.edu.au)
+
+     CREDITS
+          Sarah Maddison for artistic scenery, man page and lots of
+          help.
+
+          Numerous proto General Relativists and Fluid Dynamicists for
+          suggestions for the next topologically unique version of
+          cycles
+
+     Page 4                                          (printed 4/11/94)
+
+

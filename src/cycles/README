@@ -1,0 +1,55 @@
+ 
+         ~4Dgifts/toolbox/src/exampleCode/games/IndiZone/cycles README
+ 
+
+                CYCLES - solo or multiplayer motorcycle game
+
+                by Robin Humble, Alan Lipton and Nick Fitton
+
+
+
+
+     SYNOPSIS
+          cycles [ -i ifaddr ] [ -t ttl ]
+
+     COMMAND LINE OPTIONS
+          See also the TCP/IP User's Guide and mrouted(1M).
+
+          -i ifaddr   select the outgoing interface address (if you
+                      have multiple network interfaces)
+
+          -t ttl      select the time to live of multicast packets
+                      (default 1).
+
+
+
+
+       You are riding your cycle against humans and hunter killer robots. 
+       Avoid hitting all bike trails.  Points are awarded for excessive 
+       speed and making others crash near you or run into your trail.
+                   Really politically correct huh?
+       Look for holes through to other levels, however only you can see 
+       your holes ... and they move!
+
+
+
+
+       note the use of the environment variable, CYCLESOUND, in cycles.sh.
+       this must be correctly specified or you don't get to play.
+
+
+
+
+
+                                CONTROLS:
+
+                LEFTMOUSE     - turn left NOW
+                RIGHTMOUSE    - turn right NOW
+                Akey or 
+                MIDDLEMOUSE   - accelerate (release to slow down)
+                SPACEBAR      - jump
+                LEFTARROWKEY  - raise up and then look left 
+                RIGHTARROWKEY - raise up and then look right
+                H key         - toggles instructions
+                Esc key       - quit
+
