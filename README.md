@@ -34,6 +34,18 @@ An interactive 3D puzzle game with trackball controls for manipulating pieces.
 ### 💡 Ideas
 SGI "Ideas" logo demonstration featuring various 3D objects including lamps, holders, and animated logo elements.
 
+### 🐛 Insect
+An animated 3D insect simulation originally developed by Silicon Graphics, Inc. Features:
+- Realistic multi-legged insect with articulated body parts
+- Smooth walking animation with procedural leg movement
+- Interactive camera controls (follow mode, free rotation)
+- Checkered ground plane with customizable colors
+- Shadow rendering for depth perception
+- RGB color mode with indexed color palette simulation
+- VSync support for smooth frame limiting
+
+**Note**: This demo has been ported from the original X11/GLX implementation to work with GLUT on Windows using OpenGL legacy mode. The color system uses an in-memory palette that simulates the original indexed color mode while rendering in RGB mode for modern compatibility.
+
 ### 🎢 Roller Coaster
 A 3D roller coaster simulation with camera following the track path. Includes custom matrix transformations.
 
@@ -112,6 +124,7 @@ After building, executables will be located in the build output directory:
 ```powershell
 # Windows
 .\out\build\windows\src\atlantis\Debug\atlantis.exe
+.\out\build\windows\src\insect\Debug\insect.exe
 .\out\build\windows\src\smooth\Debug\smooth.exe
 .\out\build\windows\src\bounce\Debug\bounce.exe
 # ... etc
@@ -160,6 +173,8 @@ legacy_opengl_demo/
     ├── distort/           # Distortion effects
     ├── gl_puzzle/         # 3D puzzle game
     ├── ideas/             # SGI Ideas demo
+    ├── insect/            # Insect animation demo
+    ├── libtk/             # TK toolkit (X11/GLX to GLUT port)
     ├── roller_coaster/    # Roller coaster simulation
     └── smooth/            # Model viewer
 ```
@@ -184,6 +199,51 @@ These demos represent an important period in computer graphics history when Open
 - Studying classic rendering techniques
 - Educational purposes
 - Nostalgia and historical preservation
+
+## Porting Notes
+
+### libtk Library (X11/GLX to GLUT)
+
+The **libtk** library has been ported from X11/GLX to GLUT for Windows compatibility. Key changes include:
+
+#### Color System Migration
+- **Original**: Used indexed color mode (`glIndexi()`) with hardware color palette
+- **Ported**: Simulates indexed colors in RGB mode using an in-memory palette array
+- **Implementation**: `glIndexi_compat()` function translates color indices to RGB values via `tkGetColorRGB()`
+- **Compatibility**: Functions like `tkSetOneColor()`, `tkSetRGBMap()`, `tkSetGreyRamp()`, and `tkSetFogRamp()` maintain the original API
+
+#### Window Management
+- **Original**: X11 `XCreateWindow()` and GLX context creation
+- **Ported**: GLUT `glutCreateWindow()` with display mode conversion
+- **Callbacks**: All X11 event handlers converted to GLUT callback wrappers (`glutDisplayFunc`, `glutReshapeFunc`, `glutKeyboardFunc`, etc.)
+- **Mouse Tracking**: Custom mouse position tracking added since GLUT doesn't provide direct position queries
+
+#### Cursor Support
+- **Original**: X11 custom cursor creation and management
+- **Ported**: Maps cursor IDs to GLUT predefined cursors (`GLUT_CURSOR_LEFT_ARROW`, etc.)
+- **Limitation**: Custom cursor bitmaps not supported, uses closest GLUT equivalent
+
+#### Display Lists
+- Window type flags (`TK_INDEX`, `TK_RGB`, `TK_DOUBLE`, etc.) converted to GLUT equivalents
+- Z-buffer, double buffering, and direct rendering modes preserved
+- Overlay planes support limited (GLUT has minimal overlay support)
+
+#### Frame Rate Control
+- Added VSync support via WGL extensions (`wglSwapIntervalEXT`) on Windows
+- Prevents excessive frame rates when VSync is unavailable in driver settings
+- Maintains smooth animation at monitor refresh rate
+
+### Insect Demo Conversion
+
+The insect demo required additional modifications:
+- All `glIndexi()` calls replaced with `glIndexi_compat()` for RGB mode compatibility
+- Color initialization moved earlier in startup sequence
+- Display mode changed from `TK_INDEX` to `TK_RGB|TK_DOUBLE|TK_DIRECT|TK_DEPTH`
+- Include order fixed: `windows.h` must precede OpenGL headers to define `WINGDIAPI` and `APIENTRY` macros
+- Checkered floor rendering modified to draw both colors instead of using background transparency
+- Screen resolution variables made dynamic (`actualScreenWidth`, `actualScreenHeight`)
+
+These changes preserve the original visual appearance and behavior while enabling the code to run on modern Windows systems with current OpenGL drivers that no longer support hardware indexed color modes.
 
 ## Contributing
 
