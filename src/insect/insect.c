@@ -40,9 +40,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
-#include <GL/gl.h>
-#include "gl42ogl.h"
 #include "tk.h"
+#include "gl42ogl.h"
 #include "insect.h"
 #include "insectco.h"
 
@@ -826,7 +825,7 @@ getpolycolor (int p, float pts[][3])
     /* Changed for 8 bit ECLIPSE machine */
     if (is_8bit)
 	c = (float)reduce_index((int)c);
-    glIndexi (c);	
+    glIndexi_compat(c);	
 }
 
 
@@ -1008,7 +1007,7 @@ static void animate (void) {
 		-- display shadow and insect
 */
 
-void
+int
 main (int argc, char *argv[]) {
     int     i,
             j,
@@ -1027,7 +1026,9 @@ main (int argc, char *argv[]) {
 
     tkInitPosition(0, 0, wsizex, wsizey);
 
-    tkInitDisplayMode(TK_INDEX|TK_DOUBLE|TK_DIRECT);
+    // Utiliser TK_RGB au lieu de TK_INDEX pour le mode RGB moderne
+    // La palette de couleurs sera simulée en mémoire
+    tkInitDisplayMode(TK_RGB|TK_DOUBLE|TK_DIRECT|TK_DEPTH);
 
     if (tkInitWindow("Insect") == GL_FALSE) {
         tkQuit();
@@ -1092,4 +1093,6 @@ main (int argc, char *argv[]) {
     tkExec();
 
     glPopMatrix();
+    
+    return 0;
 }

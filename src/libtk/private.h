@@ -34,11 +34,6 @@
  *
  * OpenGL(TM) is a trademark of Silicon Graphics, Inc.
  */
-#include <windows.h>
-#include <GL/gl.h>   // Minuscules pour la compatibilité multiplateforme
-#include <GL/glu.h>
-#include <GL/glut.h>
-
 
 #if defined(__cplusplus) || defined(c_plusplus)
 #define class c_class
@@ -68,3 +63,6 @@ extern void (*IdleFunc)(void);
 extern GLenum drawAllowFlag;
 
 extern int cursorNum;
+
+// Fonction interne pour mettre à jour la position de la souris
+extern void tkUpdateMousePosition(int x, int y);

@@ -43,12 +43,14 @@
 
 #include <math.h>
 #include <stdio.h>
-#include <GL/gl.h>
 #include "tk.h"
-
 #include "gl42ogl.h"
 
 int windX, windY;
+
+// Variables pour stocker la taille réelle de l'écran
+int actualScreenWidth = YOUR_SCREEN_MAXX;
+int actualScreenHeight = YOUR_SCREEN_MAXY;
 
 
 void
@@ -78,7 +80,8 @@ getvaluator (Device dev) {
 
 	case MOUSEY:
 	    tkGetMouseLoc (&mouseX, &mouseY);
-	    val = YOUR_SCREEN_MAXY - (mouseY + originY);
+	    // Utiliser actualScreenHeight au lieu de YOUR_SCREEN_MAXY hardcodé
+	    val = actualScreenHeight - (mouseY + originY);
 	    break;
 
 	default:
@@ -138,6 +141,21 @@ mapcolor (Colorindex index, short r, short g, short b) {
  * ogl -> rgb = [0,1]
  */
     tkSetOneColor (index, r/255.0, g/255.0, b/255.0);
+}
+
+
+// Fonction helper pour simuler glIndexi en mode RGB
+// Récupère la couleur de la palette et l'applique avec glColor3f
+void
+glIndexi_compat(Colorindex index) {
+    float r, g, b;
+    tkGetColorRGB(index, &r, &g, &b);
+    glColor3f(r, g, b);
+}
+
+void
+glIndexf_compat(float index) {
+    glIndexi_compat((Colorindex)index);
 }
 
 

@@ -34,7 +34,7 @@
  *
  * OpenGL(TM) is a trademark of Silicon Graphics, Inc.
  */
-#include <GL/gl.h>
+#include "tk.h"
 
 void
 gl_IdentifyMatrix( GLfloat mat[16])

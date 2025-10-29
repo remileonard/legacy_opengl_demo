@@ -36,9 +36,14 @@
  */
 #include <GL/gl.h>
 
-/* screen == monitor */
-#define YOUR_SCREEN_MAXX    1023
-#define YOUR_SCREEN_MAXY     766
+/* screen == monitor
+ * Note: Ces valeurs sont utilisées pour les calculs de souris.
+ * Avec GLUT, on peut obtenir la taille de l'écran dynamiquement.
+ * Pour la compatibilité, on garde ces valeurs par défaut mais
+ * elles peuvent être mises à jour à l'exécution.
+ */
+#define YOUR_SCREEN_MAXX    1920
+#define YOUR_SCREEN_MAXY    1080
 
 #define YOUR_WINDOW_PADX       8
 #define YOUR_WINDOW_PADY      32
@@ -46,6 +51,9 @@
 #define MOUSEX 266
 #define MOUSEY 267
 
+// Variables globales pour la taille réelle de l'écran (mises à jour dynamiquement)
+extern int actualScreenWidth;
+extern int actualScreenHeight;
 
 typedef unsigned short Colorindex;
 typedef unsigned short Device;
@@ -78,6 +86,15 @@ glGetMatrix (GLfloat mat[]);
 
 extern void
 mapcolor (Colorindex index, short r, short g, short b);
+
+// Fonctions de compatibilité pour le mode indexé
+// En mode RGB moderne, ces fonctions récupèrent la couleur de la palette
+// et l'appliquent avec glColor3f
+extern void
+glIndexi_compat(Colorindex index);
+
+extern void
+glIndexf_compat(float index);
 
 extern void
 polf2i (long n, Icoord parray[][2]);

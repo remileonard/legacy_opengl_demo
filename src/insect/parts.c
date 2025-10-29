@@ -36,10 +36,8 @@
  */
 #include <stdio.h>
 #include <math.h>
-#include <GL/gl.h>
-#include <GL/glu.h>
-#include "gl42ogl.h"
 #include "tk.h"
+#include "gl42ogl.h"
 #include "insect.h"
 #include "insectco.h"
 
@@ -640,9 +638,9 @@ createobjects (void) {
 
 /* Changed for ECLIPSE 8 bit machine */
     if (is_8bit)
-	glIndexi (ECLIPSE8_GRID);
+	glIndexi_compat(ECLIPSE8_GRID);
     else
-	glIndexi (GRID);
+	glIndexi_compat(GRID);
 
     k = 1;
     for (i = -8; i < 7; i++)
@@ -686,7 +684,7 @@ createobjects (void) {
 	mshadow[10] = 0;
 	glMultMatrixf (mshadow);
     }
-    glIndexi (BLACK);
+    glIndexi_compat(BLACK);
     glEndList ();
 
     for (i = 0; i < 12; i++) {
@@ -758,7 +756,7 @@ createobjects (void) {
 
     glShadeModel(GL_FLAT);
 
-    glIndexi (SHADOW_COLOR);
+    glIndexi_compat(SHADOW_COLOR);
     if (lit (3, b7))
 	polf (12, b7);
     if (lit (3, b1))
@@ -834,7 +832,7 @@ createobjects (void) {
     glShadeModel(GL_FLAT);
 
     /*glEnable (GL_CULL_FACE);*/
-    glIndexi (SHADOW_COLOR);
+    glIndexi_compat(SHADOW_COLOR);
     polf (4, h1);
     polf (4, h2);
     polf (3, h3);
@@ -950,7 +948,7 @@ createobjects (void) {
     glShadeModel(GL_FLAT);
 
     /*glEnable (GL_CULL_FACE);*/
-    glIndexi (SHADOW_COLOR);
+    glIndexi_compat(SHADOW_COLOR);
     polf (4, t1);
     polf (3, t2);
     polf (3, t3);
@@ -966,7 +964,7 @@ createobjects (void) {
     glShadeModel(GL_FLAT);
 
     /*glEnable (GL_CULL_FACE);*/
-    glIndexi (SHADOW_COLOR);
+    glIndexi_compat(SHADOW_COLOR);
     polf (4, k1);
     for (k = 0; k < 4; k++)
 	k1[k][1] -= 1.0;
@@ -992,7 +990,7 @@ createobjects (void) {
     glShadeModel(GL_FLAT);
 
     /*glEnable (GL_CULL_FACE);*/
-    glIndexi (SHADOW_COLOR);
+    glIndexi_compat(SHADOW_COLOR);
     polf (4, s1);
     polf (4, s2);
     polf (4, s3);

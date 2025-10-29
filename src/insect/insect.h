@@ -34,7 +34,9 @@
  *
  * OpenGL(TM) is a trademark of Silicon Graphics, Inc.
  */
+#ifndef HALFTONE
 #define HALFTONE 1
+#endif
 #define PI 3.1415926536
 	/*  resolution of movement  */
 #define RES 30

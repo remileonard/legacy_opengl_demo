@@ -36,7 +36,6 @@
  */
 #include <stdio.h>
 #include <stdlib.h>
-#include <GL/glut.h>
 #include "tk.h"
 #include "private.h"
 
@@ -123,6 +122,9 @@ static void glutSpecialWrapper(int key, int x, int y) {
 static void glutMouseWrapper(int button, int state, int x, int y) {
     GLenum mask = 0;
     
+    // Mettre à jour la position de la souris
+    tkUpdateMousePosition(x, y);
+    
     switch (button) {
         case GLUT_LEFT_BUTTON: mask = TK_LEFTBUTTON; break;
         case GLUT_MIDDLE_BUTTON: mask = TK_MIDDLEBUTTON; break;
@@ -141,6 +143,9 @@ static void glutMouseWrapper(int button, int state, int x, int y) {
 }
 
 static void glutMotionWrapper(int x, int y) {
+    // Mettre à jour la position de la souris
+    tkUpdateMousePosition(x, y);
+    
     if (MouseMoveFunc) {
         GLenum mask = 0;
         // GLUT ne fournit pas directement l'état des boutons pendant le mouvement

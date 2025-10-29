@@ -46,7 +46,7 @@
 
 typedef struct _cursorRec {
     GLint id;
-    Cursor cursor;
+    int glutCursor;  // Type de curseur GLUT
 } cursorRec;
 
 int cursorNum = 0;
@@ -54,56 +54,53 @@ cursorRec cursors[MAX_CURSOR];
 
 /******************************************************************************/
 
+// GLUT ne supporte pas les curseurs personnalisés de la même manière que X11
+// On mappe les IDs de curseurs à des curseurs prédéfinis GLUT
 void tkNewCursor(GLint id, GLubyte *shapeBuf, GLubyte *maskBuf, GLenum fgColor,
 		 GLenum bgColor, GLint hotX, GLint hotY)
 {
-    GLubyte buf[32];
-    Pixmap shapeMap, maskMap;
-    XColor c1, c2;
-    int i;
-
-    if (cursorNum == MAX_CURSOR-1) {
-	return;
+    if (cursorNum >= MAX_CURSOR - 1) {
+        return;
     }
-
-    for (i = 0; i < 32; i += 2) {
-	buf[i] = shapeBuf[i+1];
-	buf[i+1] = shapeBuf[i];
-    }
-    shapeMap = XCreatePixmapFromBitmapData(xDisplay, wRoot, buf, 16, 16,
-					   1, 0, 1);
-    for (i = 0; i < 32; i += 2) {
-	buf[i] = maskBuf[i+1];
-	buf[i+1] = maskBuf[i];
-    }
-    maskMap = XCreatePixmapFromBitmapData(xDisplay, wRoot, buf, 16, 16,
-					  1, 0, 1);
-    c1.red = (unsigned short)(tkRGBMap[fgColor][0] * 65535.0 + 0.5);
-    c1.green = (unsigned short)(tkRGBMap[fgColor][1] * 65535.0 + 0.5);
-    c1.blue = (unsigned short)(tkRGBMap[fgColor][2] * 65535.0 + 0.5);
-    c1.flags = DoRed | DoGreen | DoBlue;
-    c2.red = (unsigned short)(tkRGBMap[bgColor][0] * 65535.0 + 0.5);
-    c2.green = (unsigned short)(tkRGBMap[bgColor][1] * 65535.0 + 0.5);
-    c2.blue = (unsigned short)(tkRGBMap[bgColor][2] * 65535.0 + 0.5);
-    c2.flags = DoRed | DoGreen | DoBlue;
-
+    
     cursors[cursorNum].id = id;
-    cursors[cursorNum].cursor = XCreatePixmapCursor(xDisplay, shapeMap, maskMap,
-					            &c1, &c2, hotX, hotY);
+    
+    // Mapper à un curseur GLUT approprié basé sur l'ID ou d'autres critères
+    // Pour un portage complet, on pourrait utiliser l'API Windows native
+    // pour créer des curseurs personnalisés, mais pour la compatibilité
+    // basique, on utilise les curseurs GLUT standard
+    switch (id) {
+        case 0:
+            cursors[cursorNum].glutCursor = GLUT_CURSOR_LEFT_ARROW;
+            break;
+        case 1:
+            cursors[cursorNum].glutCursor = GLUT_CURSOR_CROSSHAIR;
+            break;
+        case 2:
+            cursors[cursorNum].glutCursor = GLUT_CURSOR_INFO;
+            break;
+        default:
+            cursors[cursorNum].glutCursor = GLUT_CURSOR_INHERIT;
+            break;
+    }
+    
     cursorNum++;
 }
-
-/******************************************************************************/
 
 void tkSetCursor(GLint id)
 {
     int i;
-
+    
+    // Chercher le curseur avec l'ID correspondant
     for (i = 0; i < cursorNum; i++) {
-	if (cursors[i].id == id) {
-	    XDefineCursor(xDisplay, w.wMain, cursors[i].cursor);
-	}
+        if (cursors[i].id == id) {
+            glutSetCursor(cursors[i].glutCursor);
+            return;
+        }
     }
+    
+    // Si non trouvé, utiliser le curseur par défaut
+    glutSetCursor(GLUT_CURSOR_INHERIT);
 }
 
 /******************************************************************************/

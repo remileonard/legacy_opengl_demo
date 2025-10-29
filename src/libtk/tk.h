@@ -34,8 +34,12 @@
  *
  * OpenGL(TM) is a trademark of Silicon Graphics, Inc.
  */
+#ifdef _WIN32
+#include <windows.h>
+#endif
 #include <GL/gl.h>
 #include <GL/glu.h>
+#include <GL/glut.h>
 
 /*
 ** Nano Window Toolkit.
@@ -230,6 +234,7 @@ extern void tkSetFogRamp(int, int);
 extern void tkSetGreyRamp(void);
 extern void tkSetRGBMap(int, float *);
 extern void tkSetOverlayMap(int, float *);
+extern void tkGetColorRGB(int index, float *r, float *g, float *b);
 
 extern void tkNewCursor(GLint, GLubyte *, GLubyte *, GLenum, GLenum,
 			GLint, GLint);

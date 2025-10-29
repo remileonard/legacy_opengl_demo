@@ -37,8 +37,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <windows.h>
-#include <GL/glut.h>
 #include "tk.h"
 #include "private.h"
 
@@ -51,15 +49,11 @@ static int windowWidth = 300;
 static int windowHeight = 300;
 
 WINDOW_REC w = {
-    0, 0, 300, 300, TK_RGB|TK_SINGLE|TK_DIRECT
+    0, 0, 300, 300, TK_RGB|TK_SINGLE|TK_DIRECT, 0, 0
 };
 
 /******************************************************************************/
 
-int xScreen = 0; 
-WINDOW_REC w = {
-    0, 0, 300, 300, TK_RGB|TK_SINGLE|TK_DIRECT
-};
 float colorMaps[] = {
     0.000000, 1.000000, 0.000000, 1.000000, 0.000000, 1.000000, 
     0.000000, 1.000000, 0.333333, 0.776471, 0.443137, 0.556863, 
@@ -301,6 +295,20 @@ static unsigned int ConvertTkModeToGlut(GLenum type)
     return glutMode;
 }
 
+static void defaultDisplayFunc(void)
+{
+    if (DisplayFunc) {
+        DisplayFunc();
+    }
+}
+
+static void defaultReshapeFunc(int width, int height)
+{
+    if (ReshapeFunc) {
+        ReshapeFunc(width, height);
+    }
+}
+
 GLenum tkInitWindow(char *title)
 {
     static int glutInitialized = 0;
@@ -335,9 +343,9 @@ GLenum tkInitWindow(char *title)
         fprintf(stderr, "Warning: Overlay planes not fully supported in GLUT port\n");
     }
     
-    // Configurer les callbacks par défaut
-    glutDisplayFunc(NULL);  // Sera défini plus tard par l'application
-    glutReshapeFunc(NULL);  // Sera défini plus tard par l'application
+    // Configurer les callbacks par défaut - OBLIGATOIRE pour GLUT
+    glutDisplayFunc(defaultDisplayFunc);
+    glutReshapeFunc(defaultReshapeFunc);
     
     drawAllowFlag = GL_TRUE;
     

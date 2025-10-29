@@ -42,275 +42,176 @@
 
 /******************************************************************************/
 
+// Palette de couleurs pour le mode indexé (simulé en RGB)
+#define MAX_COLORMAP_SIZE 256
+static float colorPalette[MAX_COLORMAP_SIZE][3];
+static float overlayPalette[MAX_COLORMAP_SIZE][3];
+
+// Variables globales pour stocker la dernière position de la souris
+static int lastMouseX = 0;
+static int lastMouseY = 0;
+
+/******************************************************************************/
+
+// GLUT n'expose pas la taille de la palette de couleurs de la même manière que X11
+// On retourne la taille de notre palette simulée
 int tkGetColorMapSize(void)
 {
-
-    if (!xDisplay) {
-	return 0;
-    } else {
-	return w.vInfoMain->colormap_size;
-    }
+    return MAX_COLORMAP_SIZE;
 }
 
 /******************************************************************************/
 
+// Cette fonction doit être appelée depuis les callbacks GLUT pour mettre à jour la position
+void tkUpdateMousePosition(int x, int y)
+{
+    lastMouseX = x;
+    lastMouseY = y;
+}
+
 void tkGetMouseLoc(int *x, int *y)
 {
-    int junk;
-
-    *x = 0;
-    *y = 0;
-    XQueryPointer(xDisplay, w.wMain, (Window *)&junk, (Window *)&junk,
-		  &junk, &junk, x, y, (unsigned int *)&junk);
+    // GLUT ne permet pas de récupérer la position de la souris en dehors des callbacks
+    // On retourne la dernière position connue stockée par les callbacks
+    *x = lastMouseX;
+    *y = lastMouseY;
 }
 
 /******************************************************************************/
 
 void tkGetSystem(GLenum type, void *ptr)
 {
-
+    // Stub: GLUT ne donne pas accès direct au Display ou Window X11/Windows
+    // Cette fonction n'est généralement pas utilisée dans les démos OpenGL classiques
     switch (type) {
       case TK_X_DISPLAY:
-	ptr = (void *)xDisplay;
-	break;
       case TK_X_WINDOW:
-	ptr = (void *)w.wMain;
+	ptr = NULL;
 	break;
     }
 }
 
 /******************************************************************************/
 
+// Les fonctions suivantes gèrent les palettes de couleurs en mode index
+// En GLUT/OpenGL moderne, on simule une palette en la stockant en mémoire
+
 void tkSetFogRamp(int density, int startIndex)
 {
-    XColor c[256];
-    int rShift, gShift, bShift, intensity, fogValues, colorValues;
-    int i, j, k;
-
-    switch (w.vInfoMain->class) {
-      case DirectColor:
-	fogValues = 1 << density;
-	colorValues = 1 << startIndex;
-	for (i = 0; i < colorValues; i++) {
-	    for (j = 0; j < fogValues; j++) {
-		k = i * fogValues + j;
-		intensity = i * fogValues + j * colorValues;
-		if (intensity > w.vInfoMain->colormap_size) {
-		    intensity = w.vInfoMain->colormap_size;
-		}
-		intensity = (intensity << 8) | intensity;
-		rShift = ffs((unsigned int)w.vInfoMain->red_mask) - 1;
-		gShift = ffs((unsigned int)w.vInfoMain->green_mask) - 1;
-		bShift = ffs((unsigned int)w.vInfoMain->blue_mask) - 1;
-		c[k].pixel = ((k << rShift) & w.vInfoMain->red_mask) |
-			     ((k << gShift) & w.vInfoMain->green_mask) |
-			     ((k << bShift) & w.vInfoMain->blue_mask);
-		c[k].red = (unsigned short)intensity;
-		c[k].green = (unsigned short)intensity;
-		c[k].blue = (unsigned short)intensity;
-		c[k].flags = DoRed | DoGreen | DoBlue;
-	    }
-	}
-	XStoreColors(xDisplay, w.cMapMain, c, w.vInfoMain->colormap_size);
-	break;
-      case GrayScale:
-      case PseudoColor:
-	fogValues = 1 << density;
-	colorValues = 1 << startIndex;
-	for (i = 0; i < colorValues; i++) {
-	    for (j = 0; j < fogValues; j++) {
-		k = i * fogValues + j;
-		intensity = i * fogValues + j * colorValues;
-		if (intensity > w.vInfoMain->colormap_size) {
-		    intensity = w.vInfoMain->colormap_size;
-		}
-		intensity = (intensity << 8) | intensity;
-		c[k].pixel = k;
-		c[k].red = (unsigned short)intensity;
-		c[k].green = (unsigned short)intensity;
-		c[k].blue = (unsigned short)intensity;
-		c[k].flags = DoRed | DoGreen | DoBlue;
-	    }
-	}
-	XStoreColors(xDisplay, w.cMapMain, c, w.vInfoMain->colormap_size);
-	break;
+    // Créer une rampe pour le brouillard dans la palette simulée
+    int fogValues = 1 << density;
+    int colorValues = 1 << startIndex;
+    int i, j, k, intensity;
+    
+    for (i = 0; i < colorValues; i++) {
+        for (j = 0; j < fogValues; j++) {
+            k = i * fogValues + j;
+            if (k >= MAX_COLORMAP_SIZE) break;
+            
+            intensity = i * fogValues + j * colorValues;
+            if (intensity > 255) intensity = 255;
+            
+            float fIntensity = (float)intensity / 255.0f;
+            colorPalette[k][0] = fIntensity;
+            colorPalette[k][1] = fIntensity;
+            colorPalette[k][2] = fIntensity;
+        }
     }
-
-    XSync(xDisplay, 0);
 }
 
 /******************************************************************************/
 
 void tkSetGreyRamp(void)
 {
-    XColor c[256];
+    // Créer une rampe de gris dans la palette simulée
+    int i;
     float intensity;
-    int rShift, gShift, bShift, i;
-
-    switch (w.vInfoMain->class) {
-      case DirectColor:
-	for (i = 0; i < w.vInfoMain->colormap_size; i++) {
-	    intensity = (float)i / (float)w.vInfoMain->colormap_size *
-			65535.0 + 0.5;
-	    rShift = ffs((unsigned int)w.vInfoMain->red_mask) - 1;
-	    gShift = ffs((unsigned int)w.vInfoMain->green_mask) - 1;
-	    bShift = ffs((unsigned int)w.vInfoMain->blue_mask) - 1;
-	    c[i].pixel = ((i << rShift) & w.vInfoMain->red_mask) |
-			 ((i << gShift) & w.vInfoMain->green_mask) |
-			 ((i << bShift) & w.vInfoMain->blue_mask);
-	    c[i].red = (unsigned short)intensity;
-	    c[i].green = (unsigned short)intensity;
-	    c[i].blue = (unsigned short)intensity;
-	    c[i].flags = DoRed | DoGreen | DoBlue;
-	}
-	XStoreColors(xDisplay, w.cMapMain, c, w.vInfoMain->colormap_size);
-	break;
-      case GrayScale:
-      case PseudoColor:
-	for (i = 0; i < w.vInfoMain->colormap_size; i++) {
-	    intensity = (float)i / (float)w.vInfoMain->colormap_size *
-			65535.0 + 0.5;
-	    c[i].pixel = i;
-	    c[i].red = (unsigned short)intensity;
-	    c[i].green = (unsigned short)intensity;
-	    c[i].blue = (unsigned short)intensity;
-	    c[i].flags = DoRed | DoGreen | DoBlue;
-	}
-	XStoreColors(xDisplay, w.cMapMain, c, w.vInfoMain->colormap_size);
-	break;
+    int size = MAX_COLORMAP_SIZE;
+    
+    for (i = 0; i < size; i++) {
+        intensity = (float)i / (float)(size - 1);
+        colorPalette[i][0] = intensity;
+        colorPalette[i][1] = intensity;
+        colorPalette[i][2] = intensity;
     }
-
-    XSync(xDisplay, 0);
 }
 
 /******************************************************************************/
 
 void tkSetOneColor(int index, float r, float g, float b)
 {
-    XColor c;
-    int rShift, gShift, bShift;
-
-    switch (w.vInfoMain->class) {
-      case DirectColor:
-	rShift = ffs((unsigned int)w.vInfoMain->red_mask) - 1;
-	gShift = ffs((unsigned int)w.vInfoMain->green_mask) - 1;
-	bShift = ffs((unsigned int)w.vInfoMain->blue_mask) - 1;
-	c.pixel = ((index << rShift) & w.vInfoMain->red_mask) |
-		  ((index << gShift) & w.vInfoMain->green_mask) |
-		  ((index << bShift) & w.vInfoMain->blue_mask);
-	c.red = (unsigned short)(r * 65535.0 + 0.5);
-	c.green = (unsigned short)(g * 65535.0 + 0.5);
-	c.blue = (unsigned short)(b * 65535.0 + 0.5);
-	c.flags = DoRed | DoGreen | DoBlue;
-	XStoreColor(xDisplay, w.cMapMain, &c);
-	break;
-      case GrayScale:
-      case PseudoColor:
-	if (index < w.vInfoMain->colormap_size) {
-	    c.pixel = index;
-	    c.red = (unsigned short)(r * 65535.0 + 0.5);
-	    c.green = (unsigned short)(g * 65535.0 + 0.5);
-	    c.blue = (unsigned short)(b * 65535.0 + 0.5);
-	    c.flags = DoRed | DoGreen | DoBlue;
-	    XStoreColor(xDisplay, w.cMapMain, &c);
-	}
-	break;
+    // Stocker la couleur dans notre palette simulée
+    if (index >= 0 && index < MAX_COLORMAP_SIZE) {
+        colorPalette[index][0] = r;
+        colorPalette[index][1] = g;
+        colorPalette[index][2] = b;
     }
+    
+    // Note: En mode RGB moderne avec GLUT, on ne modifie pas vraiment
+    // une palette hardware. Les applications qui utilisent le mode indexé
+    // devront appeler glColor3f() avec les valeurs de colorPalette[]
+}
 
-    XSync(xDisplay, 0);
+/******************************************************************************/
+
+// Fonction helper pour récupérer une couleur de la palette
+void tkGetColorRGB(int index, float *r, float *g, float *b)
+{
+    if (index >= 0 && index < MAX_COLORMAP_SIZE) {
+        *r = colorPalette[index][0];
+        *g = colorPalette[index][1];
+        *b = colorPalette[index][2];
+    } else {
+        *r = *g = *b = 0.0f;
+    }
 }
 
 /******************************************************************************/
 
 void tkSetOverlayMap(int size, float *rgb)
 {
-    XColor c;
-    unsigned long *buf;
-    int max, i;
-
-    if (w.vInfoOverlay->class == PseudoColor) {
-	max = (size > w.vInfoOverlay->colormap_size) ?
-	      w.vInfoOverlay->colormap_size : size;
-	buf = (unsigned long *)calloc(max, sizeof(unsigned long));
-	XAllocColorCells(xDisplay, w.cMapOverlay, True, NULL, 0, buf, max-1);
-	for (i = 1; i < max; i++) {
-	    c.pixel = i;
-	    c.red = (unsigned short)(rgb[i] * 65535.0 + 0.5);
-	    c.green = (unsigned short)(rgb[size+i] * 65535.0 + 0.5);
-	    c.blue = (unsigned short)(rgb[size*2+i] * 65535.0 + 0.5);
-	    c.flags = DoRed | DoGreen | DoBlue;
-	    XStoreColor(xDisplay, w.cMapOverlay, &c);
-	}
-	free(buf);
+    // Définir la palette overlay (similaire à RGBMap mais pour overlay)
+    int max = (size > MAX_COLORMAP_SIZE) ? MAX_COLORMAP_SIZE : size;
+    int i;
+    
+    for (i = 0; i < max; i++) {
+        overlayPalette[i][0] = rgb[i];
+        overlayPalette[i][1] = rgb[size + i];
+        overlayPalette[i][2] = rgb[size*2 + i];
     }
-
-    XSync(xDisplay, 0);
+    
+    // Note: GLUT ne supporte pas les overlays de la même manière que X11
+    // Cette palette est stockée mais peut ne pas être utilisée
 }
 
 /******************************************************************************/
 
 void tkSetRGBMap(int size, float *rgb)
 {
-    XColor c;
-    int rShift, gShift, bShift, max, i;
-
-    switch (w.vInfoMain->class) {
-      case DirectColor:
-	max = (size > w.vInfoMain->colormap_size) ? w.vInfoMain->colormap_size
-						  : size;
-	for (i = 0; i < max; i++) {
-	    rShift = ffs((unsigned int)w.vInfoMain->red_mask) - 1;
-	    gShift = ffs((unsigned int)w.vInfoMain->green_mask) - 1;
-	    bShift = ffs((unsigned int)w.vInfoMain->blue_mask) - 1;
-	    c.pixel = ((i << rShift) & w.vInfoMain->red_mask) |
-		      ((i << gShift) & w.vInfoMain->green_mask) |
-		      ((i << bShift) & w.vInfoMain->blue_mask);
-	    c.red = (unsigned short)(rgb[i] * 65535.0 + 0.5);
-	    c.green = (unsigned short)(rgb[size+i] * 65535.0 + 0.5);
-	    c.blue = (unsigned short)(rgb[size*2+i] * 65535.0 + 0.5);
-	    c.flags = DoRed | DoGreen | DoBlue;
-	    XStoreColor(xDisplay, w.cMapMain, &c);
-	}
-	break;
-      case GrayScale:
-      case PseudoColor:
-	max = (size > w.vInfoMain->colormap_size) ? w.vInfoMain->colormap_size
-						  : size;
-	for (i = 0; i < max; i++) {
-	    c.pixel = i;
-	    c.red = (unsigned short)(rgb[i] * 65535.0 + 0.5);
-	    c.green = (unsigned short)(rgb[size+i] * 65535.0 + 0.5);
-	    c.blue = (unsigned short)(rgb[size*2+i] * 65535.0 + 0.5);
-	    c.flags = DoRed | DoGreen | DoBlue;
-	    XStoreColor(xDisplay, w.cMapMain, &c);
-	}
-	break;
+    // Définir la palette RGB à partir d'un tableau
+    // rgb contient : [r0, r1, ..., rN, g0, g1, ..., gN, b0, b1, ..., bN]
+    int max = (size > MAX_COLORMAP_SIZE) ? MAX_COLORMAP_SIZE : size;
+    int i;
+    
+    for (i = 0; i < max; i++) {
+        colorPalette[i][0] = rgb[i];           // Red
+        colorPalette[i][1] = rgb[size + i];    // Green
+        colorPalette[i][2] = rgb[size*2 + i];  // Blue
     }
-
-    XSync(xDisplay, 0);
 }
 
 /******************************************************************************/
 
 GLenum tkSetWindowLevel(GLenum level)
 {
-
+    // Stub: changement de niveau de fenêtre (main/overlay)
+    // GLUT ne supporte pas les overlays de la même manière que X11
     switch (level) {
       case TK_OVERLAY:
-	if (TK_HAS_OVERLAY(w.type)) {
-	    if (!glXMakeCurrent(xDisplay, w.wOverlay, w.cOverlay)) {
-		return GL_FALSE;
-	    }
-	} else {
-	    return GL_FALSE;
-	}
-	break;
+	return GL_FALSE; // Overlay non supporté
       case TK_RGB:
       case TK_INDEX:
-	if (!glXMakeCurrent(xDisplay, w.wMain, w.cMain)) {
-	    return GL_FALSE;
-	}
-	break;
+	return GL_TRUE; // OK pour la fenêtre principale
     }
     return GL_TRUE;
 }

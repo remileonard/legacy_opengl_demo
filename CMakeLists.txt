@@ -17,4 +17,5 @@ add_subdirectory(src/distort)
 add_subdirectory(src/gl_puzzle)
 add_subdirectory(src/demos)
 add_subdirectory(src/buttonfly)
+add_subdirectory(src/insect)
 
