@@ -29,6 +29,13 @@
 
 // Forward declarations
 typedef int32_t Object;
+
+// Font scaling support structure
+typedef struct ScaledFont_s {
+    void* base_font;
+    float scale;
+    int is_stroke;
+} ScaledFont;
 typedef int32_t Tag;
 typedef int16_t Angle;
 typedef int16_t Screencoord;
@@ -185,6 +192,9 @@ void fmsetfont(fmfonthandle font);
 void fmprstr(const char *str);
 fmfonthandle fmscalefont(fmfonthandle font, float scale);
 void charstr(const char *str);
+
+// Internal font scaling support (defined in iris2ogl_missing.c)
+int is_scaled_font(fmfonthandle font, ScaledFont** out_sf);
 void cmov(Coord x, Coord y, Coord z);
 void cmov2(Coord x, Coord y);
 

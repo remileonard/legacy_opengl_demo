@@ -44,9 +44,9 @@ void scale_fonts_to_win(void) {
 
     getsize(&x, &y);
     if (last_y != y) {
-	bigfont    = fmscalefont(times_bold, 0.18*y);
-	mediumfont = fmscalefont(times_bold, 0.09*y);
-	smallfont  = fmscalefont(times_bold, 0.045*y);
+	bigfont    = fmscalefont(GLUT_BITMAP_HELVETICA_12, 0.32*y);
+	mediumfont = fmscalefont(GLUT_BITMAP_HELVETICA_12, 0.18*y);
+	smallfont  = fmscalefont(GLUT_BITMAP_HELVETICA_12, 0.09*y);
 	last_y = y;
     }
 }
@@ -504,7 +504,6 @@ int over_area(void) {
 
 
 void draw_title_screen(int screen_num) {
-    glClearColor(0.0, 0.0, 1.0, 1.0);
     zclear();
 
     zbuffer(FALSE);

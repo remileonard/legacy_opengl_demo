@@ -379,8 +379,46 @@ void fmprstr(const char *str) {
         current_font = glut_fonts[DEFAULT_FONT];
     }
     
-    for (const char *c = str; *c != '\0'; c++) {
-        glutBitmapCharacter(current_font, *c);
+    if (!str) return;
+    
+    // Vérifier si current_font est un ScaledFont
+    ScaledFont* sf = NULL;
+    if (is_scaled_font(current_font, &sf)) {
+        float scale = sf->scale;
+        void* actual_font = sf->base_font;
+        int is_stroke = sf->is_stroke;
+        
+        if (is_stroke) {
+            // Stroke fonts - scaling parfait avec transformations
+            glPushMatrix();
+            
+            // Les stroke fonts sont normalement à l'échelle 1/152.38
+            // On les scale pour correspondre à la taille souhaitée
+            float stroke_scale = scale * 0.1f;  // Ajuster selon besoins
+            glScalef(stroke_scale, stroke_scale, 1.0f);
+            
+            for (const char *c = str; *c != '\0'; c++) {
+                glutStrokeCharacter(actual_font, *c);
+            }
+            
+            glPopMatrix();
+        } else {
+            // Bitmap fonts - scaling avec glPixelZoom
+            glPushAttrib(GL_PIXEL_MODE_BIT);
+            glPixelZoom(scale, scale);
+            
+            for (const char *c = str; *c != '\0'; c++) {
+                glutBitmapCharacter(actual_font, *c);
+            }
+            
+            glPixelZoom(1.0f, 1.0f);
+            glPopAttrib();
+        }
+    } else {
+        // Font normal sans scaling
+        for (const char *c = str; *c != '\0'; c++) {
+            glutBitmapCharacter(current_font, *c);
+        }
     }
 }
 

@@ -34,11 +34,12 @@ list(FILTER CYCLES_SOURCES EXCLUDE REGEX ".*sound\\.c$")
 
 # Executable
 add_executable(cycles
+    WIN32
     src/main.c
     ${CYCLES_SOURCES}
     ${PORTING_SOURCES}
 )
-
+set_target_properties( cycles PROPERTIES LINK_FLAGS "/ENTRY:\"mainCRTStartup\"" )
 target_include_directories(cycles PRIVATE
     ${OPENGL_INCLUDE_DIRS}
     ${GLUT_INCLUDE_DIRS}

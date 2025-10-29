@@ -6,6 +6,12 @@
 #include "iris2ogl.h"
 #include <stdio.h>
 #include <string.h>
+#include <math.h>
+
+// === Font Scaling Support ===
+#define MAX_SCALED_FONTS 32
+static ScaledFont scaled_fonts[MAX_SCALED_FONTS];
+static int scaled_font_count = 0;
 
 // === Additional Color Functions ===
 void RGBcolor(RGBvalue r, RGBvalue g, RGBvalue b) {
@@ -30,9 +36,39 @@ void charstr(const char *str) {
 }
 
 fmfonthandle fmscalefont(fmfonthandle font, float scale) {
-    // Font scaling not implemented in GLUT bitmap fonts
-    // Return the same font handle
+    // Chercher si cette combinaison font/scale existe déjà
+    for (int i = 0; i < scaled_font_count; i++) {
+        if (scaled_fonts[i].base_font == font && 
+            fabsf(scaled_fonts[i].scale - scale) < 0.01f) {
+            return (fmfonthandle)&scaled_fonts[i];
+        }
+    }
+    
+    // Créer une nouvelle entrée
+    if (scaled_font_count < MAX_SCALED_FONTS) {
+        scaled_fonts[scaled_font_count].base_font = font;
+        scaled_fonts[scaled_font_count].scale = scale;
+        
+        // Détecter si c'est une stroke font
+        scaled_fonts[scaled_font_count].is_stroke = 
+            (font == (void*)GLUT_STROKE_ROMAN || font == (void*)GLUT_STROKE_MONO_ROMAN);
+        
+        return (fmfonthandle)&scaled_fonts[scaled_font_count++];
+    }
+    
+    // Si on manque de place, retourner le font original
     return font;
+}
+
+// Fonction helper pour vérifier si un font handle est un ScaledFont
+int is_scaled_font(fmfonthandle font, ScaledFont** out_sf) {
+    for (int i = 0; i < scaled_font_count; i++) {
+        if ((void*)font == (void*)&scaled_fonts[i]) {
+            if (out_sf) *out_sf = &scaled_fonts[i];
+            return 1;
+        }
+    }
+    return 0;
 }
 
 // === Additional Window Functions ===
