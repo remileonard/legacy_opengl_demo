@@ -194,6 +194,7 @@ setupcolors (void) {
     if (!is_8bit) {
 	mapcolor (GRAY, 128, 128, 128);
 	mapcolor (GRID, 128, 200, 250);
+    mapcolor (GRID_2, 250, 200, 128);
 	mapcolor (SKYBLUE, 50, 50, 150);
 	mymakerange (RAMPB5, RAMPE5, 125, 250, 125, 250, 0, 0);
 	mymakerange (RAMPB4, RAMPE4, 100, 200, 125, 250, 0, 0);
@@ -203,6 +204,7 @@ setupcolors (void) {
     } else {
 	mapcolor (ECLIPSE8_GRAY, 128, 128, 128);
 	mapcolor (ECLIPSE8_GRID, 128, 200, 250);
+    mapcolor (ECLIPSE8_GRID_2, 250, 200, 128);
 	mapcolor (ECLIPSE8_SKYBLUE, 50, 50, 150);
 /*
 	mapcolor (BLACK, 0, 0, 0);
@@ -914,13 +916,19 @@ fabso (float x)
 
 void
 drawAll (void) {
-   /* new for ECLIPSE 8 bit version */
-   if (is_8bit)
-      glClearIndex (ECLIPSE8_SKYBLUE);
-   else
-      glClearIndex (SKYBLUE);
-
-   glClear (GL_COLOR_BUFFER_BIT);
+   float r, g, b;
+   
+   if (is_8bit) {
+      // Récupérer la couleur SKYBLUE de la palette
+      tkGetColorRGB(ECLIPSE8_SKYBLUE, &r, &g, &b);
+   } else {
+      // Récupérer la couleur SKYBLUE de la palette
+      tkGetColorRGB(SKYBLUE, &r, &g, &b);
+   }
+   
+   glClearColor(r, g, b, 1.0f);
+   glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+   
    glPushMatrix();
    doViewit();
    glCallList (screen);
@@ -992,6 +1000,54 @@ static GLenum MouseDown(int mouseX, int mouseY, GLenum button)
 	}
       return GL_TRUE;
 }
+#ifdef _WIN32
+#include <windows.h>
+#else
+#include <sys/time.h>
+#endif
+
+// Variables pour le contrôle du framerate
+static double lastFrameTime = 0.0;
+#define TARGET_FPS 60.0
+static const double targetFrameTime = 1.0 / TARGET_FPS;
+
+// Fonction pour obtenir le temps en secondes
+double getCurrentTime(void) {
+#ifdef _WIN32
+    static LARGE_INTEGER frequency;
+    static BOOL initialized = FALSE;
+    LARGE_INTEGER counter;
+    
+    if (!initialized) {
+        QueryPerformanceFrequency(&frequency);
+        initialized = TRUE;
+    }
+    
+    QueryPerformanceCounter(&counter);
+    return (double)counter.QuadPart / (double)frequency.QuadPart;
+#else
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    return (double)tv.tv_sec + (double)tv.tv_usec / 1000000.0;
+#endif
+}
+
+// Fonction pour attendre jusqu'au prochain frame
+void limitFrameRate(void) {
+    double currentTime = getCurrentTime();
+    double elapsedTime = currentTime - lastFrameTime;
+    
+    if (elapsedTime < targetFrameTime) {
+        double sleepTime = targetFrameTime - elapsedTime;
+#ifdef _WIN32
+        Sleep((DWORD)(sleepTime * 1000.0));
+#else
+        usleep((useconds_t)(sleepTime * 1000000.0));
+#endif
+    }
+    
+    lastFrameTime = getCurrentTime();
+}
 
 static void animate (void) {
       spin_scene();
@@ -999,6 +1055,7 @@ static void animate (void) {
       dolegs();
       drawAll();
       tkSwapBuffers();
+      limitFrameRate();
 }
 
 

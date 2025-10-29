@@ -60,6 +60,7 @@
 #define ECLIPSE8_GRAY 1
 #define ECLIPSE8_NCOLORS 10
 #define ECLIPSE8_SKYBLUE 3
+#define ECLIPSE8_GRID_2 4
 
 extern GLuint screen,viewit,shadow,body,hip[6],thigh[6],shin[6],kneeball[6];
 extern GLuint body_shadow,hip_shadow,thigh_shadow,shin_shadow,kneeball_shadow;

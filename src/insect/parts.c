@@ -643,21 +643,40 @@ createobjects (void) {
 	glIndexi_compat(GRID);
 
     k = 1;
-    for (i = -8; i < 7; i++)
-	for (j = -8; j < 7; j++) {
-	    if (k == 0) {
-		scr[0][0] = i * 3;
-		scr[0][1] = j * 3;
-		scr[1][0] = (i + 1) * 3;
-		scr[1][1] = j * 3;
-		scr[2][0] = (i + 1) * 3;
-		scr[2][1] = (j + 1) * 3;
-		scr[3][0] = i * 3;
-		scr[3][1] = (j + 1) * 3;
-		polf2i (4, scr);
-	    }
-	    k = 1 - k;
-	}
+    for (i = -16; i < 15; i++) {
+        for (j = -16; j < 15; j++) {
+            // Calculer les coordonnées du carré
+            scr[0][0] = i * 3;
+            scr[0][1] = j * 3;
+            scr[1][0] = (i + 1) * 3;
+            scr[1][1] = j * 3;
+            scr[2][0] = (i + 1) * 3;
+            scr[2][1] = (j + 1) * 3;
+            scr[3][0] = i * 3;
+            scr[3][1] = (j + 1) * 3;
+            
+            // Choisir la couleur en fonction de k
+            if (k == 0) {
+                // Première couleur du damier
+                if (is_8bit)
+                    glIndexi_compat(ECLIPSE8_GRID);
+                else
+                    glIndexi_compat(GRID);
+            } else {
+                // Deuxième couleur du damier
+                if (is_8bit)
+                    glIndexi_compat(ECLIPSE8_GRID_2);
+                else
+                    glIndexi_compat(GRID_2);
+            }
+            
+            // Dessiner le carré
+            polf2i(4, scr);
+            
+            // Alterner k
+            k = 1 - k;
+        }
+    }
     glEndList ();
 
 
