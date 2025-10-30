@@ -84,6 +84,7 @@ void cpack(uint32_t color) {
     float g = ((color >> 8) & 0xFF) / 255.0f;
     float b = (color & 0xFF) / 255.0f;
     glColor3f(r, g, b);
+    glClearColor(r, g, b, 1.0f);
 }
 
 void mapcolor(Colorindex index, RGBvalue r, RGBvalue g, RGBvalue b) {
@@ -361,19 +362,61 @@ void fmsetfont(fmfonthandle font) {
 }
 
 void cmov(Coord x, Coord y, Coord z) {
-    current_raster_x = x;
-    current_raster_y = y;
-    current_raster_z = z;
+    // Appliquer les transformations pour obtenir la vraie position raster
+    GLdouble model[16], proj[16];
+    GLint viewport[4];
+    GLdouble winX, winY, winZ;
+    
+    // Récupérer les matrices et viewport actuels
+    glGetDoublev(GL_MODELVIEW_MATRIX, model);
+    glGetDoublev(GL_PROJECTION_MATRIX, proj);
+    glGetIntegerv(GL_VIEWPORT, viewport);
+    
+    if (gluProject(x, y, z, model, proj, viewport, &winX, &winY, &winZ) == GL_TRUE) {
+        current_raster_x = (float)winX;
+        current_raster_y = (float)winY;
+        current_raster_z = (float)winZ;
+    } else {
+        current_raster_x = 0.0f;
+        current_raster_y = 0.0f;
+        current_raster_z = 0.0f;
+    }
+
     glRasterPos3f(x, y, z);
 }
 
 void cmov2(Coord x, Coord y) {
-    current_raster_x = x;
-    current_raster_y = y;
-    current_raster_z = 0.0f;
-    glRasterPos2f(x, y);
+    cmov(x, y, 0.0f);
 }
-
+void debug_opengl_state(void) {
+    printf("=== DEBUG OPENGL STATE ===\n");
+    
+    // Vérifier la matrice de projection
+    GLfloat proj[16];
+    glGetFloatv(GL_PROJECTION_MATRIX, proj);
+    printf("Projection matrix: [%.2f %.2f %.2f %.2f]\n", proj[0], proj[5], proj[10], proj[15]);
+    
+    // Vérifier le viewport
+    GLint viewport[4];
+    glGetIntegerv(GL_VIEWPORT, viewport);
+    printf("Viewport: %d %d %d %d\n", viewport[0], viewport[1], viewport[2], viewport[3]);
+    
+    // Vérifier les états OpenGL
+    printf("Depth test: %s\n", glIsEnabled(GL_DEPTH_TEST) ? "ON" : "OFF");
+    printf("Culling: %s\n", glIsEnabled(GL_CULL_FACE) ? "ON" : "OFF");
+    printf("Lighting: %s\n", glIsEnabled(GL_LIGHTING) ? "ON" : "OFF");
+    
+    // Vérifier la couleur actuelle
+    GLfloat color[4];
+    glGetFloatv(GL_CURRENT_COLOR, color);
+    printf("Current color: %.2f %.2f %.2f %.2f\n", color[0], color[1], color[2], color[3]);
+    
+    // Vérifier les erreurs OpenGL
+    GLenum error = glGetError();
+    if (error != GL_NO_ERROR) {
+        printf("OpenGL ERROR: %d\n", error);
+    }
+}
 void fmprstr(const char *str) {
     if (current_font == NULL) {
         current_font = glut_fonts[DEFAULT_FONT];
@@ -384,35 +427,48 @@ void fmprstr(const char *str) {
     // Vérifier si current_font est un ScaledFont
     ScaledFont* sf = NULL;
     if (is_scaled_font(current_font, &sf)) {
+        debug_opengl_state();
         float scale = sf->scale;
         void* actual_font = sf->base_font;
         int is_stroke = sf->is_stroke;
         
         if (is_stroke) {
-            // Stroke fonts - scaling parfait avec transformations
+            glPushAttrib(GL_ENABLE_BIT | GL_LINE_BIT);
+            glEnable(GL_LINE_SMOOTH);
+            
+            int window_width = glutGet(GLUT_WINDOW_WIDTH);
+            int window_height = glutGet(GLUT_WINDOW_HEIGHT);
+            
+            glMatrixMode(GL_PROJECTION);
             glPushMatrix();
+            glLoadIdentity();
+            glOrtho(0, window_width, 0, window_height, -1, 1);
             
-            // Les stroke fonts sont normalement à l'échelle 1/152.38
-            // On les scale pour correspondre à la taille souhaitée
-            float stroke_scale = scale * 0.1f;  // Ajuster selon besoins
+            glMatrixMode(GL_MODELVIEW);
+            glPushMatrix();
+            glLoadIdentity();
+            
+            glTranslatef(current_raster_x, current_raster_y, current_raster_z);
+            
+            float stroke_scale = scale * 0.0032f; // Les polices GLUT stroke sont à l'échelle ~119 unités
             glScalef(stroke_scale, stroke_scale, 1.0f);
-            
+            float advance = 0.0f;
             for (const char *c = str; *c != '\0'; c++) {
                 glutStrokeCharacter(actual_font, *c);
+                advance += glutStrokeWidth(actual_font, *c) * stroke_scale;
             }
-            
+            current_raster_x += advance;
+            // Restaurer les matrices
             glPopMatrix();
+            glMatrixMode(GL_PROJECTION);
+            glPopMatrix();
+            glMatrixMode(GL_MODELVIEW);
+            glDisable(GL_LINE_SMOOTH);
+            glPopAttrib();
         } else {
-            // Bitmap fonts - scaling avec glPixelZoom
-            glPushAttrib(GL_PIXEL_MODE_BIT);
-            glPixelZoom(scale, scale);
-            
             for (const char *c = str; *c != '\0'; c++) {
                 glutBitmapCharacter(actual_font, *c);
             }
-            
-            glPixelZoom(1.0f, 1.0f);
-            glPopAttrib();
         }
     } else {
         // Font normal sans scaling
