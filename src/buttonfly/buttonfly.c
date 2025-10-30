@@ -19,8 +19,11 @@ static double diff_timespecs(struct timespec *t1, struct timespec *t2) {
 }
 static struct timespec last_frame_time;
 static int time_initialized = 0;
-
+static double accumulated_time = 0.0;
 // Fonction pour calculer le delta time
+static void reset_delta_time() {
+    time_initialized = 0;
+}
 static double get_delta_time() {
     struct timespec now;
     double delta;
@@ -44,9 +47,9 @@ short dev,val;
 long originx, originy, sizex, sizey;
 long s_originx, s_originy, s_sizex, s_sizey;
 
-int flyinflag = 0;
-int flyoutflag = 0;
-int selectflag = 0;
+static int flyinflag = 0;
+static int flyoutflag = 0;
+static int selectflag = 0;
 int exitflag = 0;
 
 
@@ -347,6 +350,7 @@ int main (int argc, char *argv[]) {
     glutMotionFunc(mouse_motion);        // Mouvement avec bouton pressé
     glutPassiveMotionFunc(mouse_motion);  // Mouvement sans bouton
     glutTimerFunc(FRAME_TIME_MS, timer_func, 0);
+    //glutIdleFunc(idle_func);
     glutKeyboardFunc(keyboard_handler);
     glutKeyboardUpFunc(keyboard_up_handler);
 
@@ -457,6 +461,8 @@ void bf_fly()
         if (selected->forward) {
             add_button_to_path(current_buttons, selected);
             flyinflag = TRUE;
+            accumulated_time = 0.0;
+            reset_delta_time();
         }
         else {
             selected = NULL;
@@ -466,6 +472,8 @@ void bf_fly()
     else if (path) {
         path_struct *step;
         flyoutflag = TRUE;
+        accumulated_time = 0.0;
+        reset_delta_time();
         selected = path->button;
         current_buttons = path->current_buttons;
         step = path;
@@ -550,6 +558,8 @@ void bf_deselect()
     if (path) {
 	path_struct *step;
 	flyoutflag = TRUE;
+    accumulated_time = 0.0f;
+    reset_delta_time();
 	selected = path->button;
 	current_buttons = path->current_buttons;
 	step = path;
@@ -611,14 +621,13 @@ void selectdraw() {
 void flyindraw()
 {
     static float t = 1.0;
-    static double accumulated_time = 0.0;
+
     
     if (!flyinflag) {
         t = 1.0;
         accumulated_time = 0.0;
         return;
     }
-    
     // Obtenir le temps écoulé depuis la dernière frame
     double delta = get_delta_time();
     accumulated_time += delta;
@@ -627,7 +636,7 @@ void flyindraw()
     const double ANIMATION_DURATION = 2.0; // secondes
     t = 1.0 - (accumulated_time / ANIMATION_DURATION);
     
-    if (t <= 0.0 || accumulated_time >= ANIMATION_DURATION) {
+    if (t <= 0.0) {
         current_buttons = selected->forward;
         selected = NULL;
         flyinflag = 0;
@@ -646,13 +655,6 @@ void flyindraw()
 void flyoutdraw()
 {
     static float t = 0.0;
-    static double accumulated_time = 0.0;
-
-    if (!flyoutflag) {
-        t = 0.0;
-        accumulated_time = 0.0;
-        return;
-    }
 
     // Obtenir le temps écoulé depuis la dernière frame
     double delta = get_delta_time();
@@ -664,7 +666,7 @@ void flyoutdraw()
 
     doclear();
 
-    if (t >= 1.0 || accumulated_time >= ANIMATION_DURATION) {
+    if (t >= 1.0) {
         t = 0.0;
         accumulated_time = 0.0;
         selected = NULL;
