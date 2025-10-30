@@ -189,7 +189,7 @@ void draw_text_port_thing(char *prompt, char *data) {
 #endif
     pushmatrix();
     translate(0.0, 0.0, -0.5);
-    rectf(-1.9, -0.95, 0.0, -0.75);
+    //rectf(-1.9, -0.95, 0.0, -0.75);
 #ifdef RGB_MODE
     cpack(0);
 #else
@@ -218,12 +218,13 @@ void draw_text_port_thing(char *prompt, char *data) {
 }
 
 void draw_tic(void) {
-    float v[2];
+    float v[3];
 #ifdef RGB_MODE
-    cpack(0x0000ff);
+    cpack(0x0000FF);
 #else
     color(RED);
 #endif
+    
     bgntmesh();
     v[0] = -0.9;
     v[1] = -0.1;
@@ -281,7 +282,7 @@ void draw_buttons(int colour_choice, int num_robots) {
     if (!solo) {
         /* draw tic */
         pushmatrix();
-        translate(but[0][0] - 0.02, but[0][1] - 0.02, 0.0);
+        translate(but[0][0] - 0.02, but[0][1] - 0.02, 0.1);
         scale(0.06, 0.06, 1.0);
         draw_tic();
         popmatrix();
@@ -327,9 +328,10 @@ void draw_buttons(int colour_choice, int num_robots) {
     if (demo_mode) {
         /* draw tic */
         pushmatrix();
-        translate(but[8][0] - 0.02, but[8][1] - 0.02, 0.0);
+        translate(but[8][0] - 0.02, but[8][1] - 0.02, 0.1);
         scale(0.06, 0.06, 1.0);
         draw_tic();
+
         popmatrix();
     }
 
@@ -369,7 +371,7 @@ void draw_buttons(int colour_choice, int num_robots) {
 
     /* right arrow */
 #ifdef RGB_MODE
-    cpack(0xffffff);
+    cpack(0xffff00);
 #else
     color(WHITE);
 #endif
@@ -406,7 +408,7 @@ void draw_buttons(int colour_choice, int num_robots) {
 #else
     color(GREY50);
 #endif
-    rectf(0.33, 0.28, 0.67, 0.52);
+    //rectf(0.33, 0.28, 0.67, 0.52);
 
     /* colour shape */
     for (i = 0; i < COLOURS; i++) {
@@ -468,6 +470,7 @@ void draw_buttons(int colour_choice, int num_robots) {
     fmprstr("demo mode");
     cmov2(0.2, 0.55);
     fmprstr("your robots");
+    
     cmov2(1.1, 0.35);
     fmprstr("random");
     cmov2(1.3, 1.0);
@@ -500,36 +503,50 @@ int over_area(void) {
     int i;
     long xm, ym, xo, yo, xs, ys;
     float x, y, dx, dy;
+    
 
     xm = getvaluator(MOUSEX);
     ym = getvaluator(MOUSEY);
 
     /* scale x, y to window */
-    getorigin(&xo, &yo);
     getsize(&xs, &ys);
-    x = (float)(xm - xo) / (float)xs;
-    y = (float)(ym - yo) / (float)ys;
-
-    /* coords -2->0 in x, -1->0 in y */
-    /* translate(-2.0, -1.0, -0.5);  */
-    /* coords  0->2 in x,  0->1 in y */
+    
+    printf("DEBUG: xm=%ld, ym=%ld, xs=%ld, ys=%ld\n", 
+           xm, ym, xs, ys);
+    
+    // CORRECTION: Les coordonnées de souris sont déjà relatives à la fenêtre
+    // Pas besoin de getorigin() !
+    x = (float)xm / (float)xs;
+    y = (float)ym / (float)ys;
+    
+    y = 1.0f - y;  // Inverser l'axe Y pour correspondre au système de coordonnées OpenGL
     x *= 4.0;
     y *= 2.0;
+    
+    printf("Mouse: xm=%ld, ym=%ld, normalized=(%.2f, %.2f), final=(%.2f, %.2f)\n", 
+           xm, ym, (float)xm / (float)xs, 1.0f - (float)ym / (float)ys, x, y);
 
     /* do circular buttons */
     for (i = 0; i < 10; i++) {
         dx = but[i][0] - x;
         dy = but[i][1] - y;
-        if (dx * dx + dy * dy < 0.08 * 0.08)
+        if (dx * dx + dy * dy < 0.08 * 0.08) {
+            printf("Hit button %d at (%.2f, %.2f)\n", i, but[i][0], but[i][1]);
             return (i);
+        }
     }
 
     /* left arrow */
-    if (x < 0.3 && y < 0.35 + 0.5 * x && y > 0.45 - 0.5 * x)
+    if (x >= 0.1 && x <= 0.3 && y >= 0.3 && y <= 0.5) {
+        printf("In left arrow zone\n");
         return (10);
+    }
+    
     /* right arrow */
-    if (x > 0.7 && y < 0.85 - 0.5 * x && y > -0.05 + 0.5 * x)
+    if (x >= 0.7 && x <= 0.9 && y >= 0.3 && y <= 0.5) {
+        printf("In right arrow zone\n");
         return (11);
+    }
 
     return (-1);
 }

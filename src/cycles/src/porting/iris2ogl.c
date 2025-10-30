@@ -80,9 +80,9 @@ void iris_set_color_index(int index) {
 
 void cpack(uint32_t color) {
     // Convert packed RGB (0xRRGGBB) to float components
-    float r = ((color >> 16) & 0xFF) / 255.0f;
+    float b = ((color >> 16) & 0xFF) / 255.0f;
     float g = ((color >> 8) & 0xFF) / 255.0f;
-    float b = (color & 0xFF) / 255.0f;
+    float r = (color & 0xFF) / 255.0f;
     glColor3f(r, g, b);
     glClearColor(r, g, b, 1.0f);
 }
@@ -386,7 +386,7 @@ void cmov(Coord x, Coord y, Coord z) {
 }
 
 void cmov2(Coord x, Coord y) {
-    cmov(x, y, 0.0f);
+    cmov(x, y, 0.1f);
 }
 void debug_opengl_state(void) {
     printf("=== DEBUG OPENGL STATE ===\n");
@@ -427,7 +427,6 @@ void fmprstr(const char *str) {
     // Vérifier si current_font est un ScaledFont
     ScaledFont* sf = NULL;
     if (is_scaled_font(current_font, &sf)) {
-        debug_opengl_state();
         float scale = sf->scale;
         void* actual_font = sf->base_font;
         int is_stroke = sf->is_stroke;
