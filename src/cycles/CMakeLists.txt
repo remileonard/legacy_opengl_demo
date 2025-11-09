@@ -33,13 +33,21 @@ file(GLOB PORTING_SOURCES "src/porting/*.c")
 list(FILTER CYCLES_SOURCES EXCLUDE REGEX ".*sound\\.c$")
 
 # Executable
-add_executable(cycles
-    WIN32
-    src/main.c
-    ${CYCLES_SOURCES}
-    ${PORTING_SOURCES}
-)
-set_target_properties( cycles PROPERTIES LINK_FLAGS "/ENTRY:\"mainCRTStartup\"" )
+if(WIN32)
+    add_executable(cycles
+        WIN32
+        src/main.c
+        ${CYCLES_SOURCES}
+        ${PORTING_SOURCES}
+    )
+    set_target_properties( cycles PROPERTIES LINK_FLAGS "/ENTRY:\"mainCRTStartup\"" )
+else()
+    add_executable(cycles
+        src/main.c
+        ${CYCLES_SOURCES}
+        ${PORTING_SOURCES}
+    )
+endif()
 target_include_directories(cycles PRIVATE
     ${OPENGL_INCLUDE_DIRS}
     ${GLUT_INCLUDE_DIRS}

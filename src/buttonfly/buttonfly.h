@@ -2,9 +2,12 @@
  *	Type definitions, etc for buttonfly
  */
 #pragma once
-#include <Windows.h>
-#include <GL/GL.h>
-#include <GL/GLU.h>
+#ifdef _WIN32
+    #define WIN32_LEAN_AND_MEAN
+    #include <windows.h>
+#endif
+#include <GL/gl.h>
+#include <GL/glu.h>
 #include <GL/glut.h>
 
 #include <stdio.h>

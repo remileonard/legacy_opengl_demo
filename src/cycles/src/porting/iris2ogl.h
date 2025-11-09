@@ -261,9 +261,23 @@ int32_t getvaluator(Device dev);
 char* iris_cuserid(char *buf);
 #define cuserid(x) iris_cuserid(x)
 
-// bstring.h compatibility (bcopy is obsolete)
-#define bcopy(src, dst, len) memcpy(dst, src, len)
-#define bzero(ptr, len) memset(ptr, 0, len)
+#include <string.h>
+
+// bstring.h compatibility - only define if not available
+#ifdef _WIN32
+// Windows doesn't have bcopy/bzero in standard headers
+static inline void bcopy(const void *src, void *dst, size_t len) {
+    memmove(dst, src, len);
+}
+
+static inline void bzero(void *ptr, size_t len) {
+    memset(ptr, 0, len);
+}
+#else
+// Unix/Linux systems have bcopy/bzero in strings.h (included by string.h)
+// No need to redefine them
+#include <strings.h>
+#endif
 
 // getopt compatibility for Windows
 #ifdef _WIN32

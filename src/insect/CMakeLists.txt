@@ -1,11 +1,17 @@
 file (GLOB SC_SOURCE "*.c")
 file (GLOB SC_HEADER "*.h")
 
-add_executable(insect WIN32 ${SC_SOURCE} ${SC_HEADER})
-
-set_target_properties( insect PROPERTIES LINK_FLAGS "/ENTRY:\"mainCRTStartup\"" )
-
-target_link_libraries(insect OpenGL::GL GLUT::GLUT libtk)
+if (WIN32)
+    add_executable(insect WIN32 ${SC_SOURCE} ${SC_HEADER})
+    set_target_properties( insect PROPERTIES LINK_FLAGS "/ENTRY:\"mainCRTStartup\"" )
+else()
+    add_executable(insect ${SC_SOURCE} ${SC_HEADER})
+endif()
+if (WIN32)
+    target_link_libraries(insect OpenGL::GL OpenGL::GLU GLUT::GLUT libtk)
+else()
+    target_link_libraries(insect OpenGL::GL OpenGL::GLU GLUT::GLUT m libtk)
+endif()
 target_include_directories(insect PRIVATE ${OPENGL_INCLUDE_DIRS} ${GLUT_INCLUDE_DIRS})
 target_include_directories(insect PRIVATE ../libtk)
 target_compile_options(insect PRIVATE ${OPENGL_CFLAGS} ${GLUT_CFLAGS})

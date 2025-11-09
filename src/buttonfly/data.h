@@ -1,6 +1,10 @@
 #pragma once
-#include <Windows.h>
-#include <GL/GL.h>
+#ifdef _WIN32
+    #define WIN32_LEAN_AND_MEAN
+    #include <Windows.h>
+#endif
+
+#include <GL/gl.h>
 
 #define DIAG (1.0/1.414214)
 #define THICK (1.0/8.0)

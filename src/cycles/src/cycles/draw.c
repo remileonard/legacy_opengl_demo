@@ -9,7 +9,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define MAX(x, y) ((x) > (y) ? (x) : (y))
+#ifndef MAX
+    #define MAX(x, y) ((x) > (y) ? (x) : (y))
+#endif
 
 extern Object tail_obj, engine_obj, chassis_top, back_stuff[LEVELS];
 extern float speed_fac, vec[4][2];

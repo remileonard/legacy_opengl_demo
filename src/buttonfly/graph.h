@@ -1,9 +1,4 @@
 #pragma once
-#include <Windows.h>
-#include <GL/GL.h>
-#include <GL/GLU.h>
-#include <gl/glut.h>
-
 #define FLAT			1
 #define DEFMATERIAL		2
 #define DEFLIGHT		3
