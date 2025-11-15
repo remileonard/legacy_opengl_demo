@@ -4,6 +4,7 @@ set(SIMPLE_EXECUTABLES
     glutplane
     scube
     stars
+    maze
 )
 
 foreach(target ${SIMPLE_EXECUTABLES})
