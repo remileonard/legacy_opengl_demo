@@ -832,14 +832,59 @@ void draw_edge() {
     
     glDisable(GL_POLYGON_OFFSET_FILL);
 }
+static void setup_viewport_4_3(void) {
+    int win_w = glutGet(GLUT_WINDOW_WIDTH);
+    int win_h = glutGet(GLUT_WINDOW_HEIGHT);
+
+    if (win_h == 0) win_h = 1;
+
+    float window_aspect = (float)win_w / (float)win_h;
+    float target_aspect = 4.0f / 3.0f;
+
+    int vp_x, vp_y, vp_w, vp_h;
+
+    if (window_aspect > target_aspect) {
+        // fenêtre trop large -> bandes noires à gauche/droite
+        vp_h = win_h;
+        vp_w = (int)(vp_h * target_aspect);
+        vp_x = (win_w - vp_w) / 2;
+        vp_y = 0;
+    } else {
+        // fenêtre trop haute -> bandes noires en haut/bas
+        vp_w = win_w;
+        vp_h = (int)(vp_w / target_aspect);
+        vp_x = 0;
+        vp_y = (win_h - vp_h) / 2;
+    }
+
+    originx = vp_x;
+    originy = vp_y;
+    sizex   = vp_w;
+    sizey   = vp_h;
+
+    glViewport(vp_x, vp_y, vp_w, vp_h);
+
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    gluPerspective(45.0,
+                   (float)sizex / (float)sizey,
+                   0.1, 10.0);
+
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+    glTranslatef(0.0f, 0.0f, -5.0f / 4.0f);
+}
 void bf_redraw()
 {
     originx = 0;
     originy = 0;
     sizex = glutGet(GLUT_WINDOW_WIDTH);
     sizey = glutGet(GLUT_WINDOW_HEIGHT);
+
+    float window_aspect = (float)sizex / (float)sizey;
+    float target_aspect = 4.0f / 3.0f;
     
-    glViewport(0, 0, sizex, sizey);
+    setup_viewport_4_3();
     
     doclear();
     draw_buttons(current_buttons);

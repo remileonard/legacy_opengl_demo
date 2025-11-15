@@ -1,7 +1,11 @@
 {
     "cmake.sourceDirectory": "${workspaceFolder}",
-    "cmake.buildDirectory": "${workspaceFolder}/build",
     "cmake.configureOnOpen": true,
+    "cmake.buildArgs": [],
+    "cmake.buildToolArgs": [],
+    "cmake.buildBeforeRun": true,
+    "cmake.parallelJobs": 8,
+    "cmake.useCMakePresets": "always",
     "workbench.colorCustomizations": {
         "activityBar.activeBackground": "#689fd0",
         "activityBar.background": "#689fd0",
