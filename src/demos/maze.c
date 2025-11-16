@@ -32,7 +32,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
-
+#include <time.h>
 
 #define IDM_APPLICATION_EXIT (101)
 #define IDM_APPLICATION_TEXTURE (102)
@@ -40,17 +40,31 @@
 
 int enablebank = 0;
 int enabletexture = 0;
-
+static clock_t last_frame_time = 0;
 #define MAZE_HEIGHT (16)
 #define MAZE_WIDTH (16)
+#define TARGET_FPS 60
+#define FRAME_TIME_MS (1000.0 / TARGET_FPS)
 
 // unfortunately due to the way the polygon walls are generated there
 // are restrictions on what the wall/maze data can look like.  See below.
 char *mazedata[MAZE_HEIGHT] = {
-    "****************", "*       *      *", "* * *** * *    *", "* **  * ** * * *",
-    "*     *      * *", "********** *** *", "*           *  *", "* ***** *** ****",
-    "* *   *   *    *", "*   *******    *", "* *   *   *  * *", "* ***** **** * *",
-    "*     *      * *", "** ** **** *** *", "*   * *    *   *", "************* **",
+    "****************",
+    "*       *      *",
+    "* * *** * *    *",
+    "* **  * ** * * *",
+    "*     *      * *",
+    "********** *** *",
+    "*           *  *",
+    "*       *** ****",
+    "* *****   *    *",
+    "*     *****    *",
+    "* *   *   *  * *",
+    "* ***** **** * *",
+    "*     *      * *",
+    "** ** **** *** *",
+    "*   * *    *   *",
+    "************* **",
 };
 
 void readtexture() {
@@ -241,9 +255,9 @@ int drawtop() {
     // or combining adjacent polygons are done here.
     int x, y, dl;
     glNewList(dl = glGenLists(1), GL_COMPILE);
-    /*glPushAttrib(GL_TEXTURE_BIT | GL_LIGHTING_BIT);
+    glPushAttrib(GL_TEXTURE_BIT | GL_LIGHTING_BIT);
     glDisable(GL_LIGHTING);
-    glDisable(GL_TEXTURE_2D);*/
+    glDisable(GL_TEXTURE_2D);
     glColor3f(1.0f, 1.0f, 1.0f);
     glBegin(GL_QUADS);
     for (y = 0; y < MAZE_HEIGHT; y++) {
@@ -263,7 +277,7 @@ int drawtop() {
         }
     }
     glEnd();
-    //glPopAttrib();
+    glPopAttrib();
     glEndList();
     return (dl);
 }
@@ -377,6 +391,9 @@ void navmaze(void) {
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glLoadIdentity();
+    GLfloat light_position[] = {0, 0.0, 0.0f, 1.0f};
+    glLightfv(GL_LIGHT0, GL_POSITION,       light_position);
+
     glPushMatrix();
 
     // 1) Construire la vue (caméra)
@@ -385,20 +402,12 @@ void navmaze(void) {
         glRotatef(-player_b, 0.0f, 1.0f, 0.0f);
     glRotatef(player_h, 0.0f, 0.0f, 1.0f);
     glTranslatef(-player_x, -player_y, -0.5f);
-
-    GLfloat light_position[] = {player_x, player_y, 0.0f, 1.0f};
-    GLfloat light_dir_world[3] = {
-        (GLfloat)sin(player_h * 3.14 / 180.0),
-        (GLfloat)cos(player_h * 3.14 / 180.0),
-        0.0f
-    };
-
-    glLightfv(GL_LIGHT0, GL_POSITION,       light_position);
-    glLightfv(GL_LIGHT0, GL_SPOT_DIRECTION, light_dir_world);
     // 3) Dessiner la scène
     // Grand sol
-    glNormal3f(0.0f, 0.0f, 1.0f);
+    
+    glDisable(GL_TEXTURE_2D);
     glBegin(GL_QUADS);
+    glNormal3f(0.0f, 1.0f, 0.0f);
     glColor3f(1.0f, 0.6f, 0.0f);
     glVertex3f(0.0f      , 0.0f       , 0.0f);
     glVertex3f(MAZE_WIDTH, 0.0f       , 0.0f);
@@ -407,17 +416,19 @@ void navmaze(void) {
     glEnd();
 
     // Grand plafond
-    glNormal3f(0.0f, 0.0f, -1.0f);
+    
     glBegin(GL_QUADS);
+    glNormal3f(0.0f, -1.0f, 0.0f);
     glColor3f(1.0f, 0.0f, 0.6f);
     glVertex3f(0.0f      , 0.0f       , 1.0f);
     glVertex3f(0.0f      , MAZE_HEIGHT, 1.0f);
     glVertex3f(MAZE_WIDTH, MAZE_HEIGHT, 1.0f);
     glVertex3f(MAZE_WIDTH, 0.0f       , 1.0f);
     glEnd();
-
+    glEnable(GL_TEXTURE_2D);
     glCallList(walllist);
     glPopMatrix();
+    
     glutSwapBuffers();
 
     if (player_x > MAZE_WIDTH || player_y > MAZE_HEIGHT) {
@@ -434,7 +445,13 @@ static void reshape(int w, int h) {
 
 static void idle(void) {
     // on se contente de redessiner en continu
-    glutPostRedisplay();
+    clock_t current_time = clock();
+    double elapsed_ms = (double)(current_time - last_frame_time) * 1000.0 / CLOCKS_PER_SEC;
+    
+    if (elapsed_ms >= FRAME_TIME_MS) {
+        last_frame_time = current_time;
+        glutPostRedisplay();
+    }
 }
 
 static void keyboard(unsigned char key, int x, int y) {
@@ -522,6 +539,7 @@ static void display(void) {
     }
 }
 static void initGL(void) {
+    last_frame_time = clock();
     glEnable(GL_DEPTH_TEST);
     glDisable(GL_LIGHTING);
     glDisable(GL_TEXTURE_2D);
@@ -534,7 +552,7 @@ static void initGL(void) {
     glEnable(GL_LIGHT0);
 
     // ambiance quasi nulle pour que le labyrinthe soit sombre hors du cône
-    GLfloat light_ambient[]  = {0.01f, 0.01f, 0.01f, 1.0f};
+    GLfloat light_ambient[]  = {0.5f, 0.5f, 0.5f, 1.0f};
     GLfloat light_diffuse[]  = {1.0f, 1.0f, 1.0f, 1.0f};
     GLfloat light_specular[] = {0.0f, 0.0f, 0.0f, 1.0f};
 
@@ -551,12 +569,6 @@ static void initGL(void) {
     };
 
     glLightfv(GL_LIGHT0, GL_POSITION,       light_position);
-    glLightfv(GL_LIGHT0, GL_SPOT_DIRECTION, light_dir_world);
-
-     // cône un peu plus large et moins agressif
-    glLightf(GL_LIGHT0, GL_SPOT_CUTOFF,   20.0f);  // au lieu de 12.0f
-    glLightf(GL_LIGHT0, GL_SPOT_EXPONENT, 40.0f);  // au lieu de 80.0f
-
     // atténuation un peu plus douce
     glLightf(GL_LIGHT0, GL_CONSTANT_ATTENUATION,  0.8f);
     glLightf(GL_LIGHT0, GL_LINEAR_ATTENUATION,    0.3f);
@@ -581,7 +593,7 @@ static void initGL(void) {
     glLoadIdentity();
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 
-    idlefunc = navmaze;
+    idlefunc = spinmaze;
 }
 int main(int argc, char **argv) {
     glutInit(&argc, argv);
