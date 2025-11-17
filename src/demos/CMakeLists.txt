@@ -5,6 +5,7 @@ set(SIMPLE_EXECUTABLES
     scube
     stars
     maze
+    enterprise
 )
 
 foreach(target ${SIMPLE_EXECUTABLES})
