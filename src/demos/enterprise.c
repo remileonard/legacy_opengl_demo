@@ -90,6 +90,8 @@ static void drawNacelle(float offset) {
 }
 
 void ncc1701dDisplay(void) {
+    static float angle = 0.0f;
+    angle += 0.5f;
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glLoadIdentity();
     gluLookAt(6, -8, 5, 0, -2, 0, 0, 0, 1);
@@ -100,6 +102,7 @@ void ncc1701dDisplay(void) {
     glLightfv(GL_LIGHT0, GL_POSITION, lightPos);
 
     glPushMatrix();
+    glRotatef(angle, 0.0f, 0.0f, 1.0f);
     glColor3f(0.7f, 0.7f, 0.8f);
     drawSaucer();
     drawNeck();
