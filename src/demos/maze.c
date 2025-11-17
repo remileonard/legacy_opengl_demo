@@ -40,6 +40,7 @@
 
 int enablebank = 0;
 int enabletexture = 0;
+int enablelighting = 1;
 static clock_t last_frame_time = 0;
 #define MAZE_HEIGHT (16)
 #define MAZE_WIDTH (16)
@@ -569,6 +570,14 @@ static void special(int key, int x, int y) {
     case GLUT_KEY_F2:
         idlefunc = navmaze;
         break;
+    case GLUT_KEY_F3:
+        enablelighting = !enablelighting;
+        if (enablelighting) {
+            glEnable(GL_LIGHTING);
+        } else {
+            glDisable(GL_LIGHTING);
+        }
+        break;
     default:
         break;
     }
@@ -614,7 +623,7 @@ static void initGL(void) {
     glDisable(GL_LIGHTING);
     glDisable(GL_TEXTURE_2D);
     glEnable(GL_CULL_FACE);
-    glShadeModel(GL_SMOOTH);
+    glShadeModel(GL_FLAT);
     glEnable(GL_NORMALIZE);
 
     glEnable(GL_LIGHTING);
