@@ -302,14 +302,17 @@ static int drawground(void) {
     int dl;
     glNewList(dl = glGenLists(1), GL_COMPILE);
     glBegin(GL_QUADS);
-    glNormal3f(0.0f, 1.0f, 0.0f);
+    glNormal3f(0.0f, 0.0f, 1.0f);
     glColor3f(1.0f, 0.6f, 0.0f);
     for (int y = 0; y < MAZE_HEIGHT; ++y) {
         for (int x = 0; x < MAZE_WIDTH; ++x) {
-            glVertex3f((float)x,     (float)y,     0.0f);
-            glVertex3f((float)x + 1, (float)y,     0.0f);
-            glVertex3f((float)x + 1, (float)y + 1, 0.0f);
-            glVertex3f((float)x,     (float)y + 1, 0.0f);
+            float x0 = (float)x,     x1 = x0 + 1.0f;
+            float y0 = (float)y,     y1 = y0 + 1.0f;
+
+            glTexCoord2f(x0, y0); glVertex3f(x0, y0, 0.0f);
+            glTexCoord2f(x1, y0); glVertex3f(x1, y0, 0.0f);
+            glTexCoord2f(x1, y1); glVertex3f(x1, y1, 0.0f);
+            glTexCoord2f(x0, y1); glVertex3f(x0, y1, 0.0f);
         }
     }
     glEnd();
@@ -320,14 +323,17 @@ static int drawcelling(void) {
     int dl;
     glNewList(dl = glGenLists(1), GL_COMPILE);
     glBegin(GL_QUADS);
-    glNormal3f(0.0f, -1.0f, 0.0f);
+    glNormal3f(0.0f, 0.0f, -1.0f);
     glColor3f(0.6f, 0.6f, 1.0f);
     for (int y = 0; y < MAZE_HEIGHT; ++y) {
         for (int x = 0; x < MAZE_WIDTH; ++x) {
-            glVertex3f((float)x,     (float)y,     1.0f);
-            glVertex3f((float)x,     (float)y + 1, 1.0f);
-            glVertex3f((float)x + 1, (float)y + 1, 1.0f);
-            glVertex3f((float)x + 1, (float)y,     1.0f);
+            float x0 = (float)x,     x1 = x0 + 1.0f;
+            float y0 = (float)y,     y1 = y0 + 1.0f;
+
+            glTexCoord2f(x0, y0); glVertex3f(x0, y0, 1.0f);
+            glTexCoord2f(x0, y1); glVertex3f(x0, y1, 1.0f);
+            glTexCoord2f(x1, y1); glVertex3f(x1, y1, 1.0f);
+            glTexCoord2f(x1, y0); glVertex3f(x1, y0, 1.0f);
         }
     }
     glEnd();
