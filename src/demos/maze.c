@@ -294,9 +294,51 @@ float player_t = 0.0f;             // player's turning (change in heading)
 float player_b = 0.0f;             // viewpoint bank (roll)
 int walllist = 0;
 int mazelist = 0;
+int groundlist = 0;
+int cellinglist = 0;
+
+static int drawground(void) {
+    int dl;
+    glNewList(dl = glGenLists(1), GL_COMPILE);
+    glDisable(GL_TEXTURE_2D);
+    glBegin(GL_QUADS);
+    glNormal3f(0.0f, 1.0f, 0.0f);
+    glColor3f(1.0f, 0.6f, 0.0f);
+    for (int y = 0; y < MAZE_HEIGHT; ++y) {
+        for (int x = 0; x < MAZE_WIDTH; ++x) {
+            glVertex3f((float)x,     (float)y,     0.0f);
+            glVertex3f((float)x + 1, (float)y,     0.0f);
+            glVertex3f((float)x + 1, (float)y + 1, 0.0f);
+            glVertex3f((float)x,     (float)y + 1, 0.0f);
+        }
+    }
+    glEnd();
+    glEndList();
+    return dl;
+}
+static int drawcelling(void) {
+    int dl;
+    glNewList(dl = glGenLists(1), GL_COMPILE);
+    glDisable(GL_TEXTURE_2D);
+    glBegin(GL_QUADS);
+    glNormal3f(0.0f, -1.0f, 0.0f);
+    glColor3f(0.6f, 0.6f, 1.0f);
+    for (int y = 0; y < MAZE_HEIGHT; ++y) {
+        for (int x = 0; x < MAZE_WIDTH; ++x) {
+            glVertex3f((float)x,     (float)y,     1.0f);
+            glVertex3f((float)x,     (float)y + 1, 1.0f);
+            glVertex3f((float)x + 1, (float)y + 1, 1.0f);
+            glVertex3f((float)x + 1, (float)y,     1.0f);
+        }
+    }
+    glEnd();
+    glEndList();
+    return dl;
+}
 void spinmaze(void);
 void entermaze(void);
 void navmaze(void);
+void mapmaze(void);
 void (*idlefunc)(void) = NULL;
 int forward(float px, float py, float bf) {
     // this routine does wall collision detection
@@ -339,15 +381,58 @@ int forward(float px, float py, float bf) {
 void spinmaze(void) {
     static float spin = 720.0f;
     spin -= 5.0f; // TODO: lier au temps si tu veux
-
+    forward(player_x + player_m * player_s * (float)sin(player_h * 3.14 / 180),
+            player_y + player_m * player_s * (float)cos(player_h * 3.14 / 180), 0.2f);
+    player_h += player_t;
+    player_b = 3 * player_b / 4 + player_t / 4;
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glLoadIdentity();
+
     glPushMatrix();
     glTranslatef(0.0f, 0.0f, -20.0f);
     glRotatef(spin, 0.0f, 1.0f, 1.0f);
+    
     glTranslatef(-MAZE_WIDTH / 2.0f, -MAZE_HEIGHT / 2.0f, 0.0f);
+    glCallList(groundlist);
     glCallList(walllist);
     glCallList(mazelist);
+    glTranslatef(player_x, player_y, 0.5f);
+    GLfloat light_position[] = {0, 0, 0.5f, 1.0f};
+    glLightfv(GL_LIGHT0, GL_POSITION,       light_position);
+    glutSolidCube(0.5f);
+    glPopMatrix();
+    glutSwapBuffers();
+
+    if (spin <= 0.0f) {
+        spin = 720.0f;
+        idlefunc = entermaze;
+        player_x = STARTING_POINT_X;
+        player_y = STARTING_POINT_Y;
+        player_h = STARTING_HEADING;
+    }
+}
+void mapmaze(void) {
+    static float spin = 720.0f;
+    //spin -= 5.0f; // TODO: lier au temps si tu veux
+    forward(player_x + player_m * player_s * (float)sin(player_h * 3.14 / 180),
+            player_y + player_m * player_s * (float)cos(player_h * 3.14 / 180), 0.2f);
+    player_h += player_t;
+    player_b = 3 * player_b / 4 + player_t / 4;
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glLoadIdentity();
+
+    glPushMatrix();
+    glTranslatef(0.0f, 0.0f, -20.0f);
+    glRotatef(spin, 0.0f, 1.0f, 1.0f);
+    
+    glTranslatef(-MAZE_WIDTH / 2.0f, -MAZE_HEIGHT / 2.0f, 0.0f);
+    glCallList(groundlist);
+    glCallList(walllist);
+    glCallList(mazelist);
+    glTranslatef(player_x, player_y, 0.5f);
+    GLfloat light_position[] = {0, 0, 0.5f, 1.0f};
+    glLightfv(GL_LIGHT0, GL_POSITION,       light_position);
+    glutSolidCube(0.5f);
     glPopMatrix();
     glutSwapBuffers();
 
@@ -391,44 +476,23 @@ void navmaze(void) {
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glLoadIdentity();
-    GLfloat light_position[] = {0, 0.0, 0.0f, 1.0f};
-    glLightfv(GL_LIGHT0, GL_POSITION,       light_position);
-
+    
     glPushMatrix();
-
     // 1) Construire la vue (caméra)
     glRotatef(-90.0f, 1.0f, 0.0f, 0.0f);
     if (enablebank)
         glRotatef(-player_b, 0.0f, 1.0f, 0.0f);
     glRotatef(player_h, 0.0f, 0.0f, 1.0f);
     glTranslatef(-player_x, -player_y, -0.5f);
-    // 3) Dessiner la scène
-    // Grand sol
-    
-    glDisable(GL_TEXTURE_2D);
-    glBegin(GL_QUADS);
-    glNormal3f(0.0f, 1.0f, 0.0f);
-    glColor3f(1.0f, 0.6f, 0.0f);
-    glVertex3f(0.0f      , 0.0f       , 0.0f);
-    glVertex3f(MAZE_WIDTH, 0.0f       , 0.0f);
-    glVertex3f(MAZE_WIDTH, MAZE_HEIGHT, 0.0f);
-    glVertex3f(0.0f      , MAZE_HEIGHT, 0.0f);
-    glEnd();
+    GLfloat light_position[] = {player_x, player_y, 0.5f, 1.0f};
+    glLightfv(GL_LIGHT0, GL_POSITION,       light_position);
 
-    // Grand plafond
-    
-    glBegin(GL_QUADS);
-    glNormal3f(0.0f, -1.0f, 0.0f);
-    glColor3f(1.0f, 0.0f, 0.6f);
-    glVertex3f(0.0f      , 0.0f       , 1.0f);
-    glVertex3f(0.0f      , MAZE_HEIGHT, 1.0f);
-    glVertex3f(MAZE_WIDTH, MAZE_HEIGHT, 1.0f);
-    glVertex3f(MAZE_WIDTH, 0.0f       , 1.0f);
-    glEnd();
-    glEnable(GL_TEXTURE_2D);
+    // 3) Dessiner la scène
+    glCallList(groundlist);
+    glCallList(cellinglist);
     glCallList(walllist);
-    glPopMatrix();
     
+    glPopMatrix();
     glutSwapBuffers();
 
     if (player_x > MAZE_WIDTH || player_y > MAZE_HEIGHT) {
@@ -499,6 +563,12 @@ static void special(int key, int x, int y) {
     case GLUT_KEY_SHIFT_R:
         player_m = 3.0f;
         break;
+    case GLUT_KEY_F1:
+        idlefunc = mapmaze;
+        break;
+    case GLUT_KEY_F2:
+        idlefunc = navmaze;
+        break;
     default:
         break;
     }
@@ -547,12 +617,10 @@ static void initGL(void) {
     glShadeModel(GL_SMOOTH);
     glEnable(GL_NORMALIZE);
 
-    // --- configuration de la lumière (lampe torche) ---
     glEnable(GL_LIGHTING);
     glEnable(GL_LIGHT0);
 
-    // ambiance quasi nulle pour que le labyrinthe soit sombre hors du cône
-    GLfloat light_ambient[]  = {0.5f, 0.5f, 0.5f, 1.0f};
+    GLfloat light_ambient[]  = {0.05f, 0.05f, 0.05f, 1.0f};
     GLfloat light_diffuse[]  = {1.0f, 1.0f, 1.0f, 1.0f};
     GLfloat light_specular[] = {0.0f, 0.0f, 0.0f, 1.0f};
 
@@ -562,11 +630,6 @@ static void initGL(void) {
 
     // position/direction par défaut (seront recalculées dans navmaze)
     GLfloat light_position[] = {0.0f, 0.0f, 0.0f, 1.0f};
-    GLfloat light_dir_world[3] = {
-        (GLfloat)sin(player_h * 3.14 / 180.0),
-        (GLfloat)cos(player_h * 3.14 / 180.0),
-        0.0f
-    };
 
     glLightfv(GL_LIGHT0, GL_POSITION,       light_position);
     // atténuation un peu plus douce
@@ -584,7 +647,8 @@ static void initGL(void) {
 
     walllist = drawwalls();
     mazelist = drawtop();
-
+    groundlist = drawground();
+    cellinglist = drawcelling();
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
     gluPerspective(60.0, 1.0, 0.1, 60.0);
