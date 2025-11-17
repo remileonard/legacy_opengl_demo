@@ -259,7 +259,7 @@ int drawtop() {
     glPushAttrib(GL_TEXTURE_BIT | GL_LIGHTING_BIT);
     glDisable(GL_LIGHTING);
     glDisable(GL_TEXTURE_2D);
-    glColor3f(1.0f, 1.0f, 1.0f);
+    glColor3f(0.5f, 0.5f, 0.5f);
     glBegin(GL_QUADS);
     for (y = 0; y < MAZE_HEIGHT; y++) {
         for (x = 0; x < MAZE_WIDTH; x++) {
@@ -301,7 +301,6 @@ int cellinglist = 0;
 static int drawground(void) {
     int dl;
     glNewList(dl = glGenLists(1), GL_COMPILE);
-    glDisable(GL_TEXTURE_2D);
     glBegin(GL_QUADS);
     glNormal3f(0.0f, 1.0f, 0.0f);
     glColor3f(1.0f, 0.6f, 0.0f);
@@ -320,7 +319,6 @@ static int drawground(void) {
 static int drawcelling(void) {
     int dl;
     glNewList(dl = glGenLists(1), GL_COMPILE);
-    glDisable(GL_TEXTURE_2D);
     glBegin(GL_QUADS);
     glNormal3f(0.0f, -1.0f, 0.0f);
     glColor3f(0.6f, 0.6f, 1.0f);
@@ -639,8 +637,8 @@ static void initGL(void) {
 
     // position/direction par défaut (seront recalculées dans navmaze)
     GLfloat light_position[] = {0.0f, 0.0f, 0.0f, 1.0f};
-
     glLightfv(GL_LIGHT0, GL_POSITION,       light_position);
+    
     // atténuation un peu plus douce
     glLightf(GL_LIGHT0, GL_CONSTANT_ATTENUATION,  0.8f);
     glLightf(GL_LIGHT0, GL_LINEAR_ATTENUATION,    0.3f);
