@@ -19,6 +19,10 @@ Stars
 	..\..\demos\Debug\stars.exe
 	.color. .9 .5 .9
 	.highcolor. 1.0 .7 1.0
+Maze
+	..\..\demos\Debug\maze.exe
+	.color. .9 .5 .9
+	.highcolor. 1.0 .7 1.0
 Distort
 	..\..\distort\Debug\distort.exe ../../../../../../data/dog.rgb
 	.color. .9 .5 .9
@@ -31,10 +35,12 @@ Roller Coaster
 	..\..\roller_coaster\Debug\rc.exe
 	.color. .9 .5 .9
 	.highcolor. 1.0 .7 1.0
-Smooth
-	.menu. m_bounce
+Cycles
+	..\..\cycles\Debug\cycles.exe
 	.color. .9 .5 .9
 	.highcolor. 1.0 .7 1.0
+Smooth
+	.menu. m_bounce
 Ideas
 	..\..\ideas\Debug\ideas.exe
 	.color. .9 .5 .9

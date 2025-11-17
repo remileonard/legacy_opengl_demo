@@ -1,42 +1,29 @@
 Al
 	..\..\smooth\Debug\smooth.exe ../../../../../../data/al.obj
-
 Castle
 	..\..\smooth\Debug\smooth.exe ../../../../../../data/castle.obj
-
 Couch
 	..\..\smooth\Debug\smooth.exe ../../../../../../data/couch.obj
-
 Cow
 	..\..\smooth\Debug\smooth.exe ../../../../../../data/cow.obj
-
 Cube
 	..\..\smooth\Debug\smooth.exe ../../../../../../data/cube.obj
-
 Cut cube
 	..\..\smooth\Debug\smooth.exe ../../../../../../data/cutcube.obj
-
 Dolphins
 	..\..\smooth\Debug\smooth.exe ../../../../../../data/dolphins.obj
-
 Dragon
 	..\..\smooth\Debug\smooth.exe ../../../../../../data/dragon.obj
-
 Eagle
 	..\..\smooth\Debug\smooth.exe ../../../../../../data/eagle.obj
-
 Galleon
 	..\..\smooth\Debug\smooth.exe ../../../../../../data/galleon.obj
-
 Head chord
 	..\..\smooth\Debug\smooth.exe ../../../../../../data/head_chord.obj
-
 NCC1701b
 	..\..\smooth\Debug\smooth.exe ../../../../../../data/ncc1701b.obj
-
 Pawn
 	..\..\smooth\Debug\smooth.exe ../../../../../../data/pawn.obj
-
 Pig
 	..\..\smooth\Debug\smooth.exe ../../../../../../data/pig.obj
 Rose Vase

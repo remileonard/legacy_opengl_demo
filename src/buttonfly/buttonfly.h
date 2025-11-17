@@ -58,7 +58,7 @@ typedef struct path_struct_type {
 #define MAX_SPOTS 32
 #define TARGET_FPS 60
 #define FRAME_TIME_MS (1000 / TARGET_FPS)
-#define WORDLENGTH 11
+#define WORDLENGTH 9
 #define random(r) (r*(float)rand()/(float)(RAND_MAX))
 #define BLOCK_AT_SLOW_FRAME 0
 
