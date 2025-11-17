@@ -24,6 +24,7 @@ A collection of smaller demos including:
 - **glutplane**: Airplane graphics demo
 - **scube**: Spinning cube demonstration
 - **stars**: Starfield effect
+- **maze**: 3D maze navigation demo
 
 ### 🌀 Distort
 Real-time image distortion effects including ripple and rubber-like deformations. Demonstrates texture manipulation techniques.
@@ -56,6 +57,9 @@ A sophisticated 3D model viewer supporting OBJ/MTL file formats. Features:
 - Model manipulation with trackball controls
 - Performance statistics
 - Normal visualization
+
+### 🏍️ Cycles
+A solo or multiplayer motorcycle game where players navigate a maze while avoiding trails left by other players. Points are awarded for speed and causing others to crash.
 
 ## Prerequisites
 
