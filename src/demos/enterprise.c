@@ -22,6 +22,9 @@
 
 
 static clock_t last_frame_time = 0;
+static int window_width = 800;
+static int window_height = 600;
+static float cube_angle = 0.0f;
 
 void (*idlefunc)(void) = NULL;
 
@@ -33,87 +36,134 @@ static void specialUp(int key, int x, int y);
 static void display(void);
 static void initGL(void);
 
-static void drawSaucer(void) {
-    glBegin(GL_TRIANGLE_FAN);
-    glNormal3f(0, 0, 1);
-    glVertex3f(0, 0, 0.1f); // centre
-    for (int i = 0; i <= 36; ++i) {
-        float a = (float)i * 10.0f * 3.1415926f / 180.0f;
-        glVertex3f(3.0f * cosf(a), 2.4f * sinf(a), 0.0f);
-    }
+static void draw_rect_outline(int x, int y, int width, int height) {
+    glBegin(GL_LINE_LOOP);
+    glVertex2i(x, y);
+    glVertex2i(x + width, y);
+    glVertex2i(x + width, y + height);
+    glVertex2i(x, y + height);
     glEnd();
 }
 
-static void drawNeck(void) {
-    glBegin(GL_QUADS);
-    glNormal3f(0, 0, 1);
-    glVertex3f(-0.4f, -0.6f, 0.0f);
-    glVertex3f( 0.4f, -0.6f, 0.0f);
-    glVertex3f( 0.6f, -2.4f, -0.4f);
-    glVertex3f(-0.6f, -2.4f, -0.4f);
-    glEnd();
-}
+static void draw_layout_borders(int top_left_width,
+                                int top_right_width,
+                                int top_height,
+                                int bottom_height,
+                                int top_y) {
+    glViewport(0, 0, window_width, window_height);
+    glDisable(GL_DEPTH_TEST);
 
-static void drawSecondaryHull(void) {
-    glBegin(GL_TRIANGLE_STRIP);
-    for (int i = 0; i <= 36; ++i) {
-        float a = (float)i * 10.0f * 3.1415926f / 180.0f;
-        float x = cosf(a);
-        float y = sinf(a);
-        glNormal3f(x, 0, y);
-        glVertex3f(x * 0.9f, -2.4f, y * 0.9f - 1.2f);
-        glVertex3f(x * 0.7f, -4.0f, y * 0.7f - 1.2f);
-    }
-    glEnd();
-}
-
-static void drawNacelle(float offset) {
-    glPushMatrix();
-    glTranslatef(offset, -3.0f, -0.8f);
-    glScalef(0.3f, 1.8f, 0.3f);
-    glBegin(GL_QUADS);
-    // faces
-    glNormal3f(0, 0, 1);
-    glVertex3f(-1,-1, 1); glVertex3f(1,-1, 1); glVertex3f(1,1, 1); glVertex3f(-1,1, 1);
-    glNormal3f(0, 0,-1);
-    glVertex3f(-1,-1,-1); glVertex3f(-1,1,-1); glVertex3f(1,1,-1); glVertex3f(1,-1,-1);
-    glNormal3f(-1,0,0);
-    glVertex3f(-1,-1,-1); glVertex3f(-1,-1,1); glVertex3f(-1,1,1); glVertex3f(-1,1,-1);
-    glNormal3f(1,0,0);
-    glVertex3f(1,-1,-1); glVertex3f(1,1,-1); glVertex3f(1,1,1); glVertex3f(1,-1,1);
-    glNormal3f(0,1,0);
-    glVertex3f(-1,1,-1); glVertex3f(-1,1,1); glVertex3f(1,1,1); glVertex3f(1,1,-1);
-    glNormal3f(0,-1,0);
-    glVertex3f(-1,-1,-1); glVertex3f(1,-1,-1); glVertex3f(1,-1,1); glVertex3f(-1,-1,1);
-    glEnd();
-    glPopMatrix();
-}
-
-void ncc1701dDisplay(void) {
-    static float angle = 0.0f;
-    angle += 0.5f;
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    gluLookAt(6, -8, 5, 0, -2, 0, 0, 0, 1);
+    gluOrtho2D(0.0, window_width, 0.0, window_height);
 
-    glEnable(GL_LIGHTING);
-    glEnable(GL_LIGHT0);
-    GLfloat lightPos[] = {4, -4, 6, 1};
-    glLightfv(GL_LIGHT0, GL_POSITION, lightPos);
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
 
-    glPushMatrix();
-    glRotatef(angle, 0.0f, 0.0f, 1.0f);
-    glColor3f(0.7f, 0.7f, 0.8f);
-    drawSaucer();
-    drawNeck();
-    drawSecondaryHull();
-    drawNacelle(1.5f);
-    drawNacelle(-1.5f);
-    glPopMatrix();
+    glColor3f(0.0f, 1.0f, 0.0f);
+    glLineWidth(2.0f);
 
-    glutSwapBuffers();
+    draw_rect_outline(0, top_y, top_left_width, top_height);
+    draw_rect_outline(top_left_width, top_y, top_right_width, top_height);
+    draw_rect_outline(0, 0, window_width, bottom_height);
+}
+static void render_top_left_2d(int viewport_width, int viewport_height) {
+    (void)viewport_width;
+    (void)viewport_height;
+
+    glDisable(GL_DEPTH_TEST);
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    gluOrtho2D(0.0, 1.0, 0.0, 1.0);
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+
+    glBegin(GL_QUADS);
+    glColor3f(0.1f, 0.4f, 0.8f);
+    glVertex2f(0.1f, 0.1f);
+    glVertex2f(0.4f, 0.1f);
+    glVertex2f(0.4f, 0.4f);
+    glVertex2f(0.1f, 0.4f);
+    glEnd();
+
+    glBegin(GL_QUADS);
+    glColor3f(0.8f, 0.4f, 0.1f);
+    glVertex2f(0.6f, 0.2f);
+    glVertex2f(0.9f, 0.2f);
+    glVertex2f(0.9f, 0.5f);
+    glVertex2f(0.6f, 0.5f);
+    glEnd();
 }
 
+static void render_top_right_2d(int viewport_width, int viewport_height) {
+    (void)viewport_width;
+    (void)viewport_height;
+
+    glDisable(GL_DEPTH_TEST);
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    gluOrtho2D(0.0, 1.0, 0.0, 1.0);
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+
+    glBegin(GL_LINES);
+    glColor3f(0.9f, 0.9f, 0.9f);
+    for (int i = 0; i <= 10; ++i) {
+        float t = i / 10.0f;
+        glVertex2f(t, 0.0f);
+        glVertex2f(t, 1.0f);
+        glVertex2f(0.0f, t);
+        glVertex2f(1.0f, t);
+    }
+    glEnd();
+
+    glBegin(GL_TRIANGLES);
+    glColor3f(0.2f, 0.8f, 0.3f);
+    glVertex2f(0.2f, 0.2f);
+    glVertex2f(0.8f, 0.2f);
+    glVertex2f(0.5f, 0.7f);
+    glEnd();
+}
+
+static void render_bottom_3d(int viewport_width, int viewport_height) {
+    if (viewport_height <= 0) {
+        return;
+    }
+
+    glEnable(GL_DEPTH_TEST);
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    gluPerspective(60.0,
+                   (viewport_height > 0) ? (double)viewport_width / (double)viewport_height : 1.0,
+                   0.1,
+                   100.0);
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+    gluLookAt(3.0, 3.0, 6.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0);
+
+    glRotatef(cube_angle, 0.0f, 1.0f, 0.0f);
+    glRotatef(cube_angle * 0.5f, 1.0f, 0.0f, 0.0f);
+
+    glBegin(GL_QUADS);
+    glColor3f(1.0f, 0.0f, 0.0f);   glVertex3f(-1.0f, -1.0f, 1.0f);  glVertex3f(1.0f, -1.0f, 1.0f);
+    glVertex3f(1.0f,  1.0f, 1.0f); glVertex3f(-1.0f,  1.0f, 1.0f);
+    glColor3f(0.0f, 1.0f, 0.0f);   glVertex3f(-1.0f, -1.0f,-1.0f);  glVertex3f(-1.0f, 1.0f,-1.0f);
+    glVertex3f(1.0f,  1.0f,-1.0f); glVertex3f(1.0f, -1.0f,-1.0f);
+    glColor3f(0.0f, 0.0f, 1.0f);   glVertex3f(-1.0f, -1.0f,-1.0f);  glVertex3f(-1.0f,-1.0f, 1.0f);
+    glVertex3f(-1.0f, 1.0f, 1.0f); glVertex3f(-1.0f, 1.0f,-1.0f);
+    glColor3f(1.0f, 1.0f, 0.0f);   glVertex3f(1.0f, -1.0f,-1.0f);   glVertex3f(1.0f, 1.0f,-1.0f);
+    glVertex3f(1.0f,  1.0f, 1.0f); glVertex3f(1.0f,-1.0f, 1.0f);
+    glColor3f(0.0f, 1.0f, 1.0f);   glVertex3f(-1.0f, 1.0f,-1.0f);   glVertex3f(-1.0f, 1.0f, 1.0f);
+    glVertex3f(1.0f,  1.0f, 1.0f); glVertex3f(1.0f, 1.0f,-1.0f);
+    glColor3f(1.0f, 0.0f, 1.0f);   glVertex3f(-1.0f,-1.0f,-1.0f);   glVertex3f(1.0f,-1.0f,-1.0f);
+    glVertex3f(1.0f,-1.0f, 1.0f);  glVertex3f(-1.0f,-1.0f, 1.0f);
+    glEnd();
+
+    cube_angle += 0.5f;
+    if (cube_angle >= 360.0f) {
+        cube_angle -= 360.0f;
+    }
+}
 static void menu_callback(int value) {
     switch (value) {
     case IDM_APPLICATION_EXIT:
@@ -125,11 +175,9 @@ static void menu_callback(int value) {
 }
 
 static void reshape(int w, int h) {
-    glViewport(0, 0, w, h);
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    gluPerspective(60.0, (h > 0) ? (float)w / (float)h : 1.0f, 0.1, 60.0);
-    glMatrixMode(GL_MODELVIEW);
+    window_width = (w > 0) ? w : 1;
+    window_height = (h > 0) ? h : 1;
+    glViewport(0, 0, window_width, window_height);
 }
 
 static void idle(void) {
@@ -180,12 +228,26 @@ static void specialUp(int key, int x, int y) {
 }
 
 static void display(void) {
-    if (idlefunc) {
-        idlefunc();
-    } else {
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        glutSwapBuffers();
-    }
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    int top_height = window_height / 2;
+    int bottom_height = window_height - top_height;
+    int top_left_width = window_width / 3;
+    int top_right_width = window_width - top_left_width;
+    int top_y = bottom_height;
+
+    glViewport(0, top_y, top_left_width, top_height);
+    render_top_left_2d(top_left_width, top_height);
+
+    glViewport(top_left_width, top_y, top_right_width, top_height);
+    render_top_right_2d(top_right_width, top_height);
+
+    glViewport(0, 0, window_width, bottom_height);
+    render_bottom_3d(window_width, bottom_height);
+
+    draw_layout_borders(top_left_width, top_right_width, top_height, bottom_height, top_y);
+
+    glutSwapBuffers();
 }
 static void initGL(void) {
     last_frame_time = clock();
@@ -199,7 +261,7 @@ static void initGL(void) {
     glLoadIdentity();
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 
-    idlefunc = ncc1701dDisplay;
+    idlefunc = NULL;
 }
 int main(int argc, char **argv) {
     glutInit(&argc, argv);
