@@ -22,7 +22,9 @@
  * Some of the window setup code was stolen from a simple Cosmo example.
  * OpenGL is a trademark of SGI.
  */
-#include <windows.h>
+#ifdef WIN32
+    #include <windows.h>
+#endif
 
 #include <GL/gl.h>
 #include <GL/glu.h>
@@ -37,15 +39,20 @@
 #define IDM_APPLICATION_EXIT (101)
 #define IDM_APPLICATION_TEXTURE (102)
 #define IDM_APPLICATION_BANK (103)
+#define MAZE_HEIGHT (16)
+#define MAZE_WIDTH (16)
+#define TARGET_FPS 60
+#define FRAME_TIME_MS (1000.0 / TARGET_FPS)
+#define STARTING_POINT_X (1.5f);
+#define STARTING_POINT_Y (1.5f);
+#define STARTING_HEADING (90.0f);
+
 
 int enablebank = 0;
 int enabletexture = 0;
 int enablelighting = 1;
 static clock_t last_frame_time = 0;
-#define MAZE_HEIGHT (16)
-#define MAZE_WIDTH (16)
-#define TARGET_FPS 60
-#define FRAME_TIME_MS (1000.0 / TARGET_FPS)
+
 
 // unfortunately due to the way the polygon walls are generated there
 // are restrictions on what the wall/maze data can look like.  See below.
@@ -67,6 +74,63 @@ char *mazedata[MAZE_HEIGHT] = {
     "*   * *    *   *",
     "************* **",
 };
+
+float player_x = STARTING_POINT_X;
+float player_y = STARTING_POINT_Y;
+float player_h = STARTING_HEADING; // player's heading
+float player_s = 0.0f;             // forward speed of the player
+float player_m = 1.0f;             // speed multiplier of the player
+float player_t = 0.0f;             // player's turning (change in heading)
+float player_b = 0.0f;             // viewpoint bank (roll)
+float player_str = 0.0f;           // lateral speed (strafe)
+int walllist = 0;
+int mazelist = 0;
+int groundlist = 0;
+int cellinglist = 0;
+
+// normal vectors for each wall direction
+float nrml[4][3] = {
+    {-1.0f, 0.0f, 0.0f},
+    {0.0f, 1.0f, 0.0f},
+    {1.0f, 0.0f, 0.0f},
+    {0.0f, -1.0f, 0.0f},
+};
+// default color for each wall direction
+float clr[4][3] = {
+    {1.0f, 0.0f, 0.0f},
+    {0.0f, 1.0f, 0.0f},
+    {0.0f, 0.0f, 1.0f},
+    {1.0f, 1.0f, 0.0f},
+};
+static float texcoordX = 0.0f;
+
+void (*idlefunc)(void) = NULL;
+
+void readtexture(void);
+void spinmaze(void);
+void entermaze(void);
+void navmaze(void);
+void mapmaze(void);
+
+void moveplayer();
+int forward(float px, float py, float bf);
+
+int wall(int x, int y);
+int onopen(int x, int y);
+void closeit(int x, int y);
+int neighbor(int x, int y, int w, int *nx, int *ny);
+int diagnol(int x, int y, int w, int *nx, int *ny);
+int drawtop();
+static int drawground(void);
+static int drawcelling(void);
+
+static void idle(void);
+static void menu_callback(int value);
+static void keyboard(unsigned char key, int x, int y);
+static void special(int key, int x, int y);
+static void specialUp(int key, int x, int y);
+static void display(void);
+static void initGL(void);
 
 void readtexture() {
     unsigned char *image;
@@ -94,7 +158,6 @@ void readtexture() {
 
     fclose(fp);
 }
-
 static void menu_callback(int value) {
     switch (value) {
     case IDM_APPLICATION_EXIT:
@@ -118,7 +181,6 @@ int wall(int x, int y) {
     // should be surrounded by other solid space or polygon walls
     return (x >= 0 && y >= 0 && x < MAZE_WIDTH && y < MAZE_HEIGHT && ' ' != mazedata[y][x]);
 }
-
 /*
  * The next group of routines implements the depth-first search
  * that is used to wrap a quad strip around all the solid regions of the
@@ -185,21 +247,6 @@ int diagnol(int x, int y, int w, int *nx, int *ny) {
     }
     return wall(*nx, *ny);
 }
-// normal vectors for each wall direction
-float nrml[4][3] = {
-    {-1.0f, 0.0f, 0.0f},
-    {0.0f, 1.0f, 0.0f},
-    {1.0f, 0.0f, 0.0f},
-    {0.0f, -1.0f, 0.0f},
-};
-// default color for each wall direction
-float clr[4][3] = {
-    {1.0f, 0.0f, 0.0f},
-    {0.0f, 1.0f, 0.0f},
-    {0.0f, 0.0f, 1.0f},
-    {1.0f, 1.0f, 0.0f},
-};
-static float texcoordX = 0.0f;
 int dw(int x, int y, int p) {
     // the recursive draw wall routine that extends the quad strip
     int w = p; // w is the current wall direction being considered
@@ -246,8 +293,6 @@ int drawwalls() {
     glEndList();
     return dl;
 }
-//-----------------------------------------------
-
 int drawtop() {
     // draws the top and the bottom of the maze
     // which is useful for overhead views
@@ -282,22 +327,6 @@ int drawtop() {
     glEndList();
     return (dl);
 }
-
-#define STARTING_POINT_X (1.5f);
-#define STARTING_POINT_Y (1.5f);
-#define STARTING_HEADING (90.0f);
-float player_x = STARTING_POINT_X;
-float player_y = STARTING_POINT_Y;
-float player_h = STARTING_HEADING; // player's heading
-float player_s = 0.0f;             // forward speed of the player
-float player_m = 1.0f;             // speed multiplier of the player
-float player_t = 0.0f;             // player's turning (change in heading)
-float player_b = 0.0f;             // viewpoint bank (roll)
-int walllist = 0;
-int mazelist = 0;
-int groundlist = 0;
-int cellinglist = 0;
-
 static int drawground(void) {
     int dl;
     glNewList(dl = glGenLists(1), GL_COMPILE);
@@ -340,11 +369,16 @@ static int drawcelling(void) {
     glEndList();
     return dl;
 }
-void spinmaze(void);
-void entermaze(void);
-void navmaze(void);
-void mapmaze(void);
-void (*idlefunc)(void) = NULL;
+
+void moveplayer() {
+    float heading_rad = player_h * 3.1415926f / 180.0f;
+    float sinH = sinf(heading_rad);
+    float cosH = cosf(heading_rad);
+    float target_x = player_x + player_m * (player_s * sinH + player_str * cosH);
+    float target_y = player_y + player_m * (player_s * cosH - player_str * sinH);
+    player_h += player_t;
+    forward(target_x, target_y, 0.2f);
+}
 int forward(float px, float py, float bf) {
     // this routine does wall collision detection
     // the inputs to this routine are:
@@ -386,10 +420,6 @@ int forward(float px, float py, float bf) {
 void spinmaze(void) {
     static float spin = 720.0f;
     spin -= 5.0f; // TODO: lier au temps si tu veux
-    forward(player_x + player_m * player_s * (float)sin(player_h * 3.14 / 180),
-            player_y + player_m * player_s * (float)cos(player_h * 3.14 / 180), 0.2f);
-    player_h += player_t;
-    player_b = 3 * player_b / 4 + player_t / 4;
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glLoadIdentity();
 
@@ -418,11 +448,9 @@ void spinmaze(void) {
 }
 void mapmaze(void) {
     static float spin = 720.0f;
-    //spin -= 5.0f; // TODO: lier au temps si tu veux
-    forward(player_x + player_m * player_s * (float)sin(player_h * 3.14 / 180),
-            player_y + player_m * player_s * (float)cos(player_h * 3.14 / 180), 0.2f);
-    player_h += player_t;
-    player_b = 3 * player_b / 4 + player_t / 4;
+    
+    moveplayer();
+
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glLoadIdentity();
 
@@ -474,10 +502,7 @@ void entermaze(void) {
 
 void navmaze(void) {
 
-    forward(player_x + player_m * player_s * (float)sin(player_h * 3.14 / 180),
-            player_y + player_m * player_s * (float)cos(player_h * 3.14 / 180), 0.2f);
-    player_h += player_t;
-    player_b = 3 * player_b / 4 + player_t / 4;
+    moveplayer();
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glLoadIdentity();
@@ -551,12 +576,27 @@ static void special(int key, int x, int y) {
     (void)x;
     (void)y;
 
+    int modifiers = glutGetModifiers();
+    int altDown = modifiers & GLUT_ACTIVE_ALT;
+
     switch (key) {
     case GLUT_KEY_LEFT:
-        player_t = -5.0f;
+        if (altDown) {
+            player_str = -0.05f;
+            player_t = 0.0f;
+        } else {
+            player_t = -5.0f;
+            player_str = 0.0f;
+        }
         break;
     case GLUT_KEY_RIGHT:
-        player_t = 5.0f;
+        if (altDown) {
+            player_str = 0.05f;
+            player_t = 0.0f;
+        } else {
+            player_t = 5.0f;
+            player_str = 0.0f;
+        }
         break;
     case GLUT_KEY_UP:
         player_s = 0.05f;
@@ -595,10 +635,14 @@ static void specialUp(int key, int x, int y) {
     case GLUT_KEY_LEFT:
         if (player_t < 0.0f)
             player_t = 0.0f;
+        if (player_str < 0.0f)
+            player_str = 0.0f;
         break;
     case GLUT_KEY_RIGHT:
         if (player_t > 0.0f)
             player_t = 0.0f;
+        if (player_str > 0.0f)
+            player_str = 0.0f;
         break;
     case GLUT_KEY_UP:
     case GLUT_KEY_DOWN:
