@@ -45,6 +45,38 @@ static void specialUp(int key, int x, int y);
 static void display(void);
 static void initGL(void);
 
+static void draw_bitmap_text_wrapped(int viewport_width,
+                                     int viewport_height,
+                                     float origin_x,
+                                     float origin_y,
+                                     float max_width,
+                                     const char *text) {
+    const float line_height = (float)glutBitmapHeight(GLUT_BITMAP_HELVETICA_18) / (float)viewport_height;
+    float cursor_x = origin_x;
+    float cursor_y = origin_y;
+
+    glRasterPos2f(cursor_x, cursor_y);
+
+    for (const unsigned char *c = (const unsigned char *)text; *c; ++c) {
+        if (*c == '\n') {
+            cursor_x = origin_x;
+            cursor_y -= line_height;
+            glRasterPos2f(cursor_x, cursor_y);
+            continue;
+        }
+
+        float glyph_width = (float)glutBitmapWidth(GLUT_BITMAP_HELVETICA_18, *c) / (float)viewport_width;
+
+        if (cursor_x + glyph_width > origin_x + max_width) {
+            cursor_x = origin_x;
+            cursor_y -= line_height;
+            glRasterPos2f(cursor_x, cursor_y);
+        }
+
+        glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, *c);
+        cursor_x += glyph_width;
+    }
+}
 static void update_player_position(float delta_time, entity_t *entity) {
     // Met à jour la position du joueur en fonction de sa vitesse et de son orientation
     float distance = entity->s * entity->m * delta_time;
@@ -121,10 +153,14 @@ static void render_top_left_2d(int viewport_width, int viewport_height) {
     glEnd();
 
     glColor3f(1.0f, 1.0f, 1.0f);
-    glRasterPos2f(0.05f, 0.9f);   // position valide dans l’ortho [0,1]
-    for (const char *c = buffer; *c; ++c) {
-        glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, *c);
-    }
+    draw_bitmap_text_wrapped(
+        viewport_width,
+        viewport_height,
+        0.05f,
+        0.9f,
+        0.85f,   // largeur autorisée dans [0,1]
+        buffer
+    );
 }
 
 static void render_top_right_2d(int viewport_width, int viewport_height) {
