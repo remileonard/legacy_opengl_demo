@@ -20,11 +20,20 @@
 #define TARGET_FPS 60
 #define FRAME_TIME_MS (1000.0 / TARGET_FPS)
 
+typedef struct entity_t {
+    float x;
+    float y;
+    float h; // heading
+    float s; // speed
+    float m; // speed multiplier
+} entity_t;
 
 static clock_t last_frame_time = 0;
 static int window_width = 800;
 static int window_height = 600;
 static float cube_angle = 0.0f;
+static entity_t player = {0.0f, 0.0f, 0.0f, 0.0f, 1.0f};
+static entity_t enemy = {0.5f, -0.4f, 0.0f, 0.0f, 1.0f};
 
 void (*idlefunc)(void) = NULL;
 
@@ -36,6 +45,13 @@ static void specialUp(int key, int x, int y);
 static void display(void);
 static void initGL(void);
 
+static void update_player_position(float delta_time, entity_t *entity) {
+    // Met à jour la position du joueur en fonction de sa vitesse et de son orientation
+    float distance = entity->s * entity->m * delta_time;
+    float radians = 3.14159265f - entity->h * (3.14159265f / 180.0f);
+    entity->x += sinf(radians) * distance;
+    entity->y += cosf(radians) * distance;
+}
 static void draw_rect_outline(int x, int y, int width, int height) {
     glBegin(GL_LINE_LOOP);
     glVertex2i(x, y);
@@ -71,6 +87,16 @@ static void render_top_left_2d(int viewport_width, int viewport_height) {
     (void)viewport_width;
     (void)viewport_height;
 
+    char buffer[256];
+    snprintf(
+        buffer,
+        sizeof(buffer),
+        "Player Position: (%.2f, %.2f) Heading: %.2f",
+        player.x,
+        player.y,
+        player.h
+    );
+    
     glDisable(GL_DEPTH_TEST);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
@@ -93,6 +119,12 @@ static void render_top_left_2d(int viewport_width, int viewport_height) {
     glVertex2f(0.9f, 0.5f);
     glVertex2f(0.6f, 0.5f);
     glEnd();
+
+    glColor3f(1.0f, 1.0f, 1.0f);
+    glRasterPos2f(0.05f, 0.9f);   // position valide dans l’ortho [0,1]
+    for (const char *c = buffer; *c; ++c) {
+        glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, *c);
+    }
 }
 
 static void render_top_right_2d(int viewport_width, int viewport_height) {
@@ -102,9 +134,24 @@ static void render_top_right_2d(int viewport_width, int viewport_height) {
     glDisable(GL_DEPTH_TEST);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    gluOrtho2D(0.0, 1.0, 0.0, 1.0);
+    gluOrtho2D(-1.0, 1.0, -1.0, 1.0);
     glMatrixMode(GL_MODELVIEW);
+    
     glLoadIdentity();
+
+    glTranslatef(player.x, player.y, 0.0f);
+    
+    glPushMatrix();
+    glTranslatef(enemy.x, enemy.y, 0.0f);
+    glRotatef(enemy.h, 0.0f, 0.0f, 1.0f);
+    glBegin(GL_QUADS);
+    glColor3f(1.0f, 0.0f, 0.0f);
+    glVertex2f(-0.05f, -0.05f);
+    glVertex2f(0.05f, -0.05f);
+    glVertex2f(0.05f, 0.05f);
+    glVertex2f(-0.05f, 0.05f);
+    glEnd();
+    glPopMatrix();
 
     glBegin(GL_LINES);
     glColor3f(0.9f, 0.9f, 0.9f);
@@ -117,11 +164,13 @@ static void render_top_right_2d(int viewport_width, int viewport_height) {
     }
     glEnd();
 
+    glTranslatef(-player.x, -player.y, 0.0f);
+    glRotatef(player.h, 0.0f, 0.0f, 1.0f);
     glBegin(GL_TRIANGLES);
-    glColor3f(0.2f, 0.8f, 0.3f);
-    glVertex2f(0.2f, 0.2f);
-    glVertex2f(0.8f, 0.2f);
-    glVertex2f(0.5f, 0.7f);
+    glColor3f(0.8f, 0.2f, 0.3f);
+    glVertex2f(-0.05f, -0.05f);
+    glVertex2f(0.05f, -0.05f);
+    glVertex2f(0.0f, 0.05f);
     glEnd();
 }
 
@@ -133,36 +182,27 @@ static void render_bottom_3d(int viewport_width, int viewport_height) {
     glEnable(GL_DEPTH_TEST);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    gluPerspective(60.0,
-                   (viewport_height > 0) ? (double)viewport_width / (double)viewport_height : 1.0,
-                   0.1,
-                   100.0);
+    gluPerspective(
+        45.0,
+        (viewport_height > 0) ? (double)viewport_width / (double)viewport_height : 1.0,
+        0.1,
+        100.0
+    );
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
-    gluLookAt(3.0, 3.0, 6.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0);
+    // XY -> plan horizontal
+    glRotatef(-90.0f, 1.0f, 0.0f, 0.0f);
+    glRotatef(-player.h, 0.0f, 0.0f, 1.0f);
+    glTranslatef(player.x, player.y, 0.0f);
 
-    glRotatef(cube_angle, 0.0f, 1.0f, 0.0f);
-    glRotatef(cube_angle * 0.5f, 1.0f, 0.0f, 0.0f);
+    glPushMatrix();
+    
+    glTranslatef(enemy.x, enemy.y, 0.0f);
+    glRotatef(enemy.h, 0.0f, 0.0f, 1.0f);
+    glutSolidCube(0.1f);
+    glPopMatrix();
 
-    glBegin(GL_QUADS);
-    glColor3f(1.0f, 0.0f, 0.0f);   glVertex3f(-1.0f, -1.0f, 1.0f);  glVertex3f(1.0f, -1.0f, 1.0f);
-    glVertex3f(1.0f,  1.0f, 1.0f); glVertex3f(-1.0f,  1.0f, 1.0f);
-    glColor3f(0.0f, 1.0f, 0.0f);   glVertex3f(-1.0f, -1.0f,-1.0f);  glVertex3f(-1.0f, 1.0f,-1.0f);
-    glVertex3f(1.0f,  1.0f,-1.0f); glVertex3f(1.0f, -1.0f,-1.0f);
-    glColor3f(0.0f, 0.0f, 1.0f);   glVertex3f(-1.0f, -1.0f,-1.0f);  glVertex3f(-1.0f,-1.0f, 1.0f);
-    glVertex3f(-1.0f, 1.0f, 1.0f); glVertex3f(-1.0f, 1.0f,-1.0f);
-    glColor3f(1.0f, 1.0f, 0.0f);   glVertex3f(1.0f, -1.0f,-1.0f);   glVertex3f(1.0f, 1.0f,-1.0f);
-    glVertex3f(1.0f,  1.0f, 1.0f); glVertex3f(1.0f,-1.0f, 1.0f);
-    glColor3f(0.0f, 1.0f, 1.0f);   glVertex3f(-1.0f, 1.0f,-1.0f);   glVertex3f(-1.0f, 1.0f, 1.0f);
-    glVertex3f(1.0f,  1.0f, 1.0f); glVertex3f(1.0f, 1.0f,-1.0f);
-    glColor3f(1.0f, 0.0f, 1.0f);   glVertex3f(-1.0f,-1.0f,-1.0f);   glVertex3f(1.0f,-1.0f,-1.0f);
-    glVertex3f(1.0f,-1.0f, 1.0f);  glVertex3f(-1.0f,-1.0f, 1.0f);
-    glEnd();
-
-    cube_angle += 0.5f;
-    if (cube_angle >= 360.0f) {
-        cube_angle -= 360.0f;
-    }
+    
 }
 static void menu_callback(int value) {
     switch (value) {
@@ -184,7 +224,11 @@ static void idle(void) {
     // on se contente de redessiner en continu
     clock_t current_time = clock();
     double elapsed_ms = (double)(current_time - last_frame_time) * 1000.0 / CLOCKS_PER_SEC;
-    
+    update_player_position(0.00001, &player);
+    enemy.h += 0.0001f;
+    if (enemy.h >= 360.0f) enemy.h -= 360.0f;
+    enemy.s = 0.05f;
+    update_player_position(0.00001, &enemy);
     if (elapsed_ms >= FRAME_TIME_MS) {
         last_frame_time = current_time;
         glutPostRedisplay();
@@ -212,6 +256,15 @@ static void special(int key, int x, int y) {
     int altDown = modifiers & GLUT_ACTIVE_ALT;
 
     switch (key) {
+    case GLUT_KEY_LEFT:
+        player.h += 5.0f;
+        break;
+    case GLUT_KEY_RIGHT:
+        player.h -= 5.0f;
+        break;
+    case GLUT_KEY_UP:
+        player.s = 0.1f;
+        break;
     default:
         break;
     }
@@ -222,6 +275,9 @@ static void specialUp(int key, int x, int y) {
     (void)y;
 
     switch (key) {
+    case GLUT_KEY_UP:
+        player.s = 0.0f;
+        break;
     default:
         break;
     }
