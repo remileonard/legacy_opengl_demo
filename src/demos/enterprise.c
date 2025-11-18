@@ -20,20 +20,47 @@
 #define TARGET_FPS 60
 #define FRAME_TIME_MS (1000.0 / TARGET_FPS)
 
+enum entity_type {
+    ENTITY_TYPE_PLAYER,
+    ENTITY_PHASER,
+    ENTITY_TORPEDO,
+    ENTITY_TYPE_ENEMY,
+    ENTITY_BASE,
+};
 typedef struct entity_t {
     float x;
     float y;
     float h; // heading
     float s; // speed
     float m; // speed multiplier
+    enum entity_type type;
+    float life;
+    float energy;
+    float shield;
+    struct entity_t *parent;
 } entity_t;
 
+struct entity_list_t {
+    entity_t *entities;
+    struct entity_list_t *next;
+};
+typedef struct {
+    float x;
+    float y;
+} star_t;
+
+#define STAR_COUNT 400
+#define STAR_EXTENT 20.0f
+static star_t stars[STAR_COUNT];
+static float previous_player_heading = 0.0f;
 static clock_t last_frame_time = 0;
 static int window_width = 800;
 static int window_height = 600;
 static float cube_angle = 0.0f;
-static entity_t player = {0.0f, 0.0f, 0.0f, 0.0f, 1.0f};
-static entity_t enemy = {0.5f, -0.4f, 0.0f, 0.0f, 1.0f};
+static entity_t player = {0.0f, 0.0f, 0.0f, 0.0f, 1.0f, ENTITY_TYPE_PLAYER, -1, -1, -1, NULL};
+static entity_t enemy = {0.5f, -0.4f, 0.0f, 0.0f, 1.0f, ENTITY_TYPE_ENEMY, -1, -1, -1, NULL};
+
+static struct entity_list_t *entity_list_head = NULL;
 
 void (*idlefunc)(void) = NULL;
 
@@ -45,12 +72,103 @@ static void specialUp(int key, int x, int y);
 static void display(void);
 static void initGL(void);
 
-static void draw_bitmap_text_wrapped(int viewport_width,
-                                     int viewport_height,
-                                     float origin_x,
-                                     float origin_y,
-                                     float max_width,
-                                     const char *text) {
+static void init_stars(void) {
+    for (int i = 0; i < STAR_COUNT; ++i) {
+        stars[i].x = ((float)rand() / RAND_MAX - 0.5f) * 40.0f;
+        stars[i].y = ((float)rand() / RAND_MAX - 0.5f) * 40.0f;
+    }
+}
+static void wrap_star(star_t *star) {
+    if (star->x > STAR_EXTENT) star->x -= STAR_EXTENT * 2.0f;
+    else if (star->x < -STAR_EXTENT) star->x += STAR_EXTENT * 2.0f;
+    if (star->y > STAR_EXTENT) star->y -= STAR_EXTENT * 2.0f;
+    else if (star->y < -STAR_EXTENT) star->y += STAR_EXTENT * 2.0f;
+}
+static void update_starfield(float delta_time) {
+    (void)delta_time;
+    float delta_heading = player.h - previous_player_heading;
+    while (delta_heading > 180.0f) delta_heading -= 360.0f;
+    while (delta_heading < -180.0f) delta_heading += 360.0f;
+    float lateral_shift = delta_heading * 0.05f;
+    for (int i = 0; i < STAR_COUNT; ++i) {
+        stars[i].x += lateral_shift;
+        wrap_star(&stars[i]);
+    }
+    previous_player_heading = player.h;
+}
+static void draw_starfield(void) {
+    glPushMatrix();
+    glTranslatef(-player.x * 0.2f, -player.y * 0.2f, -5.0f);
+    glColor3f(1.0f, 1.0f, 1.0f);
+    
+    for (int i = 0; i < STAR_COUNT; ++i) {
+        glPointSize(i%5);
+        glBegin(GL_POINTS);
+        glVertex3f(stars[i].x, stars[i].y, 0.0f);
+        glEnd();
+    }
+    
+    glPopMatrix();
+    glPointSize(1.0f);
+}
+static void remove_entity_from_list(entity_t *to_remove) {
+    if (entity_list_head == NULL || to_remove == NULL) {
+        return;
+    }
+
+    if (entity_list_head->entities == to_remove) {
+        entity_list_head = entity_list_head->next;
+    } else {
+        struct entity_list_t *current = entity_list_head;
+        while (current->next != NULL) {
+            if (current->next->entities == to_remove) {
+                break;
+            }
+            current = current->next;
+        }
+        if (current->next->entities == to_remove) {
+            current->next = current->next->next;
+        }
+    }
+
+    free(to_remove);
+}
+static float distance(entity_t *a, entity_t *b) {
+    float dx = a->x - b->x;
+    float dy = a->y - b->y;
+    return sqrtf(dx * dx + dy * dy);
+}
+static void shoot(entity_t *entity, entity_t *target) {
+    if (entity->energy > 0.0f) {
+        entity->energy -= 1.0f; // recharge energy if negative
+        return;
+    }
+    entity->energy = 200.0f; // shooting costs energy
+    float dx = target->x - entity->x;
+    float dy = target->y - entity->y;
+    float angle = atan2f(dy, dx) * (180.0f / 3.14159265f);
+
+    struct entity_list_t *new_node = (struct entity_list_t *)malloc(sizeof(struct entity_list_t));
+    new_node->entities = (entity_t *)malloc(sizeof(entity_t));
+    new_node->entities->x = entity->x;
+    new_node->entities->y = entity->y;
+    new_node->entities->h = angle+270.0f;
+    new_node->entities->s = 0.1f;
+    new_node->entities->m = 1.0f;
+    new_node->entities->type = ENTITY_PHASER;
+    new_node->entities->life = 40.0f; // lasts for 2 seconds
+    new_node->entities->parent = entity;
+    new_node->next = entity_list_head;
+    entity_list_head = new_node;
+}
+static void draw_bitmap_text_wrapped(
+    int viewport_width,
+    int viewport_height,
+    float origin_x,
+    float origin_y,
+    float max_width,
+    const char *text
+) {
     const float line_height = (float)glutBitmapHeight(GLUT_BITMAP_HELVETICA_18) / (float)viewport_height;
     float cursor_x = origin_x;
     float cursor_y = origin_y;
@@ -80,9 +198,15 @@ static void draw_bitmap_text_wrapped(int viewport_width,
 static void update_player_position(float delta_time, entity_t *entity) {
     // Met à jour la position du joueur en fonction de sa vitesse et de son orientation
     float distance = entity->s * entity->m * delta_time;
-    float radians = 3.14159265f - entity->h * (3.14159265f / 180.0f);
-    entity->x += sinf(radians) * distance;
-    entity->y += cosf(radians) * distance;
+    float radians = (entity->h + 90) * (3.14159265f / 180.0f);
+    entity->x += cosf(radians) * distance;
+    entity->y += sinf(radians) * distance;
+    if (entity->life>0) {
+        entity->life -= delta_time * 5.0f;
+        if (entity->life < 0) {
+            remove_entity_from_list(entity);
+        };
+    }
 }
 static void draw_rect_outline(int x, int y, int width, int height) {
     glBegin(GL_LINE_LOOP);
@@ -136,28 +260,71 @@ static void render_top_left_2d(int viewport_width, int viewport_height) {
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 
+    float bar_width = 0.8f;
+    bar_width =bar_width - (0.8 *(-player.life > 0.0f) ? (-player.life / 100.0f) : 0.0f);
+    glPushMatrix();
+    glTranslatef(0.1f, 0.1f, 0.0f);
     glBegin(GL_QUADS);
-    glColor3f(0.1f, 0.4f, 0.8f);
-    glVertex2f(0.1f, 0.1f);
-    glVertex2f(0.4f, 0.1f);
-    glVertex2f(0.4f, 0.4f);
-    glVertex2f(0.1f, 0.4f);
+    glColor3f(0.0f, 0.8f, 0.0f);
+    glVertex2f(0.0f, 0.0f);
+    glVertex2f(bar_width, 0.0f);
+    glVertex2f(bar_width, 0.1f);
+    glVertex2f(0.0f, 0.1f);
     glEnd();
+    glPopMatrix();
 
+    glPushMatrix();
+    glTranslatef(0.1f, 0.25f, 0.0f);
     glBegin(GL_QUADS);
-    glColor3f(0.8f, 0.4f, 0.1f);
-    glVertex2f(0.6f, 0.2f);
-    glVertex2f(0.9f, 0.2f);
-    glVertex2f(0.9f, 0.5f);
-    glVertex2f(0.6f, 0.5f);
+    glColor3f(0.8f, 0.0f, 0.0f);
+    glVertex2f(0.0f, 0.0f);
+    glVertex2f(0.8f, 0.0f);
+    glVertex2f(0.8f, 0.1f);
+    glVertex2f(0.0f, 0.1f);
     glEnd();
+    glPopMatrix();
+
+    glPushMatrix();
+    glTranslatef(0.1f, 0.40f, 0.0f);
+    glBegin(GL_QUADS);
+    glColor3f(0.0f, 0.0f, 0.8f);
+    glVertex2f(0.0f, 0.0f);
+    glVertex2f(0.8f, 0.0f);
+    glVertex2f(0.8f, 0.1f);
+    glVertex2f(0.0f, 0.1f);
+    glEnd();
+    glPopMatrix();
 
     glColor3f(1.0f, 1.0f, 1.0f);
+    snprintf(
+        buffer,
+        sizeof(buffer),
+        "Player Position: (%.2f, %.2f) Heading: %.2f",
+        player.x,
+        player.y,
+        player.h
+    );
     draw_bitmap_text_wrapped(
         viewport_width,
         viewport_height,
         0.05f,
         0.9f,
+        0.85f,   // largeur autorisée dans [0,1]
+        buffer
+    );
+    snprintf(
+        buffer,
+        sizeof(buffer),
+        "Enemy Position: (%.2f, %.2f) Heading: %.2f",
+        enemy.x,
+        enemy.y,
+        enemy.h
+    );
+    draw_bitmap_text_wrapped(
+        viewport_width,
+        viewport_height,
+        0.05f,
+        0.75f,
         0.85f,   // largeur autorisée dans [0,1]
         buffer
     );
@@ -175,8 +342,24 @@ static void render_top_right_2d(int viewport_width, int viewport_height) {
     
     glLoadIdentity();
 
-    glTranslatef(player.x, player.y, 0.0f);
+    glTranslatef(-player.x, -player.y, 0);
     
+    struct entity_list_t *node = entity_list_head;
+    while (node != NULL) {
+        struct entity_list_t *current = node;
+        glPushMatrix();
+        glTranslatef(current->entities->x, current->entities->y, 0.0f);
+        glRotatef(current->entities->h, 0.0f, 0.0f, 1.0f);
+        glBegin(GL_QUADS);
+        glColor3f(0.0f, 1.0f, 0.0f);
+        glVertex2f(-0.02f, -0.02f);
+        glVertex2f(0.02f, -0.02f);
+        glVertex2f(0.02f, 0.02f);
+        glVertex2f(-0.02f, 0.02f);
+        glEnd();
+        glPopMatrix();
+        node = node->next;
+    }
     glPushMatrix();
     glTranslatef(enemy.x, enemy.y, 0.0f);
     glRotatef(enemy.h, 0.0f, 0.0f, 1.0f);
@@ -189,18 +372,8 @@ static void render_top_right_2d(int viewport_width, int viewport_height) {
     glEnd();
     glPopMatrix();
 
-    glBegin(GL_LINES);
-    glColor3f(0.9f, 0.9f, 0.9f);
-    for (int i = 0; i <= 10; ++i) {
-        float t = i / 10.0f;
-        glVertex2f(t, 0.0f);
-        glVertex2f(t, 1.0f);
-        glVertex2f(0.0f, t);
-        glVertex2f(1.0f, t);
-    }
-    glEnd();
-
-    glTranslatef(-player.x, -player.y, 0.0f);
+    glPushMatrix();
+    glTranslatef(player.x, player.y, 0.0f);
     glRotatef(player.h, 0.0f, 0.0f, 1.0f);
     glBegin(GL_TRIANGLES);
     glColor3f(0.8f, 0.2f, 0.3f);
@@ -208,6 +381,7 @@ static void render_top_right_2d(int viewport_width, int viewport_height) {
     glVertex2f(0.05f, -0.05f);
     glVertex2f(0.0f, 0.05f);
     glEnd();
+    glPopMatrix();
 }
 
 static void render_bottom_3d(int viewport_width, int viewport_height) {
@@ -221,24 +395,103 @@ static void render_bottom_3d(int viewport_width, int viewport_height) {
     gluPerspective(
         45.0,
         (viewport_height > 0) ? (double)viewport_width / (double)viewport_height : 1.0,
-        0.1,
+        0.01,
         100.0
     );
+    glLightfv(GL_LIGHT0, GL_POSITION, (GLfloat[]){0.0f, 0.0f, 1.0f, 0.0f});
+    glEnable(GL_LIGHT0);
+    glEnable(GL_LIGHTING);
+    glEnable(GL_COLOR_MATERIAL);
+    glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
+    draw_starfield();
     // XY -> plan horizontal
     glRotatef(-90.0f, 1.0f, 0.0f, 0.0f);
     glRotatef(-player.h, 0.0f, 0.0f, 1.0f);
-    glTranslatef(player.x, player.y, 0.0f);
+    glTranslatef(-player.x, -player.y, 0.0f);
 
     glPushMatrix();
-    
     glTranslatef(enemy.x, enemy.y, 0.0f);
+    glColor3f(1.0f, 0.0f, 0.0f);
     glRotatef(enemy.h, 0.0f, 0.0f, 1.0f);
     glutSolidCube(0.1f);
     glPopMatrix();
-
     
+    struct entity_list_t *node = entity_list_head;
+    while (node != NULL) {
+        struct entity_list_t *current = node;
+        glPushMatrix();
+        glTranslatef(current->entities->x, current->entities->y, 0.0f);
+        glColor3f(0.0f, 1.0f, 0.0f);
+        glScalef(0.002f, 0.002f, 0.001f);
+        glutSolidDodecahedron();    
+        glPopMatrix();
+        node = node->next;
+    }
+
+    // Crosshair overlay (écran)
+    glMatrixMode(GL_PROJECTION);
+    glPushMatrix();
+    glLoadIdentity();
+    gluOrtho2D(-1.0, 1.0, -1.0, 1.0);
+    glMatrixMode(GL_MODELVIEW);
+    glPushMatrix();
+    glLoadIdentity();
+    glDisable(GL_DEPTH_TEST);
+    glColor3f(1.0f, 1.0f, 1.0f);
+    
+    glBegin(GL_LINES);
+    glVertex2f(0.0f, 0.2f);
+    glVertex2f(0.0f, 0.04f);
+    glEnd();
+    
+    
+    glBegin(GL_LINES);
+    glVertex2f(0.02f, 0.0f);
+    glVertex2f(0.1f, 0.0f);
+    glEnd();
+    
+    glBegin(GL_LINES);
+    glVertex2f(-0.02f, 0.0f);
+    glVertex2f(-0.1f, 0.0f);
+    glEnd();
+    
+    glBegin(GL_LINES);
+    glVertex2f(0.0f, -0.2f);
+    glVertex2f(0.0f, -0.04f);
+    glEnd();
+    
+    glEnable(GL_DEPTH_TEST);
+    glPopMatrix();
+    glMatrixMode(GL_PROJECTION);
+    glPopMatrix();
+    glMatrixMode(GL_MODELVIEW);
+    glDisable(GL_LIGHTING);
+}
+static void game_loop(double delta_time) {
+    update_player_position(delta_time, &player);
+    update_starfield((float)delta_time);
+    enemy.h += 0.1f;
+    if (enemy.h >= 360.0f) enemy.h -= 360.0f;
+    enemy.s = 0.05f;
+    update_player_position(delta_time, &enemy);
+    if (distance(&enemy, &player) < 0.5f) {
+        shoot(&enemy, &player);
+    }
+    struct entity_list_t *node = entity_list_head;
+    while (node != NULL) {
+        update_player_position(delta_time, node->entities);
+        if (node->entities->parent != &player && distance(node->entities, &player) < 0.05f && node->entities->type == ENTITY_PHASER) {
+            player.life -= 1.0f;
+            remove_entity_from_list(node->entities);
+        }
+        if (node->entities->parent != &enemy && distance(node->entities, &enemy) < 0.05f && node->entities->type == ENTITY_PHASER) {
+            enemy.life -= 1.0f;
+            remove_entity_from_list(node->entities);
+        }
+        node = node->next;
+    }
 }
 static void menu_callback(int value) {
     switch (value) {
@@ -260,13 +513,10 @@ static void idle(void) {
     // on se contente de redessiner en continu
     clock_t current_time = clock();
     double elapsed_ms = (double)(current_time - last_frame_time) * 1000.0 / CLOCKS_PER_SEC;
-    update_player_position(0.00001, &player);
-    enemy.h += 0.0001f;
-    if (enemy.h >= 360.0f) enemy.h -= 360.0f;
-    enemy.s = 0.05f;
-    update_player_position(0.00001, &enemy);
+    
     if (elapsed_ms >= FRAME_TIME_MS) {
         last_frame_time = current_time;
+        game_loop(elapsed_ms / 1000.0);
         glutPostRedisplay();
     }
 }
@@ -279,6 +529,19 @@ static void keyboard(unsigned char key, int x, int y) {
     case 27: // ESC
         glutLeaveMainLoop();
         break;
+    case 32: // SPACE
+        struct entity_list_t *new_node = (struct entity_list_t *)malloc(sizeof(struct entity_list_t));
+        new_node->entities = (entity_t *)malloc(sizeof(entity_t));
+        new_node->entities->x = player.x;
+        new_node->entities->y = player.y;
+        new_node->entities->h = player.h;
+        new_node->entities->s = 0.2f;
+        new_node->entities->m = 1.0f;
+        new_node->entities->type = ENTITY_PHASER;
+        new_node->entities->life = 10;
+        new_node->entities->parent = &player;
+        new_node->next = entity_list_head;
+        entity_list_head = new_node;
     default:
         break;
     }
@@ -352,7 +615,7 @@ static void initGL(void) {
     glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
     glLoadIdentity();
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-
+    init_stars();
     idlefunc = NULL;
 }
 int main(int argc, char **argv) {
