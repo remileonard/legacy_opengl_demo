@@ -201,6 +201,7 @@ static void update_player_position(float delta_time, entity_t *entity) {
     float radians = (entity->h + 90) * (3.14159265f / 180.0f);
     entity->x += cosf(radians) * distance;
     entity->y += sinf(radians) * distance;
+    
     if (entity->life>0) {
         entity->life -= delta_time * 5.0f;
         if (entity->life < 0) {
@@ -329,7 +330,147 @@ static void render_top_left_2d(int viewport_width, int viewport_height) {
         buffer
     );
 }
-
+static void draw_spaceship_top_view(void) {
+    // Corps principal - triangle vue de dessus
+    glBegin(GL_TRIANGLES);
+    glColor3f(0.6f, 0.6f, 0.7f);
+    glVertex2f(0.0f, 0.05f);        // Pointe avant
+    glVertex2f(-0.03f, -0.05f);     // Arrière gauche
+    glVertex2f(0.03f, -0.05f);      // Arrière droit
+    glEnd();
+    
+    // Cockpit - petit triangle au centre avant
+    glBegin(GL_TRIANGLES);
+    glColor3f(0.2f, 0.5f, 0.8f);
+    glVertex2f(0.0f, 0.03f);
+    glVertex2f(-0.01f, 0.0f);
+    glVertex2f(0.01f, 0.0f);
+    glEnd();
+    
+    // Moteur gauche
+    glBegin(GL_TRIANGLES);
+    glColor3f(0.5f, 0.5f, 0.6f);
+    glVertex2f(-0.025f, -0.03f);
+    glVertex2f(-0.035f, -0.06f);
+    glVertex2f(-0.015f, -0.06f);
+    glEnd();
+    
+    // Flamme moteur gauche
+    glBegin(GL_TRIANGLES);
+    glColor3f(1.0f, 0.3f, 0.0f);
+    glVertex2f(-0.025f, -0.06f);
+    glVertex2f(-0.03f, -0.08f);
+    glVertex2f(-0.02f, -0.08f);
+    glEnd();
+    
+    // Moteur droit
+    glBegin(GL_TRIANGLES);
+    glColor3f(0.5f, 0.5f, 0.6f);
+    glVertex2f(0.025f, -0.03f);
+    glVertex2f(0.035f, -0.06f);
+    glVertex2f(0.015f, -0.06f);
+    glEnd();
+    
+    // Flamme moteur droit
+    glBegin(GL_TRIANGLES);
+    glColor3f(1.0f, 0.3f, 0.0f);
+    glVertex2f(0.025f, -0.06f);
+    glVertex2f(0.03f, -0.08f);
+    glVertex2f(0.02f, -0.08f);
+    glEnd();
+}
+static void draw_player_ship_top_view(void) {
+    // Corps principal - forme de flèche allongée
+    glBegin(GL_TRIANGLES);
+    glColor3f(0.8f, 0.3f, 0.3f);
+    glVertex2f(0.0f, 0.07f);        // Pointe avant longue
+    glVertex2f(-0.02f, -0.01f);     // Milieu gauche
+    glVertex2f(0.02f, -0.01f);      // Milieu droit
+    glEnd();
+    
+    // Section arrière du corps
+    glBegin(GL_QUADS);
+    glColor3f(0.7f, 0.2f, 0.2f);
+    glVertex2f(-0.02f, -0.01f);
+    glVertex2f(0.02f, -0.01f);
+    glVertex2f(0.015f, -0.04f);
+    glVertex2f(-0.015f, -0.04f);
+    glEnd();
+    
+    // Aile gauche
+    glBegin(GL_TRIANGLES);
+    glColor3f(0.6f, 0.25f, 0.25f);
+    glVertex2f(-0.02f, 0.01f);
+    glVertex2f(-0.06f, 0.0f);
+    glVertex2f(-0.04f, -0.02f);
+    glEnd();
+    
+    // Aile droite
+    glBegin(GL_TRIANGLES);
+    glColor3f(0.6f, 0.25f, 0.25f);
+    glVertex2f(0.02f, 0.01f);
+    glVertex2f(0.04f, -0.02f);
+    glVertex2f(0.06f, 0.0f);
+    glEnd();
+    
+    // Cockpit - capsule au centre
+    glBegin(GL_QUADS);
+    glColor3f(0.3f, 0.6f, 0.9f);
+    glVertex2f(-0.008f, 0.02f);
+    glVertex2f(0.008f, 0.02f);
+    glVertex2f(0.008f, 0.0f);
+    glVertex2f(-0.008f, 0.0f);
+    glEnd();
+    
+    // Réacteur gauche
+    glBegin(GL_QUADS);
+    glColor3f(0.5f, 0.5f, 0.6f);
+    glVertex2f(-0.025f, -0.04f);
+    glVertex2f(-0.015f, -0.04f);
+    glVertex2f(-0.015f, -0.05f);
+    glVertex2f(-0.025f, -0.05f);
+    glEnd();
+    
+    // Flamme réacteur gauche
+    glBegin(GL_TRIANGLES);
+    glColor3f(1.0f, 0.5f, 0.0f);
+    glVertex2f(-0.025f, -0.05f);
+    glVertex2f(-0.015f, -0.05f);
+    glVertex2f(-0.02f, -0.07f);
+    glEnd();
+    
+    // Réacteur droit
+    glBegin(GL_QUADS);
+    glColor3f(0.5f, 0.5f, 0.6f);
+    glVertex2f(0.015f, -0.04f);
+    glVertex2f(0.025f, -0.04f);
+    glVertex2f(0.025f, -0.05f);
+    glVertex2f(0.015f, -0.05f);
+    glEnd();
+    
+    // Flamme réacteur droit
+    glBegin(GL_TRIANGLES);
+    glColor3f(1.0f, 0.5f, 0.0f);
+    glVertex2f(0.015f, -0.05f);
+    glVertex2f(0.025f, -0.05f);
+    glVertex2f(0.02f, -0.07f);
+    glEnd();
+    
+    // Canons laser sur les ailes (petits rectangles)
+    glBegin(GL_QUADS);
+    glColor3f(0.2f, 0.8f, 0.2f);
+    // Canon gauche
+    glVertex2f(-0.05f, 0.0f);
+    glVertex2f(-0.045f, 0.0f);
+    glVertex2f(-0.045f, -0.015f);
+    glVertex2f(-0.05f, -0.015f);
+    // Canon droit
+    glVertex2f(0.045f, 0.0f);
+    glVertex2f(0.05f, 0.0f);
+    glVertex2f(0.05f, -0.015f);
+    glVertex2f(0.045f, -0.015f);
+    glEnd();
+}
 static void render_top_right_2d(int viewport_width, int viewport_height) {
     (void)viewport_width;
     (void)viewport_height;
@@ -363,27 +504,158 @@ static void render_top_right_2d(int viewport_width, int viewport_height) {
     glPushMatrix();
     glTranslatef(enemy.x, enemy.y, 0.0f);
     glRotatef(enemy.h, 0.0f, 0.0f, 1.0f);
-    glBegin(GL_QUADS);
-    glColor3f(1.0f, 0.0f, 0.0f);
-    glVertex2f(-0.05f, -0.05f);
-    glVertex2f(0.05f, -0.05f);
-    glVertex2f(0.05f, 0.05f);
-    glVertex2f(-0.05f, 0.05f);
-    glEnd();
+    draw_spaceship_top_view();
     glPopMatrix();
 
     glPushMatrix();
     glTranslatef(player.x, player.y, 0.0f);
     glRotatef(player.h, 0.0f, 0.0f, 1.0f);
+    draw_player_ship_top_view();
+    glPopMatrix();
+}
+static void draw_spaceship(void) {
+    // Corps principal - forme de losange avec épaisseur
+    float body_height = 0.03f;
+    
+    // Face supérieure du corps
     glBegin(GL_TRIANGLES);
-    glColor3f(0.8f, 0.2f, 0.3f);
-    glVertex2f(-0.05f, -0.05f);
-    glVertex2f(0.05f, -0.05f);
-    glVertex2f(0.0f, 0.05f);
+    glColor3f(0.6f, 0.6f, 0.7f);
+    glVertex3f(0.0f, 0.1f, 0.0f);           // Pointe avant
+    glVertex3f(-0.05f, -0.05f, 0.0f);       // Arrière gauche
+    glVertex3f(0.0f, 0.0f, body_height);    // Centre haut
+    
+    glVertex3f(0.0f, 0.1f, 0.0f);
+    glVertex3f(0.0f, 0.0f, body_height);
+    glVertex3f(0.05f, -0.05f, 0.0f);        // Arrière droit
+    
+    glVertex3f(-0.05f, -0.05f, 0.0f);
+    glVertex3f(0.05f, -0.05f, 0.0f);
+    glVertex3f(0.0f, 0.0f, body_height);
+    glEnd();
+    
+    // Face inférieure du corps
+    glBegin(GL_TRIANGLES);
+    glColor3f(0.4f, 0.4f, 0.5f);
+    glVertex3f(0.0f, 0.1f, 0.0f);
+    glVertex3f(0.0f, 0.0f, -body_height);
+    glVertex3f(-0.05f, -0.05f, 0.0f);
+    
+    glVertex3f(0.0f, 0.1f, 0.0f);
+    glVertex3f(0.05f, -0.05f, 0.0f);
+    glVertex3f(0.0f, 0.0f, -body_height);
+    
+    glVertex3f(-0.05f, -0.05f, 0.0f);
+    glVertex3f(0.0f, 0.0f, -body_height);
+    glVertex3f(0.05f, -0.05f, 0.0f);
+    glEnd();
+    
+    // Côtés du corps
+    glBegin(GL_TRIANGLES);
+    glColor3f(0.5f, 0.5f, 0.6f);
+    // Avant gauche
+    glVertex3f(0.0f, 0.1f, 0.0f);
+    glVertex3f(0.0f, 0.0f, body_height);
+    glVertex3f(0.0f, 0.0f, -body_height);
+    
+    // Arrière
+    glVertex3f(-0.05f, -0.05f, 0.0f);
+    glVertex3f(0.0f, 0.0f, -body_height);
+    glVertex3f(0.0f, 0.0f, body_height);
+    
+    glVertex3f(0.05f, -0.05f, 0.0f);
+    glVertex3f(0.0f, 0.0f, body_height);
+    glVertex3f(0.0f, 0.0f, -body_height);
+    glEnd();
+    
+    
+    // Cockpit - pyramide plus prononcée
+    float cockpit_height = 0.04f;
+    glBegin(GL_TRIANGLES);
+    glColor3f(0.2f, 0.5f, 0.8f);
+    // Sommet vers l'avant
+    glVertex3f(0.01f, 0.06f, cockpit_height);
+    glVertex3f(-0.015f, 0.02f, 0.0f);
+    glVertex3f(0.015f, 0.02f, 0.0f);
+    
+    glVertex3f(0.01f, 0.06f, cockpit_height);
+    glVertex3f(-0.015f, 0.02f, 0.0f);
+    glVertex3f(0.0f, 0.0f, 0.0f);
+    
+    glVertex3f(0.01f, 0.06f, cockpit_height);
+    glVertex3f(0.0f, 0.0f, 0.0f);
+    glVertex3f(0.015f, 0.02f, 0.0f);
+    
+    // Base
+    glColor3f(0.15f, 0.4f, 0.7f);
+    glVertex3f(-0.015f, 0.02f, 0.0f);
+    glVertex3f(0.015f, 0.02f, 0.0f);
+    glVertex3f(0.0f, 0.0f, 0.0f);
+    glEnd();
+    
+    // Moteurs - cylindres épais
+    float motor_radius = 0.012f;
+    float motor_length = 0.04f;
+    
+    // Moteur gauche
+    glPushMatrix();
+    glTranslatef(-0.03f, -0.06f, 0.0f);
+    glColor3f(1.0f, 0.3f, 0.0f);
+    glBegin(GL_TRIANGLES);
+    // Arrière (flamme)
+    glVertex3f(-motor_radius, -motor_length, 0.0f);
+    glVertex3f(motor_radius, -motor_length, 0.0f);
+    glVertex3f(0.0f, -motor_length, motor_radius);
+    
+    glVertex3f(-motor_radius, -motor_length, 0.0f);
+    glVertex3f(0.0f, -motor_length, motor_radius);
+    glVertex3f(0.0f, -motor_length, -motor_radius);
+    
+    glVertex3f(motor_radius, -motor_length, 0.0f);
+    glVertex3f(0.0f, -motor_length, -motor_radius);
+    glVertex3f(0.0f, -motor_length, motor_radius);
+    
+    // Corps
+    glColor3f(0.6f, 0.6f, 0.7f);
+    glVertex3f(-motor_radius, 0.0f, 0.0f);
+    glVertex3f(-motor_radius, -motor_length, 0.0f);
+    glVertex3f(0.0f, 0.0f, motor_radius);
+    
+    glVertex3f(motor_radius, 0.0f, 0.0f);
+    glVertex3f(0.0f, 0.0f, motor_radius);
+    glVertex3f(motor_radius, -motor_length, 0.0f);
+    glEnd();
+    glPopMatrix();
+    
+    // Moteur droit
+    glPushMatrix();
+    glTranslatef(0.03f, -0.06f, 0.0f);
+    glColor3f(1.0f, 0.3f, 0.0f);
+    glBegin(GL_TRIANGLES);
+    // Arrière (flamme)
+    glVertex3f(-motor_radius, -motor_length, 0.0f);
+    glVertex3f(motor_radius, -motor_length, 0.0f);
+    glVertex3f(0.0f, -motor_length, motor_radius);
+    
+    glVertex3f(-motor_radius, -motor_length, 0.0f);
+    glVertex3f(0.0f, -motor_length, motor_radius);
+    glVertex3f(0.0f, -motor_length, -motor_radius);
+    
+    glVertex3f(motor_radius, -motor_length, 0.0f);
+    glVertex3f(0.0f, -motor_length, -motor_radius);
+    glVertex3f(0.0f, -motor_length, motor_radius);
+    
+    // Corps
+    glColor3f(0.6f, 0.6f, 0.7f);
+    glVertex3f(-motor_radius, 0.0f, 0.0f);
+    glVertex3f(-motor_radius, -motor_length, 0.0f);
+    glVertex3f(0.0f, 0.0f, motor_radius);
+    
+    glVertex3f(motor_radius, 0.0f, 0.0f);
+    glVertex3f(0.0f, 0.0f, motor_radius);
+    glVertex3f(motor_radius, -motor_length, 0.0f);
     glEnd();
     glPopMatrix();
 }
-
 static void render_bottom_3d(int viewport_width, int viewport_height) {
     if (viewport_height <= 0) {
         return;
@@ -415,7 +687,7 @@ static void render_bottom_3d(int viewport_width, int viewport_height) {
     glTranslatef(enemy.x, enemy.y, 0.0f);
     glColor3f(1.0f, 0.0f, 0.0f);
     glRotatef(enemy.h, 0.0f, 0.0f, 1.0f);
-    glutSolidCube(0.1f);
+    draw_spaceship();
     glPopMatrix();
     
     struct entity_list_t *node = entity_list_head;
