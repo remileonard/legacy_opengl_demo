@@ -355,14 +355,6 @@ static void draw_spaceship_top_view(void) {
     glVertex2f(-0.015f, -0.06f);
     glEnd();
     
-    // Flamme moteur gauche
-    glBegin(GL_TRIANGLES);
-    glColor3f(1.0f, 0.3f, 0.0f);
-    glVertex2f(-0.025f, -0.06f);
-    glVertex2f(-0.03f, -0.08f);
-    glVertex2f(-0.02f, -0.08f);
-    glEnd();
-    
     // Moteur droit
     glBegin(GL_TRIANGLES);
     glColor3f(0.5f, 0.5f, 0.6f);
@@ -371,13 +363,6 @@ static void draw_spaceship_top_view(void) {
     glVertex2f(0.015f, -0.06f);
     glEnd();
     
-    // Flamme moteur droit
-    glBegin(GL_TRIANGLES);
-    glColor3f(1.0f, 0.3f, 0.0f);
-    glVertex2f(0.025f, -0.06f);
-    glVertex2f(0.03f, -0.08f);
-    glVertex2f(0.02f, -0.08f);
-    glEnd();
 }
 static void draw_player_ship_top_view(void) {
     // Corps principal - forme de flèche allongée
@@ -395,22 +380,6 @@ static void draw_player_ship_top_view(void) {
     glVertex2f(0.02f, -0.01f);
     glVertex2f(0.015f, -0.04f);
     glVertex2f(-0.015f, -0.04f);
-    glEnd();
-    
-    // Aile gauche
-    glBegin(GL_TRIANGLES);
-    glColor3f(0.6f, 0.25f, 0.25f);
-    glVertex2f(-0.02f, 0.01f);
-    glVertex2f(-0.06f, 0.0f);
-    glVertex2f(-0.04f, -0.02f);
-    glEnd();
-    
-    // Aile droite
-    glBegin(GL_TRIANGLES);
-    glColor3f(0.6f, 0.25f, 0.25f);
-    glVertex2f(0.02f, 0.01f);
-    glVertex2f(0.04f, -0.02f);
-    glVertex2f(0.06f, 0.0f);
     glEnd();
     
     // Cockpit - capsule au centre
@@ -431,13 +400,6 @@ static void draw_player_ship_top_view(void) {
     glVertex2f(-0.025f, -0.05f);
     glEnd();
     
-    // Flamme réacteur gauche
-    glBegin(GL_TRIANGLES);
-    glColor3f(1.0f, 0.5f, 0.0f);
-    glVertex2f(-0.025f, -0.05f);
-    glVertex2f(-0.015f, -0.05f);
-    glVertex2f(-0.02f, -0.07f);
-    glEnd();
     
     // Réacteur droit
     glBegin(GL_QUADS);
@@ -446,29 +408,6 @@ static void draw_player_ship_top_view(void) {
     glVertex2f(0.025f, -0.04f);
     glVertex2f(0.025f, -0.05f);
     glVertex2f(0.015f, -0.05f);
-    glEnd();
-    
-    // Flamme réacteur droit
-    glBegin(GL_TRIANGLES);
-    glColor3f(1.0f, 0.5f, 0.0f);
-    glVertex2f(0.015f, -0.05f);
-    glVertex2f(0.025f, -0.05f);
-    glVertex2f(0.02f, -0.07f);
-    glEnd();
-    
-    // Canons laser sur les ailes (petits rectangles)
-    glBegin(GL_QUADS);
-    glColor3f(0.2f, 0.8f, 0.2f);
-    // Canon gauche
-    glVertex2f(-0.05f, 0.0f);
-    glVertex2f(-0.045f, 0.0f);
-    glVertex2f(-0.045f, -0.015f);
-    glVertex2f(-0.05f, -0.015f);
-    // Canon droit
-    glVertex2f(0.045f, 0.0f);
-    glVertex2f(0.05f, 0.0f);
-    glVertex2f(0.05f, -0.015f);
-    glVertex2f(0.045f, -0.015f);
     glEnd();
 }
 static void render_top_right_2d(int viewport_width, int viewport_height) {
