@@ -39,6 +39,7 @@ typedef struct entity_t {
     float shield;
     struct entity_t *parent;
     void (*automat)(struct entity_t *self, double delta_time);
+    int marked_for_removal;
 } entity_t;
 
 struct entity_list_t {
@@ -93,9 +94,34 @@ static void initGL(void);
 static void enemi_automaton(entity_t *self, double delta_time);
 static void init_enemies(void);
 
-static entity_t player = {0.0f, 0.0f, 0.0f, 0.0f, 1.0f, ENTITY_TYPE_PLAYER, -1, -1, -1, NULL, NULL};
-static entity_t enemy = {0.5f, -0.4f, 0.0f, 0.0f, 1.0f, ENTITY_TYPE_ENEMY, -1, -1, -1, NULL, enemi_automaton};
+static entity_t player = {0.0f, 0.0f, 0.0f, 0.0f, 1.0f, ENTITY_TYPE_PLAYER, -1, -1, -1, NULL, NULL, 0};
 
+
+static void cleanup_marked_entities(void) {
+    struct entity_list_t *current = entity_list_head;
+    struct entity_list_t *prev = NULL;
+    
+    while (current != NULL) {
+        struct entity_list_t *next = current->next;
+        
+        if (current->entities->marked_for_removal) {
+            // Détacher du chaînage
+            if (prev == NULL) {
+                entity_list_head = next;
+            } else {
+                prev->next = next;
+            }
+            
+            // Libérer la mémoire
+            free(current->entities);
+            free(current);
+        } else {
+            prev = current;
+        }
+        
+        current = next;
+    }
+}
 static void enemi_automaton(entity_t *self, double delta_time) {
     if (distance(self, &player) > 0.5f) {
         // move towards player
@@ -203,6 +229,7 @@ static void shoot(entity_t *entity, entity_t *target) {
     new_node->entities->life = 40.0f; // lasts for 2 seconds
     new_node->entities->parent = entity;
     new_node->entities->automat = NULL;
+    new_node->entities->marked_for_removal = 0;
     new_node->next = entity_list_head;
     entity_list_head = new_node;
 }
@@ -358,22 +385,6 @@ static void render_top_left_2d(int viewport_width, int viewport_height) {
         0.85f,   // largeur autorisée dans [0,1]
         buffer
     );
-    snprintf(
-        buffer,
-        sizeof(buffer),
-        "Enemy Position: (%.2f, %.2f) Heading: %.2f",
-        enemy.x,
-        enemy.y,
-        enemy.h
-    );
-    draw_bitmap_text_wrapped(
-        viewport_width,
-        viewport_height,
-        0.05f,
-        0.75f,
-        0.85f,   // largeur autorisée dans [0,1]
-        buffer
-    );
 }
 static void draw_spaceship_top_view(void) {
     // Corps principal - triangle vue de dessus
@@ -501,17 +512,35 @@ static void draw_spaceship(void) {
     // Corps principal - forme de losange avec épaisseur
     float body_height = 0.03f;
     
-    // Face supérieure du corps
+    // Fonction helper pour calculer la normale d'un triangle
+    #define CALC_NORMAL(v1x, v1y, v1z, v2x, v2y, v2z, v3x, v3y, v3z) \
+        { \
+            float ux = v2x - v1x, uy = v2y - v1y, uz = v2z - v1z; \
+            float vx = v3x - v1x, vy = v3y - v1y, vz = v3z - v1z; \
+            float nx = uy * vz - uz * vy; \
+            float ny = uz * vx - ux * vz; \
+            float nz = ux * vy - uy * vx; \
+            float len = sqrtf(nx*nx + ny*ny + nz*nz); \
+            if (len > 0.0001f) { nx /= len; ny /= len; nz /= len; } \
+            glNormal3f(nx, ny, nz); \
+        }
+    
+    // Face supérieure du corps - triangle avant gauche
     glBegin(GL_TRIANGLES);
     glColor3f(0.6f, 0.6f, 0.7f);
-    glVertex3f(0.0f, 0.1f, 0.0f);           // Pointe avant
-    glVertex3f(-0.05f, -0.05f, 0.0f);       // Arrière gauche
-    glVertex3f(0.0f, 0.0f, body_height);    // Centre haut
+    CALC_NORMAL(0.0f, 0.1f, 0.0f, -0.05f, -0.05f, 0.0f, 0.0f, 0.0f, body_height);
+    glVertex3f(0.0f, 0.1f, 0.0f);
+    glVertex3f(-0.05f, -0.05f, 0.0f);
+    glVertex3f(0.0f, 0.0f, body_height);
     
+    // Face supérieure - triangle avant droit
+    CALC_NORMAL(0.0f, 0.1f, 0.0f, 0.0f, 0.0f, body_height, 0.05f, -0.05f, 0.0f);
     glVertex3f(0.0f, 0.1f, 0.0f);
     glVertex3f(0.0f, 0.0f, body_height);
-    glVertex3f(0.05f, -0.05f, 0.0f);        // Arrière droit
+    glVertex3f(0.05f, -0.05f, 0.0f);
     
+    // Face supérieure - triangle arrière
+    CALC_NORMAL(-0.05f, -0.05f, 0.0f, 0.05f, -0.05f, 0.0f, 0.0f, 0.0f, body_height);
     glVertex3f(-0.05f, -0.05f, 0.0f);
     glVertex3f(0.05f, -0.05f, 0.0f);
     glVertex3f(0.0f, 0.0f, body_height);
@@ -520,14 +549,17 @@ static void draw_spaceship(void) {
     // Face inférieure du corps
     glBegin(GL_TRIANGLES);
     glColor3f(0.4f, 0.4f, 0.5f);
+    CALC_NORMAL(0.0f, 0.1f, 0.0f, 0.0f, 0.0f, -body_height, -0.05f, -0.05f, 0.0f);
     glVertex3f(0.0f, 0.1f, 0.0f);
     glVertex3f(0.0f, 0.0f, -body_height);
     glVertex3f(-0.05f, -0.05f, 0.0f);
     
+    CALC_NORMAL(0.0f, 0.1f, 0.0f, 0.05f, -0.05f, 0.0f, 0.0f, 0.0f, -body_height);
     glVertex3f(0.0f, 0.1f, 0.0f);
     glVertex3f(0.05f, -0.05f, 0.0f);
     glVertex3f(0.0f, 0.0f, -body_height);
     
+    CALC_NORMAL(-0.05f, -0.05f, 0.0f, 0.0f, 0.0f, -body_height, 0.05f, -0.05f, 0.0f);
     glVertex3f(-0.05f, -0.05f, 0.0f);
     glVertex3f(0.0f, 0.0f, -body_height);
     glVertex3f(0.05f, -0.05f, 0.0f);
@@ -537,15 +569,18 @@ static void draw_spaceship(void) {
     glBegin(GL_TRIANGLES);
     glColor3f(0.5f, 0.5f, 0.6f);
     // Avant gauche
+    CALC_NORMAL(0.0f, 0.1f, 0.0f, 0.0f, 0.0f, body_height, 0.0f, 0.0f, -body_height);
     glVertex3f(0.0f, 0.1f, 0.0f);
     glVertex3f(0.0f, 0.0f, body_height);
     glVertex3f(0.0f, 0.0f, -body_height);
     
     // Arrière
+    CALC_NORMAL(-0.05f, -0.05f, 0.0f, 0.0f, 0.0f, -body_height, 0.0f, 0.0f, body_height);
     glVertex3f(-0.05f, -0.05f, 0.0f);
     glVertex3f(0.0f, 0.0f, -body_height);
     glVertex3f(0.0f, 0.0f, body_height);
     
+    CALC_NORMAL(0.05f, -0.05f, 0.0f, 0.0f, 0.0f, body_height, 0.0f, 0.0f, -body_height);
     glVertex3f(0.05f, -0.05f, 0.0f);
     glVertex3f(0.0f, 0.0f, body_height);
     glVertex3f(0.0f, 0.0f, -body_height);
@@ -557,20 +592,24 @@ static void draw_spaceship(void) {
     glBegin(GL_TRIANGLES);
     glColor3f(0.2f, 0.5f, 0.8f);
     // Sommet vers l'avant
+    CALC_NORMAL(0.01f, 0.06f, cockpit_height, -0.015f, 0.02f, 0.0f, 0.015f, 0.02f, 0.0f);
     glVertex3f(0.01f, 0.06f, cockpit_height);
     glVertex3f(-0.015f, 0.02f, 0.0f);
     glVertex3f(0.015f, 0.02f, 0.0f);
     
+    CALC_NORMAL(0.01f, 0.06f, cockpit_height, -0.015f, 0.02f, 0.0f, 0.0f, 0.0f, 0.0f);
     glVertex3f(0.01f, 0.06f, cockpit_height);
     glVertex3f(-0.015f, 0.02f, 0.0f);
     glVertex3f(0.0f, 0.0f, 0.0f);
     
+    CALC_NORMAL(0.01f, 0.06f, cockpit_height, 0.0f, 0.0f, 0.0f, 0.015f, 0.02f, 0.0f);
     glVertex3f(0.01f, 0.06f, cockpit_height);
     glVertex3f(0.0f, 0.0f, 0.0f);
     glVertex3f(0.015f, 0.02f, 0.0f);
     
     // Base
     glColor3f(0.15f, 0.4f, 0.7f);
+    CALC_NORMAL(-0.015f, 0.02f, 0.0f, 0.015f, 0.02f, 0.0f, 0.0f, 0.0f, 0.0f);
     glVertex3f(-0.015f, 0.02f, 0.0f);
     glVertex3f(0.015f, 0.02f, 0.0f);
     glVertex3f(0.0f, 0.0f, 0.0f);
@@ -586,24 +625,29 @@ static void draw_spaceship(void) {
     glColor3f(1.0f, 0.3f, 0.0f);
     glBegin(GL_TRIANGLES);
     // Arrière (flamme)
+    CALC_NORMAL(-motor_radius, -motor_length, 0.0f, motor_radius, -motor_length, 0.0f, 0.0f, -motor_length, motor_radius);
     glVertex3f(-motor_radius, -motor_length, 0.0f);
     glVertex3f(motor_radius, -motor_length, 0.0f);
     glVertex3f(0.0f, -motor_length, motor_radius);
     
+    CALC_NORMAL(-motor_radius, -motor_length, 0.0f, 0.0f, -motor_length, motor_radius, 0.0f, -motor_length, -motor_radius);
     glVertex3f(-motor_radius, -motor_length, 0.0f);
     glVertex3f(0.0f, -motor_length, motor_radius);
     glVertex3f(0.0f, -motor_length, -motor_radius);
     
+    CALC_NORMAL(motor_radius, -motor_length, 0.0f, 0.0f, -motor_length, -motor_radius, 0.0f, -motor_length, motor_radius);
     glVertex3f(motor_radius, -motor_length, 0.0f);
     glVertex3f(0.0f, -motor_length, -motor_radius);
     glVertex3f(0.0f, -motor_length, motor_radius);
     
     // Corps
     glColor3f(0.6f, 0.6f, 0.7f);
+    CALC_NORMAL(-motor_radius, 0.0f, 0.0f, -motor_radius, -motor_length, 0.0f, 0.0f, 0.0f, motor_radius);
     glVertex3f(-motor_radius, 0.0f, 0.0f);
     glVertex3f(-motor_radius, -motor_length, 0.0f);
     glVertex3f(0.0f, 0.0f, motor_radius);
     
+    CALC_NORMAL(motor_radius, 0.0f, 0.0f, 0.0f, 0.0f, motor_radius, motor_radius, -motor_length, 0.0f);
     glVertex3f(motor_radius, 0.0f, 0.0f);
     glVertex3f(0.0f, 0.0f, motor_radius);
     glVertex3f(motor_radius, -motor_length, 0.0f);
@@ -616,29 +660,36 @@ static void draw_spaceship(void) {
     glColor3f(1.0f, 0.3f, 0.0f);
     glBegin(GL_TRIANGLES);
     // Arrière (flamme)
+    CALC_NORMAL(-motor_radius, -motor_length, 0.0f, motor_radius, -motor_length, 0.0f, 0.0f, -motor_length, motor_radius);
     glVertex3f(-motor_radius, -motor_length, 0.0f);
     glVertex3f(motor_radius, -motor_length, 0.0f);
     glVertex3f(0.0f, -motor_length, motor_radius);
     
+    CALC_NORMAL(-motor_radius, -motor_length, 0.0f, 0.0f, -motor_length, motor_radius, 0.0f, -motor_length, -motor_radius);
     glVertex3f(-motor_radius, -motor_length, 0.0f);
     glVertex3f(0.0f, -motor_length, motor_radius);
     glVertex3f(0.0f, -motor_length, -motor_radius);
     
+    CALC_NORMAL(motor_radius, -motor_length, 0.0f, 0.0f, -motor_length, -motor_radius, 0.0f, -motor_length, motor_radius);
     glVertex3f(motor_radius, -motor_length, 0.0f);
     glVertex3f(0.0f, -motor_length, -motor_radius);
     glVertex3f(0.0f, -motor_length, motor_radius);
     
     // Corps
     glColor3f(0.6f, 0.6f, 0.7f);
+    CALC_NORMAL(-motor_radius, 0.0f, 0.0f, -motor_radius, -motor_length, 0.0f, 0.0f, 0.0f, motor_radius);
     glVertex3f(-motor_radius, 0.0f, 0.0f);
     glVertex3f(-motor_radius, -motor_length, 0.0f);
     glVertex3f(0.0f, 0.0f, motor_radius);
     
+    CALC_NORMAL(motor_radius, 0.0f, 0.0f, 0.0f, 0.0f, motor_radius, motor_radius, -motor_length, 0.0f);
     glVertex3f(motor_radius, 0.0f, 0.0f);
     glVertex3f(0.0f, 0.0f, motor_radius);
     glVertex3f(motor_radius, -motor_length, 0.0f);
     glEnd();
     glPopMatrix();
+    
+    #undef CALC_NORMAL
 }
 static void render_bottom_3d(int viewport_width, int viewport_height) {
     if (viewport_height <= 0) {
@@ -658,6 +709,7 @@ static void render_bottom_3d(int viewport_width, int viewport_height) {
     glEnable(GL_LIGHT0);
     glEnable(GL_LIGHTING);
     glEnable(GL_COLOR_MATERIAL);
+    glEnable(GL_NORMALIZE);
     glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
@@ -735,27 +787,23 @@ static void game_loop(double delta_time) {
             update_player_position(delta_time, node->entities);
             if (node->entities->parent != &player && distance(node->entities, &player) < 0.05f && node->entities->type == ENTITY_PHASER) {
                 player.life -= 1.0f;
-                remove_entity_from_list(node->entities);
+                node->entities->marked_for_removal = 1;
             } else if (node->entities->parent == &player) {
                 struct entity_list_t *enemy_node = entity_list_head;
                 while (enemy_node != NULL) {
                     if (enemy_node->entities->type == ENTITY_TYPE_ENEMY && distance(node->entities, enemy_node->entities) < 0.05f && node->entities->type == ENTITY_PHASER) {
                         enemy_node->entities->life -= 1.0f;
-                        remove_entity_from_list(node->entities);
-                        remove_entity_from_list(enemy_node->entities);
+                        node->entities->marked_for_removal = 1;
+                        enemy_node->entities->marked_for_removal = 1;
                         nb_enemies--;
                     }
                     enemy_node = enemy_node->next;
                 }
             }
-            if (node->entities->parent != &enemy && distance(node->entities, &enemy) < 0.05f && node->entities->type == ENTITY_PHASER) {
-                enemy.life -= 1.0f;
-                remove_entity_from_list(node->entities);
-            }
-            
         }
         node = node->next;
     }
+    cleanup_marked_entities();
     if (nb_enemies <= 0) {
         nb_enemies = rand() % 5 + 1;
         init_enemies();
@@ -809,6 +857,7 @@ static void keyboard(unsigned char key, int x, int y) {
         new_node->entities->life = 10;
         new_node->entities->parent = &player;
         new_node->entities->automat = NULL;
+        new_node->entities->marked_for_removal = 0;
         new_node->next = entity_list_head;
         entity_list_head = new_node;
     default:
@@ -910,6 +959,7 @@ static void init_enemies(void) {
         
         new_node->entities->parent = NULL;
         new_node->entities->automat = enemi_automaton;
+        new_node->entities->marked_for_removal = 0;
         new_node->next = entity_list_head;
         entity_list_head = new_node;
     }
