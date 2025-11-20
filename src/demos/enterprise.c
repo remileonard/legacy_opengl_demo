@@ -38,6 +38,7 @@ typedef struct entity_t {
     float energy;
     float shield;
     struct entity_t *parent;
+    void (*automat)(struct entity_t *self, double delta_time);
 } entity_t;
 
 struct entity_list_t {
@@ -57,20 +58,60 @@ static clock_t last_frame_time = 0;
 static int window_width = 800;
 static int window_height = 600;
 static float cube_angle = 0.0f;
-static entity_t player = {0.0f, 0.0f, 0.0f, 0.0f, 1.0f, ENTITY_TYPE_PLAYER, -1, -1, -1, NULL};
-static entity_t enemy = {0.5f, -0.4f, 0.0f, 0.0f, 1.0f, ENTITY_TYPE_ENEMY, -1, -1, -1, NULL};
-
+static int nb_enemies = 5;
 static struct entity_list_t *entity_list_head = NULL;
 
 void (*idlefunc)(void) = NULL;
 
+static void init_stars(void);
+static void wrap_star(star_t *star);
+static void update_starfield(float delta_time);
+static void draw_starfield(void);
+static void remove_entity_from_list(entity_t *to_remove);
+static float distance(entity_t *a, entity_t *b);
+static void shoot(entity_t *entity, entity_t *target);
+static void draw_bitmap_text_wrapped(int viewport_width,int viewport_height,float origin_x,float origin_y,float max_width,const char *text);
+static void update_player_position(float delta_time, entity_t *entity);
+static void draw_rect_outline(int x, int y, int width, int height);
+static void draw_layout_borders(int top_left_width,int top_right_width,int top_height,int bottom_height,int top_y);
+static void render_top_left_2d(int viewport_width, int viewport_height);
+static void draw_spaceship_top_view(void);
+static void draw_player_ship_top_view(void);
+static void render_top_right_2d(int viewport_width, int viewport_height);
+static void draw_spaceship(void);
+static void render_bottom_3d(int viewport_width, int viewport_height);
+static void game_loop(double delta_time);
+static void reshape(int w, int h);
 static void idle(void);
 static void menu_callback(int value);
 static void keyboard(unsigned char key, int x, int y);
 static void special(int key, int x, int y);
 static void specialUp(int key, int x, int y);
+static void render_gameplay(void);
 static void display(void);
 static void initGL(void);
+static void enemi_automaton(entity_t *self, double delta_time);
+static void init_enemies(void);
+
+static entity_t player = {0.0f, 0.0f, 0.0f, 0.0f, 1.0f, ENTITY_TYPE_PLAYER, -1, -1, -1, NULL, NULL};
+static entity_t enemy = {0.5f, -0.4f, 0.0f, 0.0f, 1.0f, ENTITY_TYPE_ENEMY, -1, -1, -1, NULL, enemi_automaton};
+
+static void enemi_automaton(entity_t *self, double delta_time) {
+    if (distance(self, &player) > 0.5f) {
+        // move towards player
+        float dx = player.x - self->x;
+        float dy = player.y - self->y;
+        float angle_to_player = atan2f(dy, dx) * (180.0f / 3.14159265f) - 90.0f;
+        self->h += (angle_to_player - self->h) * 0.1f; // smooth turning
+        self->s = 0.05f; // constant speed
+    } else {
+        self->s = 0.0f; // stop when close
+    }
+    if (distance(self, &player) < 0.5f) {
+        shoot(self, &player);
+    }
+    update_player_position((float)delta_time, self);
+}
 
 static void init_stars(void) {
     for (int i = 0; i < STAR_COUNT; ++i) {
@@ -129,6 +170,9 @@ static void remove_entity_from_list(entity_t *to_remove) {
         if (current->next->entities == to_remove) {
             current->next = current->next->next;
         }
+        if (to_remove == entity_list_head->entities) {
+            entity_list_head = entity_list_head->next;
+        }
     }
 
     free(to_remove);
@@ -158,6 +202,7 @@ static void shoot(entity_t *entity, entity_t *target) {
     new_node->entities->type = ENTITY_PHASER;
     new_node->entities->life = 40.0f; // lasts for 2 seconds
     new_node->entities->parent = entity;
+    new_node->entities->automat = NULL;
     new_node->next = entity_list_head;
     entity_list_head = new_node;
 }
@@ -430,22 +475,22 @@ static void render_top_right_2d(int viewport_width, int viewport_height) {
         glPushMatrix();
         glTranslatef(current->entities->x, current->entities->y, 0.0f);
         glRotatef(current->entities->h, 0.0f, 0.0f, 1.0f);
-        glBegin(GL_QUADS);
-        glColor3f(0.0f, 1.0f, 0.0f);
-        glVertex2f(-0.02f, -0.02f);
-        glVertex2f(0.02f, -0.02f);
-        glVertex2f(0.02f, 0.02f);
-        glVertex2f(-0.02f, 0.02f);
-        glEnd();
+        if (current->entities->type == ENTITY_PHASER) {
+            
+            glBegin(GL_QUADS);
+            glColor3f(0.0f, 1.0f, 0.0f);
+            glVertex2f(-0.02f, -0.02f);
+            glVertex2f(0.02f, -0.02f);
+            glVertex2f(0.02f, 0.02f);
+            glVertex2f(-0.02f, 0.02f);
+            glEnd();
+            
+        } else if (current->entities->type == ENTITY_TYPE_ENEMY) {
+            draw_spaceship_top_view();   
+        }
         glPopMatrix();
         node = node->next;
     }
-    glPushMatrix();
-    glTranslatef(enemy.x, enemy.y, 0.0f);
-    glRotatef(enemy.h, 0.0f, 0.0f, 1.0f);
-    draw_spaceship_top_view();
-    glPopMatrix();
-
     glPushMatrix();
     glTranslatef(player.x, player.y, 0.0f);
     glRotatef(player.h, 0.0f, 0.0f, 1.0f);
@@ -621,22 +666,21 @@ static void render_bottom_3d(int viewport_width, int viewport_height) {
     glRotatef(-90.0f, 1.0f, 0.0f, 0.0f);
     glRotatef(-player.h, 0.0f, 0.0f, 1.0f);
     glTranslatef(-player.x, -player.y, 0.0f);
-
-    glPushMatrix();
-    glTranslatef(enemy.x, enemy.y, 0.0f);
-    glColor3f(1.0f, 0.0f, 0.0f);
-    glRotatef(enemy.h, 0.0f, 0.0f, 1.0f);
-    draw_spaceship();
-    glPopMatrix();
     
     struct entity_list_t *node = entity_list_head;
     while (node != NULL) {
         struct entity_list_t *current = node;
         glPushMatrix();
         glTranslatef(current->entities->x, current->entities->y, 0.0f);
-        glColor3f(0.0f, 1.0f, 0.0f);
-        glScalef(0.002f, 0.002f, 0.001f);
-        glutSolidDodecahedron();    
+        if (current->entities->type == ENTITY_PHASER) {
+            glColor3f(0.0f, 1.0f, 0.0f);
+            glScalef(0.002f, 0.002f, 0.001f);
+            glutSolidDodecahedron();    
+        } else if (current->entities->type == ENTITY_TYPE_ENEMY) {
+            glColor3f(1.0f, 0.0f, 0.0f);
+            glRotatef(current->entities->h, 0.0f, 0.0f, 1.0f);
+            draw_spaceship();
+        }
         glPopMatrix();
         node = node->next;
     }
@@ -683,25 +727,38 @@ static void render_bottom_3d(int viewport_width, int viewport_height) {
 static void game_loop(double delta_time) {
     update_player_position(delta_time, &player);
     update_starfield((float)delta_time);
-    enemy.h += 0.1f;
-    if (enemy.h >= 360.0f) enemy.h -= 360.0f;
-    enemy.s = 0.05f;
-    update_player_position(delta_time, &enemy);
-    if (distance(&enemy, &player) < 0.5f) {
-        shoot(&enemy, &player);
-    }
     struct entity_list_t *node = entity_list_head;
-    while (node != NULL) {
-        update_player_position(delta_time, node->entities);
-        if (node->entities->parent != &player && distance(node->entities, &player) < 0.05f && node->entities->type == ENTITY_PHASER) {
-            player.life -= 1.0f;
-            remove_entity_from_list(node->entities);
-        }
-        if (node->entities->parent != &enemy && distance(node->entities, &enemy) < 0.05f && node->entities->type == ENTITY_PHASER) {
-            enemy.life -= 1.0f;
-            remove_entity_from_list(node->entities);
+    while (node != NULL && entity_list_head != NULL) {
+        if (node->entities->automat != NULL) {
+            node->entities->automat(node->entities, (float)delta_time);
+        } else {
+            update_player_position(delta_time, node->entities);
+            if (node->entities->parent != &player && distance(node->entities, &player) < 0.05f && node->entities->type == ENTITY_PHASER) {
+                player.life -= 1.0f;
+                remove_entity_from_list(node->entities);
+            } else if (node->entities->parent == &player) {
+                struct entity_list_t *enemy_node = entity_list_head;
+                while (enemy_node != NULL) {
+                    if (enemy_node->entities->type == ENTITY_TYPE_ENEMY && distance(node->entities, enemy_node->entities) < 0.05f && node->entities->type == ENTITY_PHASER) {
+                        enemy_node->entities->life -= 1.0f;
+                        remove_entity_from_list(node->entities);
+                        remove_entity_from_list(enemy_node->entities);
+                        nb_enemies--;
+                    }
+                    enemy_node = enemy_node->next;
+                }
+            }
+            if (node->entities->parent != &enemy && distance(node->entities, &enemy) < 0.05f && node->entities->type == ENTITY_PHASER) {
+                enemy.life -= 1.0f;
+                remove_entity_from_list(node->entities);
+            }
+            
         }
         node = node->next;
+    }
+    if (nb_enemies <= 0) {
+        nb_enemies = rand() % 5 + 1;
+        init_enemies();
     }
 }
 static void menu_callback(int value) {
@@ -751,6 +808,7 @@ static void keyboard(unsigned char key, int x, int y) {
         new_node->entities->type = ENTITY_PHASER;
         new_node->entities->life = 10;
         new_node->entities->parent = &player;
+        new_node->entities->automat = NULL;
         new_node->next = entity_list_head;
         entity_list_head = new_node;
     default:
@@ -793,7 +851,7 @@ static void specialUp(int key, int x, int y) {
     }
 }
 
-static void display(void) {
+static void render_gameplay(void) {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     int top_height = window_height / 2;
@@ -815,6 +873,14 @@ static void display(void) {
 
     glutSwapBuffers();
 }
+static void display(void) {
+    if (idlefunc) {
+        idlefunc();
+    } else {
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glutSwapBuffers();
+    }
+}
 static void initGL(void) {
     last_frame_time = clock();
     glEnable(GL_DEPTH_TEST);
@@ -827,7 +893,26 @@ static void initGL(void) {
     glLoadIdentity();
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
     init_stars();
-    idlefunc = NULL;
+    init_enemies();
+    idlefunc = render_gameplay;
+}
+static void init_enemies(void) {
+    for (int i=0; i<nb_enemies; i++) {
+        struct entity_list_t *new_node = (struct entity_list_t *)malloc(sizeof(struct entity_list_t));
+        new_node->entities = (entity_t *)malloc(sizeof(entity_t));
+        new_node->entities->x = (float)(rand() % 100) / 50.0f - 1.0f;
+        new_node->entities->y = (float)(rand() % 100) / 50.0f - 1.0f;
+        new_node->entities->h = (float)(rand() % 360);
+        new_node->entities->s = 0.0f;
+        new_node->entities->m = 1.0f;
+        new_node->entities->type = ENTITY_TYPE_ENEMY;
+        new_node->entities->life = -1.0f;
+        
+        new_node->entities->parent = NULL;
+        new_node->entities->automat = enemi_automaton;
+        new_node->next = entity_list_head;
+        entity_list_head = new_node;
+    }
 }
 int main(int argc, char **argv) {
     glutInit(&argc, argv);
