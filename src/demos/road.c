@@ -50,6 +50,21 @@ int segmentSize = 5;
 float currentCamX = 0.0f;
 float currentCamY = 0.0f;
 
+float playerX = 0.0f;           // Position latérale de la voiture (-roadWidth à +roadWidth)
+float playerSpeed = 0.0f;       // Vitesse actuelle
+float maxSpeed = 5.0f;          // Vitesse maximale
+float acceleration = 0.15f;     // Accélération
+float deceleration = 0.1f;      // Décélération
+float braking = 0.3f;           // Freinage
+float offRoadDecel = 0.5f;      // Décélération hors route
+float turnSpeed = 0.5f;         // Vitesse de virage
+float centrifugalForce = 0.8f;  // Force centrifuge
+float backgroundOffset = 0.0f;  // Décalage horizontal du décor
+
+int keyStates[256] = {0};        // État des touches normales
+int specialKeyStates[256] = {0}; // État des touches spéciales (flèches)
+
+
 Road* generateRoad(RoadParam params);
 void freeRoad(Road* road);
 
@@ -58,6 +73,116 @@ void freeRoad(Road* road);
 static float randf() {
     return (float)rand() / (float)RAND_MAX;
 }
+void drawBackground(float curveOffset) {
+    // Sauvegarder l'état de l'éclairage et du depth test
+    glDisable(GL_LIGHTING);
+    glDisable(GL_DEPTH_TEST);
+    
+    // Sauvegarder la matrice
+    glPushMatrix();
+    glLoadIdentity();
+    
+    // Appliquer seulement les rotations de la caméra (pas la translation)
+    //glRotatef(180.0f, 0.0f, 1.0f, 0.0f);
+    
+    // Calculer le pitch pour que le fond suive la caméra
+    int currentSegment = (int)(cameraPosition / segmentSize);
+    float segmentProgress = (cameraPosition - currentSegment * segmentSize) / segmentSize;
+    RoadSegment* currentSeg = &road->segments[currentSegment % road->count];
+    RoadSegment* nextSeg = &road->segments[(currentSegment + 1) % road->count];
+    float road_climb = (nextSeg->height - currentSeg->height) / segmentSize;
+    float pitchAngle = atanf(road_climb) * 180.0f / M_PI;
+    static float bgPitchValue = 0.0f;
+    if (fabsf(bgPitchValue - pitchAngle) < 0.5f) {
+        bgPitchValue = pitchAngle;
+    } else if (bgPitchValue < pitchAngle) bgPitchValue += 0.5f;
+    else if (bgPitchValue > pitchAngle) bgPitchValue -= 0.5f;
+    if (bgPitchValue < -60.0f) bgPitchValue = -60.0f;
+    if (bgPitchValue > 0.0f) bgPitchValue = 0.0f;
+    glRotatef(bgPitchValue, 1.0f, 0.0f, 0.0f);
+    
+    // Dessiner le ciel (dégradé bleu)
+    glBegin(GL_QUADS);
+        // Haut du ciel (bleu clair)
+        glColor3f(0.4f, 0.6f, 1.0f);
+        glVertex3f(-5000.0f, 1000.0f, -1500.0f);
+        glVertex3f(5000.0f, 1000.0f, -1500.0f);
+        
+        // Horizon (bleu plus pâle)
+        glColor3f(0.7f, 0.85f, 1.0f);
+        glVertex3f(5000.0f, -200.0f, -1500.0f);
+        glVertex3f(-5000.0f, -200.0f, -1500.0f);
+    glEnd();
+    
+    // Décalage parallaxe selon la courbe de la route
+    float bgShift = curveOffset * 0.5f;
+    
+    // Couche 1 : Montagnes très lointaines (violet/bleu sombre)
+    glColor3f(0.3f, 0.3f, 0.5f);
+    glBegin(GL_TRIANGLE_STRIP);
+        for (int i = -15; i <= 15; i++) {
+            float x = i * 300.0f + bgShift * 0.2f;
+            float height = 200.0f + 80.0f * sinf(i * 0.4f);
+            glVertex3f(x, height, -1400.0f);
+            glVertex3f(x, -200.0f, -1400.0f);
+        }
+    glEnd();
+    
+    // Couche 2 : Montagnes moyennes (gris-bleu)
+    glColor3f(0.4f, 0.5f, 0.6f);
+    glBegin(GL_TRIANGLE_STRIP);
+        for (int i = -15; i <= 15; i++) {
+            float x = i * 250.0f + bgShift * 0.4f;
+            float height = 150.0f + 60.0f * sinf(i * 0.6f + 1.5f);
+            glVertex3f(x, height, -1200.0f);
+            glVertex3f(x, -200.0f, -1200.0f);
+        }
+    glEnd();
+    
+    // Couche 3 : Collines proches (vert)
+    glColor3f(0.3f, 0.6f, 0.4f);
+    glBegin(GL_TRIANGLE_STRIP);
+        for (int i = -15; i <= 15; i++) {
+            float x = i * 200.0f + bgShift * 0.8f;
+            float height = 100.0f + 40.0f * sinf(i * 0.8f + 2.5f);
+            glVertex3f(x, height, -1000.0f);
+            glVertex3f(x, -2000.0f, -1000.0f);
+        }
+    glEnd();
+    
+    // Nuages (blancs)
+    glColor3f(0.95f, 0.95f, 1.0f);
+    for (int i = 0; i < 8; i++) {
+        float cloudX = -1500.0f + i * 400.0f + bgShift * 0.15f;
+        float cloudY = 300.0f + (i % 3) * 80.0f;
+        float cloudZ = -1300.0f;
+        
+        // Plusieurs sphères pour former un nuage
+        glPushMatrix();
+        glTranslatef(cloudX, cloudY, cloudZ);
+        glScalef(80.0f, 30.0f, 30.0f);
+        glutSolidSphere(1.0f, 8, 6);
+        glPopMatrix();
+        
+        glPushMatrix();
+        glTranslatef(cloudX + 50.0f, cloudY + 10.0f, cloudZ);
+        glScalef(70.0f, 25.0f, 25.0f);
+        glutSolidSphere(1.0f, 8, 6);
+        glPopMatrix();
+        
+        glPushMatrix();
+        glTranslatef(cloudX + 90.0f, cloudY, cloudZ);
+        glScalef(60.0f, 20.0f, 20.0f);
+        glutSolidSphere(1.0f, 8, 6);
+        glPopMatrix();
+    }
+    
+    // Restaurer les états
+    glPopMatrix();
+    glEnable(GL_DEPTH_TEST);
+    glEnable(GL_LIGHTING);
+}
+
 void drawText(float x, float y, const char* text) {
     glMatrixMode(GL_PROJECTION);
     glPushMatrix();
@@ -220,6 +345,27 @@ void drawRoadSegment(int index, float zPos) {
     // Vérifier si c'est le dernier segment (ligne d'arrivée)
     int isFinishLine = (index == road->count - 1);
     
+    // Calculer la normale : uniquement basée sur la pente (changement de hauteur)
+    float heightDelta = nextSeg->height - seg->height;
+    
+    // Vecteur le long de la route (dans la direction Z)
+    // Direction: (0, heightDelta, segmentSize)
+    // La normale est perpendiculaire à ce vecteur dans le plan vertical
+    
+    // Pour un quad horizontal pentu, la normale pointe "vers le haut et légèrement en arrière"
+    float normal[3];
+    normal[0] = 0.0f;                    // Pas de composante X (la route ne penche pas latéralement)
+    normal[1] = segmentSize;             // Composante Y (pointe vers le haut)
+    normal[2] = -heightDelta;            // Composante Z (opposée à la pente)
+    
+    // Normaliser le vecteur
+    float length = sqrtf(normal[0]*normal[0] + normal[1]*normal[1] + normal[2]*normal[2]);
+    if (length > 0.0f) {
+        normal[0] /= length;
+        normal[1] /= length;
+        normal[2] /= length;
+    }
+    
     // Couleurs alternées pour l'herbe
     if (alternate) {
         glColor3f(0.2f, 0.5f, 0.2f);  // Vert foncé
@@ -229,6 +375,7 @@ void drawRoadSegment(int index, float zPos) {
     
     // Herbe gauche
     glBegin(GL_QUADS);
+        glNormal3fv(normal);
         glVertex3f(-roadWidth - borderWidth - grassWidth + seg->curve, seg->height, zPos);
         glVertex3f(-roadWidth - borderWidth + seg->curve, seg->height, zPos);
         glVertex3f(-roadWidth - borderWidth + nextSeg->curve, nextSeg->height, zPos + segmentSize);
@@ -237,6 +384,7 @@ void drawRoadSegment(int index, float zPos) {
     
     // Herbe droite
     glBegin(GL_QUADS);
+        glNormal3fv(normal);
         glVertex3f(roadWidth + borderWidth + seg->curve, seg->height, zPos);
         glVertex3f(roadWidth + borderWidth + grassWidth + seg->curve, seg->height, zPos);
         glVertex3f(roadWidth + borderWidth + grassWidth + nextSeg->curve, nextSeg->height, zPos + segmentSize);
@@ -254,6 +402,7 @@ void drawRoadSegment(int index, float zPos) {
     
     // Bordure gauche
     glBegin(GL_QUADS);
+        glNormal3fv(normal);
         glVertex3f(-roadWidth - borderWidth + seg->curve, seg->height, zPos);
         glVertex3f(-roadWidth + seg->curve, seg->height, zPos);
         glVertex3f(-roadWidth + nextSeg->curve, nextSeg->height, zPos + segmentSize);
@@ -262,6 +411,7 @@ void drawRoadSegment(int index, float zPos) {
     
     // Bordure droite
     glBegin(GL_QUADS);
+        glNormal3fv(normal);
         glVertex3f(roadWidth + seg->curve, seg->height, zPos);
         glVertex3f(roadWidth + borderWidth + seg->curve, seg->height, zPos);
         glVertex3f(roadWidth + borderWidth + nextSeg->curve, nextSeg->height, zPos + segmentSize);
@@ -277,8 +427,9 @@ void drawRoadSegment(int index, float zPos) {
         glColor3f(0.47f, 0.47f, 0.47f);
     }
     
-    // Draw road quad
+    // Draw road quad avec normale
     glBegin(GL_QUADS);
+        glNormal3fv(normal);
         glVertex3f(-roadWidth + seg->curve, seg->height, zPos);
         glVertex3f(roadWidth + seg->curve, seg->height, zPos);
         glVertex3f(roadWidth + nextSeg->curve, nextSeg->height, zPos + segmentSize);
@@ -298,7 +449,6 @@ void drawRoadSegment(int index, float zPos) {
         float curveDelta = nextSeg->curve - seg->curve;
         
         // Calculer l'angle en degrés pour orienter le sprite perpendiculairement à la route
-        // atan2 donne l'angle en radians, on convertit en degrés
         float roadAngle = atan2f(curveDelta, segmentSize) * 180.0f / M_PI;
         
         // Calculer l'angle de pente (montée/descente)
@@ -309,18 +459,18 @@ void drawRoadSegment(int index, float zPos) {
         glTranslatef(spriteX, spriteY, spriteZ);
         
         // Orienter le sprite perpendiculairement à la route
-        glRotatef(-roadAngle, 0.0f, 1.0f, 0.0f);  // Rotation autour de Y pour suivre la courbe
-        glRotatef(slopeAngle, 1.0f, 0.0f, 0.0f);   // Rotation autour de X pour suivre la pente
+        glRotatef(-roadAngle, 0.0f, 1.0f, 0.0f);
+        glRotatef(slopeAngle, 1.0f, 0.0f, 0.0f);
         
         if (seg->sprite->type == 0) {
             // Rocher (cube marron)
-            glColor3f(0.4f, 0.3f, 0.2f);  // Marron
-            glTranslatef(0.0f, 5.0f, 0.0f);  // Légèrement au-dessus du sol
+            glColor3f(0.4f, 0.3f, 0.2f);
+            glTranslatef(0.0f, 5.0f, 0.0f);
             glutSolidCube(10.0f);
         } else {
             // Arbre (cube vert)
-            glColor3f(0.1f, 0.6f, 0.1f);  // Vert foncé
-            glTranslatef(0.0f, 15.0f, 0.0f);  // Plus haut que le rocher
+            glColor3f(0.1f, 0.6f, 0.1f);
+            glTranslatef(0.0f, 15.0f, 0.0f);
             glutSolidCube(30.0f);
         }
         
@@ -328,68 +478,154 @@ void drawRoadSegment(int index, float zPos) {
     }
 }
 void drawPlayerCar(void) {
+    // La voiture est à 80 unités devant la caméra
+    float carDistanceAhead = 80.0f;
+    
+    // Calculer la position de la voiture (pas celle de la caméra !)
+    float carPositionOnRoad = cameraPosition + carDistanceAhead;
+    
+    int carSegment = (int)(carPositionOnRoad / segmentSize);
+    float carSegmentProgress = (carPositionOnRoad - carSegment * segmentSize) / segmentSize;
+    
+    RoadSegment* carCurrentSeg = &road->segments[carSegment % road->count];
+    RoadSegment* carNextSeg = &road->segments[(carSegment + 1) % road->count];
+    
+    // Position interpolée de la voiture sur SA PROPRE position
+    float carCurve = carCurrentSeg->curve + (carNextSeg->curve - carCurrentSeg->curve) * carSegmentProgress;
+    float carHeight = carCurrentSeg->height + (carNextSeg->height - carCurrentSeg->height) * carSegmentProgress;
+    
+    // Calculer l'angle de la route pour orienter la voiture
+    float curveDelta = carNextSeg->curve - carCurrentSeg->curve;
+    float heightDelta = carNextSeg->height - carCurrentSeg->height;
+    
+    float roadAngle = atan2f(curveDelta, segmentSize) * 180.0f / M_PI;
+    float slopeAngle = atan2f(heightDelta, segmentSize) * 180.0f / M_PI;
+    
     glPushMatrix();
     
-    // La voiture est positionnée DANS LE REPERE MONDE 3D
-    // mais à une position qui reste fixe par rapport à la caméra
+    // Position de la voiture : courbe de la route + déplacement latéral du joueur
+    glTranslatef(carCurve + playerX, carHeight + 5.0f, carDistanceAhead);
     
-    // Position de la voiture : légèrement devant et en dessous de la caméra
-    float carX = 0.0f;           // Centrée horizontalement (pas de décalage latéral)
-    float carY = -20.0f;         // En dessous de la caméra (sur le "sol" visible)
-    float carZ = 80.0f;          // Devant la caméra (distance visible)
+    // Orienter la voiture
+    glRotatef(180.0f, 0.0f, 1.0f, 0.0f);
+    glRotatef(roadAngle, 0.0f, 1.0f, 0.0f);
+    glRotatef(slopeAngle, 1.0f, 0.0f, 0.0f);
     
-    glTranslatef(carX, carY, carZ);
-    
-    // Rotation pour orienter la voiture dans le bon sens
-    // (dépend de comment vous modélisez la voiture)
-    glRotatef(180.0f, 0.0f, 1.0f, 0.0f);  // Faire face à la route
-    
-    // Couleur de la voiture (rouge)
+    // Dessiner la carrosserie (cube rouge)
     glColor3f(1.0f, 0.0f, 0.0f);
-    
-    // Dessiner la voiture comme un cube simple (temporaire)
-    // Plus tard, remplacez par un vrai modèle 3D
+    glPushMatrix();
+    glTranslatef(0.0f, 8.0f, 0.0f);
     glutSolidCube(15.0f);
+    glPopMatrix();
+    
+    // Dimensions pour positionner les roues
+    float carHalfSize = 15.0f / 2.0f;  // 7.5f
+    float wheelSize = 3.0f;
+    float wheelHalfSize = wheelSize / 2.0f;  // 1.5f
+    glColor3f(0.0f, 0.0f, 0.0f);
+
+    // Les roues sont positionnées SOUS et AUTOUR de la carrosserie
+    float wheelOffsetX = carHalfSize;              // Au bord gauche/droite de la carrosserie
+    float wheelOffsetY = -carHalfSize - wheelHalfSize;  // SOUS la carrosserie
+    float wheelOffsetZ = carHalfSize - 1.0f;       // Légèrement vers l'intérieur
+    
+    // Couleur des roues (noir)
+    glColor3f(0.0f, 0.0f, 0.0f);
+    
+    glPushMatrix();
+    glTranslatef(-10.0f, 0.0f, 10.0f);
+    glutSolidCube(wheelSize);
+    glPopMatrix();
+    
+    // Roue avant-droite
+    glPushMatrix();
+    glTranslatef(10.0f, 0.0f, 10.0f);
+    glutSolidCube(wheelSize);
+    glPopMatrix();
+    
+    // Roue arrière-gauche
+    glPushMatrix();
+    glTranslatef(-10.0f, 0.0f, -10.0f);
+    glutSolidCube(wheelSize);
+    glPopMatrix();
+    
+    // Roue arrière-droite
+    glPushMatrix();
+    glTranslatef(10.0f, 0.0f, -10.0f);
+    glutSolidCube(wheelSize);
+    glPopMatrix();
     
     glPopMatrix();
 }
+// Remplacer les fonctions keyboard et specialKeys par celles-ci :
+void keyboard(unsigned char key, int x, int y) {
+    (void)x;
+    (void)y;
+    keyStates[key] = 1;  // Marquer la touche comme pressée
+    
+    if (key == 27) {  // ESC
+        freeRoad(road);
+        exit(0);
+    }
+}
+
+void keyboardUp(unsigned char key, int x, int y) {
+    (void)x;
+    (void)y;
+    keyStates[key] = 0;  // Marquer la touche comme relâchée
+}
+
+void specialKeys(int key, int x, int y) {
+    (void)x;
+    (void)y;
+    specialKeyStates[key] = 1;  // Marquer la touche spéciale comme pressée
+}
+
+void specialKeysUp(int key, int x, int y) {
+    (void)x;
+    (void)y;
+    specialKeyStates[key] = 0;  // Marquer la touche spéciale comme relâchée
+}
+
 void displayManual(void) {
+
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glLoadIdentity();
-    
+    glLightfv(GL_LIGHT0, GL_POSITION, (GLfloat[]){0.4f, 0.7f, 0.3f, 0.0f});
+    glEnable(GL_LIGHT0);
+    glEnable(GL_LIGHTING);
+    glEnable(GL_COLOR_MATERIAL);
+    glEnable(GL_NORMALIZE);
+    glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
     int currentSegment = (int)(cameraPosition / segmentSize);
     float segmentProgress = (cameraPosition - currentSegment * segmentSize) / segmentSize;
 
-    // Segment actuel et suivant (pour interpolation comme dans racer.js)
     RoadSegment* currentSeg = &road->segments[currentSegment % road->count];
     RoadSegment* nextSeg = &road->segments[(currentSegment + 1) % road->count];
     
-    // Calculer baseOffset (comme dans racer.js)
-    // C'est l'interpolation de la courbe entre le segment actuel et le suivant
     float baseOffset = currentSeg->curve + (nextSeg->curve - currentSeg->curve) * segmentProgress;
-    
-    // Calculer la hauteur interpolée
     float playerHeight = currentSeg->height + (nextSeg->height - currentSeg->height) * segmentProgress;
-    
     float road_climb = (nextSeg->height - currentSeg->height) / segmentSize;
 
-    // Position de la caméra
-    float camX = baseOffset;  // Suivre exactement la courbe de la route
+    float camX = baseOffset;
     float camY = playerHeight + cameraHeight;
     float camZ = 0.0f;
-    // === Transformations manuelles ===
+
+    drawBackground(baseOffset);
+
     glRotatef(180.0f, 0.0f, 1.0f, 0.0f);
-    // 1. Incliner la vue vers le bas pour voir la route devant
 
     float pitchAngle = atanf(road_climb) * 180.0f / M_PI;
     static float pitchValue = 0.0f;
-    if (pitchValue < pitchAngle ) pitchValue += 0.1f;
-    else if (pitchValue > pitchAngle) pitchValue -= 0.1f;
-    if (pitchValue < -30.0f) pitchValue = -30.0f;
-    glRotatef(pitchValue, 1.0f, 0.0f, 0.0f);  // Rotation sur X pour regarder vers le bas
+    if (fabsf(pitchValue - pitchAngle) < 0.5f) {
+        pitchValue = pitchAngle;
+    } else if (pitchValue < pitchAngle ) pitchValue += 0.5f;
+    else if (pitchValue > pitchAngle) pitchValue -= 0.5f;
+    if (pitchValue < -60.0f) pitchValue = -60.0f;
+    if (pitchValue > 0.0f) pitchValue = 0.0f;
+    glRotatef(pitchValue, 1.0f, 0.0f, 0.0f);
     
     glPushMatrix();
-    // 1. Déplacer le monde dans la direction opposée de la caméra
     glTranslatef(-camX, -camY, -camZ);
     
     // Draw road segments
@@ -398,29 +634,108 @@ void displayManual(void) {
         float z = (i * segmentSize) - (cameraPosition - currentSegment * segmentSize);
         drawRoadSegment(segIndex, z);
     }
-
-    glPopMatrix();
     drawPlayerCar();
+    glPopMatrix();
+    
     // Afficher les informations de debug
     char buffer[256];
     
-    sprintf(buffer, "Camera X: %.2f  Y: %.2f  Z: %.2f", camX, camY, camZ);
+    sprintf(buffer, "Speed: %.2f  Player X: %.2f", playerSpeed, playerX);
     drawText(10, 580, buffer);
     
-    sprintf(buffer, "Road Height: %.2f  Curve: %.2f", currentSeg->height, currentSeg->curve);
+    sprintf(buffer, "Camera X: %.2f  Y: %.2f", camX, camY);
     drawText(10, 560, buffer);
     
     sprintf(buffer, "Segment: %d  Position: %.2f", currentSegment, cameraPosition);
     drawText(10, 540, buffer);
     
+    sprintf(buffer, "Camera Pitch: %.2f", pitchValue);
+    drawText(10, 520, buffer);
+
+    sprintf(buffer, "Curve: %.2f  Height: %.2f", currentSeg->curve - nextSeg->curve, currentSeg->height);
+    drawText(10, 500, buffer);
+    float roadWidth = 50.0f;
+    if (playerX < -roadWidth || playerX > roadWidth) {
+        sprintf(buffer, "OFF ROAD!");
+        drawText(350, 580, buffer);
+        playerX *= 0.9f;  // Ramener progressivement la voiture vers la route
+    }
+    
     glutSwapBuffers();
 }
 void idle(void) {
-    cameraPosition += 1.5f;
+    float roadWidth = 50.0f;
+    // Traiter les touches pressées en continu
+    if (specialKeyStates[GLUT_KEY_UP]) {
+        // Accélération
+        if (playerSpeed < maxSpeed) {
+            playerSpeed += acceleration;
+        }
+    }
+    
+    if (specialKeyStates[GLUT_KEY_DOWN]) {
+        // Freinage
+        if (playerSpeed > 0.0f) {
+            playerSpeed -= braking;
+            if (playerSpeed < 0.0f) playerSpeed = 0.0f;
+        }
+    }
+    
+    if (specialKeyStates[GLUT_KEY_LEFT]) {
+        // Tourner à gauche
+        if (playerSpeed > 0.0f) {  // Seulement si la voiture avance
+            playerX += turnSpeed * (playerSpeed / maxSpeed);
+        }
+    }
+    
+    if (specialKeyStates[GLUT_KEY_RIGHT]) {
+        // Tourner à droite
+        if (playerSpeed > 0.0f) {  // Seulement si la voiture avance
+            playerX -= turnSpeed * (playerSpeed / maxSpeed);
+        }
+    }
+    // Appliquer la vitesse du joueur
+    cameraPosition += playerSpeed;
+    
+    // Calculer la position de la voiture pour la force centrifuge
+    float carPositionOnRoad = cameraPosition + 80.0f;
+    int carSegment = (int)(carPositionOnRoad / segmentSize);
+    
+    RoadSegment* carCurrentSeg = &road->segments[carSegment % road->count];
+    RoadSegment* carNextSeg = &road->segments[(carSegment + 1) % road->count];
+    
+    // Calculer la courbure de la route (force centrifuge)
+    float curveDelta = carCurrentSeg->curve - carNextSeg->curve;
+    
+    // Appliquer la force centrifuge (pousse la voiture vers l'extérieur du virage)
+    if (playerSpeed > 0.0f) {
+        float centrifugal = (curveDelta / segmentSize) * centrifugalForce * (playerSpeed / maxSpeed) * 2.0f;
+        playerX -= centrifugal;
+    }
+    
+    // Vérifier si la voiture est hors de la route
+    if (playerX < -roadWidth || playerX > roadWidth) {
+        // Ralentir considérablement hors route
+        playerSpeed -= offRoadDecel;
+        if (playerSpeed < 0.0f) playerSpeed = 0.0f;
+        
+        // Limiter la position pour ne pas aller trop loin
+        if (playerX < -roadWidth - 20.0f) playerX = -roadWidth - 20.0f;
+        if (playerX > roadWidth + 20.0f) playerX = roadWidth + 20.0f;
+    }
+    
+    // Décélération naturelle si aucune touche n'est pressée
+    if (playerSpeed > 0.0f) {
+        playerSpeed -= deceleration * 0.1f;
+        if (playerSpeed < 0.0f) playerSpeed = 0.0f;
+    }
+    
+    // Boucler la route
     float maxPosition = road->count * segmentSize;
     if (cameraPosition >= maxPosition) {
         cameraPosition = fmodf(cameraPosition, maxPosition);
     }
+    
     glutPostRedisplay();
 }
 
@@ -428,7 +743,7 @@ void reshape(int w, int h) {
     glViewport(0, 0, w, h);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    gluPerspective(60.0, (double)w / (double)h, 1.0, 1000.0);
+    gluPerspective(60.0, (double)w / (double)h, 1.0, 1000000.0);
     glMatrixMode(GL_MODELVIEW);
 }
 
@@ -458,11 +773,15 @@ int main(int argc, char** argv) {
     glutCreateWindow("Road Racer - OpenGL");
     
     glEnable(GL_DEPTH_TEST);
-    glClearColor(0.8f, 0.85f, 0.6f, 1.0f);
+    glClearColor(0.4f, 0.6f, 1.0f, 1.0f);
     
     glutDisplayFunc(displayManual);
     glutReshapeFunc(reshape);
     glutIdleFunc(idle);
+    glutKeyboardFunc(keyboard);
+    glutKeyboardUpFunc(keyboardUp);        // AJOUTER : Détection des touches relâchées
+    glutSpecialFunc(specialKeys);
+    glutSpecialUpFunc(specialKeysUp);      // AJOUTER : Détection des touches spéciales relâchées
     
     glutMainLoop();
     
