@@ -6,6 +6,7 @@ set(SIMPLE_EXECUTABLES
     stars
     maze
     enterprise
+    road
 )
 
 foreach(target ${SIMPLE_EXECUTABLES})

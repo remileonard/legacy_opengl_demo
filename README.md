@@ -61,6 +61,14 @@ A sophisticated 3D model viewer supporting OBJ/MTL file formats. Features:
 ### 🏍️ Cycles
 A solo or multiplayer motorcycle game where players navigate a maze while avoiding trails left by other players. Points are awarded for speed and causing others to crash.
 
+### 🚀 Enterprise
+A space shooter game inspired by classic arcade titles. Features:
+- Player-controlled spaceship with movement and shooting mechanics
+- Enemy ships with basic AI behavior
+- Starfield background for depth effect
+- Score tracking and game over conditions
+
+
 ## Prerequisites
 
 - **CMake** 3.26.0 or higher
