@@ -7,6 +7,7 @@ set(SIMPLE_EXECUTABLES
     maze
     enterprise
     road
+    plasma
 )
 
 foreach(target ${SIMPLE_EXECUTABLES})

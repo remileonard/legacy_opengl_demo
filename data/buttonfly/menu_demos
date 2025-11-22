@@ -23,6 +23,18 @@ Maze
 	..\..\demos\Debug\maze.exe
 	.color. .9 .5 .9
 	.highcolor. 1.0 .7 1.0
+Enterprise
+	..\..\demos\Debug\enterprise.exe
+	.color. .9 .5 .9
+	.highcolor. 1.0 .7 1.0
+Road
+	..\..\demos\Debug\road.exe
+	.color. .9 .5 .9
+	.highcolor. 1.0 .7 1.0
+Plasma
+	..\..\demos\Debug\plasma.exe
+	.color. .9 .5 .9
+	.highcolor. 1.0 .7 1.0
 Distort
 	..\..\distort\Debug\distort.exe ../../../../../../data/dog.rgb
 	.color. .9 .5 .9

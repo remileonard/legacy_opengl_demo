@@ -5,7 +5,7 @@
 
 #include <GL/gl.h>
 #include <GL/glu.h>
-#include <GL/freeglut.h>
+#include <GL/glut.h>
 
 #include <assert.h>
 #include <math.h>
@@ -67,6 +67,10 @@ static float cube_angle = 0.0f;
 static int nb_enemies = 5;
 static int sector = 0;
 static int score = 0;
+static int altDown = 0;
+static int shiftDown = 0;
+int keyStates[256] = {0};        // État des touches normales
+int specialKeyStates[256] = {0}; // État des touches spéciales (flèches)
 
 static struct entity_list_t *entity_list_head = NULL;
 
@@ -1054,6 +1058,23 @@ static void render_bottom_3d(int viewport_width, int viewport_height) {
     
 }
 static void game_loop(double delta_time) {
+
+    if (specialKeyStates[GLUT_KEY_LEFT]) {
+        player.h += 2.0f;
+    }
+    if (specialKeyStates[GLUT_KEY_RIGHT]) {
+        player.h -= 2.0f;
+    }
+    if (specialKeyStates[GLUT_KEY_UP]) {
+        player.s = 0.1f;
+        if (shiftDown) {
+            player.s = 0.4f;
+        }
+    }
+    if (keyStates[32]) {
+        shoot(&player, NULL);
+    }
+
     if (player.life <= -100.0f) {
         current_game_state = GAME_STATE_GAME_OVER;
         idlefunc = render_game_over_screen;
@@ -1103,56 +1124,6 @@ static void idle(void) {
     }
 }
 
-static void keyboard(unsigned char key, int x, int y) {
-    (void)x;
-    (void)y;
-
-    switch (key) {
-    case 27: // ESC
-        glutLeaveMainLoop();
-        break;
-    case 32: // SPACE
-        if (current_game_state == GAME_STATE_TITLE) {
-            current_game_state = GAME_STATE_PLAYING;
-            idlefunc = render_gameplay;
-            reset_game();
-        } else if (current_game_state == GAME_STATE_GAME_OVER) {
-            current_game_state = GAME_STATE_PLAYING;
-            idlefunc = render_gameplay;
-            reset_game();
-        } else if (current_game_state == GAME_STATE_PLAYING) {
-            shoot(&player, NULL);
-        }
-        break;
-    default:
-        break;
-    }
-}
-
-static void special(int key, int x, int y) {
-    (void)x;
-    (void)y;
-
-    int modifiers = glutGetModifiers();
-    int altDown = modifiers & GLUT_ACTIVE_ALT;
-    int shiftDown = modifiers & GLUT_ACTIVE_SHIFT;
-    switch (key) {
-    case GLUT_KEY_LEFT:
-        player.h += 5.0f;
-        break;
-    case GLUT_KEY_RIGHT:
-        player.h -= 5.0f;
-        break;
-    case GLUT_KEY_UP:
-        player.s = 0.1f;
-        if (shiftDown) {
-            player.s = 0.4f;
-        }
-        break;
-    default:
-        break;
-    }
-}
 static void render_title_screen(void) {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     
@@ -1214,14 +1185,6 @@ static void render_title_screen(void) {
     );
     
     glutSwapBuffers();
-}
-static void specialUp(int key, int x, int y) {
-    switch (key) {
-    case GLUT_KEY_UP:
-        break;
-    default:
-        break;
-    }
 }
 static void reset_game(void) {
     // Réinitialiser le joueur
@@ -1319,6 +1282,52 @@ static void init_enemies(void) {
         entity_list_head = new_node;
     }
 }
+void keyboard(unsigned char key, int x, int y) {
+    (void)x;
+    (void)y;
+    switch (key) {
+    case 27: // ESC
+        glutLeaveMainLoop();
+        break;
+    case 32: // SPACE
+        if (current_game_state == GAME_STATE_TITLE) {
+            current_game_state = GAME_STATE_PLAYING;
+            idlefunc = render_gameplay;
+            reset_game();
+        } else if (current_game_state == GAME_STATE_GAME_OVER) {
+            current_game_state = GAME_STATE_PLAYING;
+            idlefunc = render_gameplay;
+            reset_game();
+        } else if (current_game_state == GAME_STATE_PLAYING) {
+            keyStates[key] = 1;
+        }
+        break;
+    default:
+        keyStates[key] = 1;
+        break;
+    }
+}
+
+void keyboardUp(unsigned char key, int x, int y) {
+    (void)x;
+    (void)y;
+    keyStates[key] = 0;  // Marquer la touche comme relâchée
+}
+
+void specialKeys(int key, int x, int y) {
+    (void)x;
+    (void)y;
+    int modifiers = glutGetModifiers();
+    altDown = modifiers & GLUT_ACTIVE_ALT;
+    shiftDown = modifiers & GLUT_ACTIVE_SHIFT;
+    specialKeyStates[key] = 1;
+}
+
+void specialKeysUp(int key, int x, int y) {
+    (void)x;
+    (void)y;
+    specialKeyStates[key] = 0;
+}
 int main(int argc, char **argv) {
     glutInit(&argc, argv);
     // Double buffer + RGB + z-buffer
@@ -1340,8 +1349,9 @@ int main(int argc, char **argv) {
     glutReshapeFunc(reshape);
     glutIdleFunc(idle);
     glutKeyboardFunc(keyboard);
-    glutSpecialFunc(special);
-    glutSpecialUpFunc(specialUp);
+    glutKeyboardUpFunc(keyboardUp);
+    glutSpecialFunc(specialKeys);
+    glutSpecialUpFunc(specialKeysUp);
 
     glutMainLoop();
     return 0;

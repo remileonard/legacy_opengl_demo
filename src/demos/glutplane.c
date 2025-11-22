@@ -24,7 +24,7 @@
 #define M_PI_2 1.57079632
 #endif
 
-GLboolean moving = GL_FALSE;
+GLboolean moving = GL_TRUE;
 
 #define MAX_PLANES 15
 

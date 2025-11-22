@@ -68,6 +68,20 @@ A space shooter game inspired by classic arcade titles. Features:
 - Starfield background for depth effect
 - Score tracking and game over conditions
 
+### 🏎️ Road
+A pseudo-3D racing game with a first-person perspective. Features:
+- Player-controlled car navigating a winding road
+- Scrolling road and roadside objects for depth illusion
+- Basic collision detection and scoring system
+
+### 🎆 Plasma
+Various 2D retro demos effects using glDrawPixels for rendering.
+- Plasma effect
+- Shade bobs
+- metaballs
+- unlimited bobs
+
+
 
 ## Prerequisites
 
