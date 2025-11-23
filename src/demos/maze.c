@@ -28,7 +28,7 @@
 
 #include <GL/gl.h>
 #include <GL/glu.h>
-#include <GL/freeglut.h>
+#include <GL/glut.h>
 
 #include <assert.h>
 #include <math.h>
@@ -39,8 +39,8 @@
 #define IDM_APPLICATION_EXIT (101)
 #define IDM_APPLICATION_TEXTURE (102)
 #define IDM_APPLICATION_BANK (103)
-#define MAZE_HEIGHT (16)
-#define MAZE_WIDTH (16)
+#define MAZE_HEIGHT (21)
+#define MAZE_WIDTH (21)
 #define TARGET_FPS 60
 #define FRAME_TIME_MS (1000.0 / TARGET_FPS)
 #define STARTING_POINT_X (1.5f);
@@ -56,24 +56,7 @@ static clock_t last_frame_time = 0;
 
 // unfortunately due to the way the polygon walls are generated there
 // are restrictions on what the wall/maze data can look like.  See below.
-char *mazedata[MAZE_HEIGHT] = {
-    "****************",
-    "*       *      *",
-    "* * *** * *    *",
-    "* **  * ** * * *",
-    "*     *      * *",
-    "********** *** *",
-    "*           *  *",
-    "*       *** ****",
-    "* *****   *    *",
-    "*     *****    *",
-    "* *   *   *  * *",
-    "* ***** **** * *",
-    "*     *      * *",
-    "** ** **** *** *",
-    "*   * *    *   *",
-    "************* **",
-};
+char mazedata[MAZE_HEIGHT][MAZE_WIDTH];
 
 float player_x = STARTING_POINT_X;
 float player_y = STARTING_POINT_Y;
@@ -102,6 +85,12 @@ float clr[4][3] = {
     {0.0f, 0.0f, 1.0f},
     {1.0f, 1.0f, 0.0f},
 };
+typedef struct {
+    int x, y, width, height;
+} Room;
+typedef struct {
+    int x, y;
+} Cell;
 static float texcoordX = 0.0f;
 
 void (*idlefunc)(void) = NULL;
@@ -116,11 +105,8 @@ void moveplayer();
 int forward(float px, float py, float bf);
 
 int wall(int x, int y);
-int onopen(int x, int y);
-void closeit(int x, int y);
-int neighbor(int x, int y, int w, int *nx, int *ny);
-int diagnol(int x, int y, int w, int *nx, int *ny);
 int drawtop();
+int drawwalls();
 static int drawground(void);
 static int drawcelling(void);
 
@@ -132,6 +118,196 @@ static void specialUp(int key, int x, int y);
 static void display(void);
 static void initGL(void);
 
+void generate_random_maze(void) {
+    int x, y;
+    Cell stack[MAZE_WIDTH * MAZE_HEIGHT];
+    int stack_size = 0;
+    Room rooms[10];
+    int num_rooms = 0;
+    int visited[MAZE_HEIGHT][MAZE_WIDTH];
+    int max_rooms = 3 + (rand() % 5);
+    int current_x = 1;
+    int current_y = 1;
+    int dx[] = {0, 1, 0, -1};
+    int dy[] = {-1, 0, 1, 0};
+    int exit_side = rand() % 4;
+    int exit_pos;
+
+    for (y = 0; y < MAZE_HEIGHT; y++) {
+        for (x = 0; x < MAZE_WIDTH; x++) {
+            mazedata[y][x] = '*';
+        }
+    }
+    
+    
+    for (y = 0; y < MAZE_HEIGHT; y++) {
+        for (x = 0; x < MAZE_WIDTH; x++) {
+            visited[y][x] = 0;
+        }
+    }
+    
+    for (int r = 0; r < max_rooms && num_rooms < 10; r++) {
+        int room_width = 3 + (rand() % 3) * 2;   // 3, 5 ou 7
+        int room_height = 3 + (rand() % 3) * 2;  // 3, 5 ou 7
+
+        int room_x = 1 + (rand() % ((MAZE_WIDTH - room_width - 2) / 2)) * 2;
+        int room_y = 1 + (rand() % ((MAZE_HEIGHT - room_height - 2) / 2)) * 2;
+        int overlap = 0;
+
+        if (room_x + room_width >= MAZE_WIDTH - 1 || room_y + room_height >= MAZE_HEIGHT - 1)
+            continue;
+
+        
+        for (int i = 0; i < num_rooms; i++) {
+            if (!(room_x + room_width + 2 < rooms[i].x || 
+                  room_x > rooms[i].x + rooms[i].width + 2 ||
+                  room_y + room_height + 2 < rooms[i].y || 
+                  room_y > rooms[i].y + rooms[i].height + 2)) {
+                overlap = 1;
+                break;
+            }
+        }
+        
+        if (overlap)
+            continue;
+        
+        rooms[num_rooms].x = room_x;
+        rooms[num_rooms].y = room_y;
+        rooms[num_rooms].width = room_width;
+        rooms[num_rooms].height = room_height;
+        num_rooms++;
+
+        for (int ry = room_y; ry < room_y + room_height; ry++) {
+            for (int rx = room_x; rx < room_x + room_width; rx++) {
+                mazedata[ry][rx] = ' ';
+                visited[ry][rx] = 1;
+            }
+        }
+    }
+    
+
+    mazedata[current_y][current_x] = ' ';
+    visited[current_y][current_x] = 1;
+    
+    stack[stack_size++] = (Cell){current_x, current_y};
+    
+
+    
+    while (stack_size > 0) {
+        current_x = stack[stack_size - 1].x;
+        current_y = stack[stack_size - 1].y;
+
+        int neighbors[4];
+        int neighbor_count = 0;
+        
+        for (int dir = 0; dir < 4; dir++) {
+            int nx = current_x + dx[dir] * 2;
+            int ny = current_y + dy[dir] * 2;
+
+            if (nx >= 1 && nx < MAZE_WIDTH - 1 && 
+                ny >= 1 && ny < MAZE_HEIGHT - 1 && 
+                !visited[ny][nx]) {
+                neighbors[neighbor_count++] = dir;
+            }
+        }
+        
+        if (neighbor_count > 0) {
+            int chosen_dir = neighbors[rand() % neighbor_count];
+
+            int wall_x = current_x + dx[chosen_dir];
+            int wall_y = current_y + dy[chosen_dir];
+            int next_x = current_x + dx[chosen_dir] * 2;
+            int next_y = current_y + dy[chosen_dir] * 2;
+            
+            mazedata[wall_y][wall_x] = ' ';
+            mazedata[next_y][next_x] = ' ';
+            visited[next_y][next_x] = 1;
+
+            stack[stack_size++] = (Cell){next_x, next_y};
+        } else {
+            stack_size--;
+        }
+    }
+
+    for (int r = 0; r < num_rooms; r++) {
+        int num_doors = 1 + (rand() % 3); // 1 à 3 portes
+        
+        for (int d = 0; d < num_doors; d++) {
+            int side = rand() % 4;
+            int door_x, door_y;
+            
+            switch (side) {
+                case 0: // Haut
+                    door_x = rooms[r].x + 1 + (rand() % (rooms[r].width - 2));
+                    if (door_x % 2 == 0) door_x--;
+                    door_y = rooms[r].y - 1;
+                    if (door_y >= 1) {
+                        mazedata[door_y][door_x] = ' ';
+                    }
+                    break;
+                    
+                case 1: // Droite
+                    door_x = rooms[r].x + rooms[r].width;
+                    door_y = rooms[r].y + 1 + (rand() % (rooms[r].height - 2));
+                    if (door_y % 2 == 0) door_y--;
+                    if (door_x < MAZE_WIDTH - 1) {
+                        mazedata[door_y][door_x] = ' ';
+                    }
+                    break;
+                    
+                case 2: // Bas
+                    door_x = rooms[r].x + 1 + (rand() % (rooms[r].width - 2));
+                    if (door_x % 2 == 0) door_x--;
+                    door_y = rooms[r].y + rooms[r].height;
+                    if (door_y < MAZE_HEIGHT - 1) {
+                        mazedata[door_y][door_x] = ' ';
+                    }
+                    break;
+                    
+                case 3: // Gauche
+                    door_x = rooms[r].x - 1;
+                    door_y = rooms[r].y + 1 + (rand() % (rooms[r].height - 2));
+                    if (door_y % 2 == 0) door_y--;
+                    if (door_x >= 1) {
+                        mazedata[door_y][door_x] = ' ';
+                    }
+                    break;
+            }
+        }
+    }
+    
+    mazedata[1][1] = ' ';
+
+    switch (exit_side) {
+        case 0: // Bord haut (y = 0)
+            exit_pos = 1 + (rand() % (MAZE_WIDTH - 2));
+            if (exit_pos % 2 == 0) exit_pos--; // Assurer une position impaire
+            mazedata[0][exit_pos] = ' ';
+            if (exit_pos < MAZE_WIDTH) mazedata[1][exit_pos] = ' ';
+            break;
+            
+        case 1: // Bord droit (x = MAZE_WIDTH - 1)
+            exit_pos = 1 + (rand() % (MAZE_HEIGHT - 2));
+            if (exit_pos % 2 == 0) exit_pos--; // Assurer une position impaire
+            mazedata[exit_pos][MAZE_WIDTH - 1] = ' ';
+            if (MAZE_WIDTH >= 2) mazedata[exit_pos][MAZE_WIDTH - 2] = ' ';
+            break;
+            
+        case 2: // Bord bas (y = MAZE_HEIGHT - 1)
+            exit_pos = 1 + (rand() % (MAZE_WIDTH - 2));
+            if (exit_pos % 2 == 0) exit_pos--; // Assurer une position impaire
+            mazedata[MAZE_HEIGHT - 1][exit_pos] = ' ';
+            if (MAZE_HEIGHT >= 2) mazedata[MAZE_HEIGHT - 2][exit_pos] = ' ';
+            break;
+            
+        case 3: // Bord gauche (x = 0)
+            exit_pos = 1 + (rand() % (MAZE_HEIGHT - 2));
+            if (exit_pos % 2 == 0) exit_pos--; // Assurer une position impaire
+            mazedata[exit_pos][0] = ' ';
+            mazedata[exit_pos][1] = ' ';
+            break;
+    }
+}
 void readtexture() {
     unsigned char *image;
     int rc;
@@ -181,115 +357,65 @@ int wall(int x, int y) {
     // should be surrounded by other solid space or polygon walls
     return (x >= 0 && y >= 0 && x < MAZE_WIDTH && y < MAZE_HEIGHT && ' ' != mazedata[y][x]);
 }
-/*
- * The next group of routines implements the depth-first search
- * that is used to wrap a quad strip around all the solid regions of the
- * maze.  Note this enforces certain topological restrictions on the
- * maze data itself.  There cant be any loops, clusters, or floating pieces
- * existing by themselves.  The solid nodes must be a tree (graph theory speak).
- *
- */
-int onopen(int x, int y) {
-    //  returns whether node x,y is on the depth-first search open list
-    assert(wall(x, y));
-    return (mazedata[y][x] == '*');
-}
-void closeit(int x, int y) {
-    //  puts node x,y on the closed list
-    assert(wall(x, y));
-    assert(onopen(x, y));
-    mazedata[y][x] = 'X';
-}
-int neighbor(int x, int y, int w, int *nx, int *ny) {
-    // if x,y has a neighbor in direction w then returns true
-    switch (w) {
-    case 0:
-        *nx = x - 1;
-        *ny = y;
-        break;
-    case 1:
-        *nx = x;
-        *ny = y + 1;
-        break;
-    case 2:
-        *nx = x + 1;
-        *ny = y;
-        break;
-    case 3:
-        *nx = x;
-        *ny = y - 1;
-        break;
-    default:
-        assert(0);
-    }
-    return wall(*nx, *ny);
-}
-int diagnol(int x, int y, int w, int *nx, int *ny) {
-    switch (w) {
-    case 0:
-        *nx = x - 1;
-        *ny = y - 1;
-        break;
-    case 1:
-        *nx = x - 1;
-        *ny = y + 1;
-        break;
-    case 2:
-        *nx = x + 1;
-        *ny = y + 1;
-        break;
-    case 3:
-        *nx = x + 1;
-        *ny = y - 1;
-        break;
-    default:
-        assert(0);
-    }
-    return wall(*nx, *ny);
-}
-int dw(int x, int y, int p) {
-    // the recursive draw wall routine that extends the quad strip
-    int w = p; // w is the current wall direction being considered
-    closeit(x, y);
-    do {
-        int x2, y2;
-        if (neighbor(x, y, w, &x2, &y2)) {
-            if (onopen(x2, y2)) {
-                dw(x2, y2, (w + 3) % 4);
-            } else {
-                assert((w + 1) % 4 == p); // or a loop or cluster exists
-                return 1;
-            }
-        } else {
-            float fx;
-            float fy;
-            if (diagnol(x, y, w, &x2, &y2) && onopen(x2, y2)) {
-                dw(x2, y2, (w + 2) % 4);
-            }
-            glNormal3fv(nrml[w]); // useful iff using lighting
-            glColor3fv(clr[w]);
-            texcoordX = (texcoordX < 0.5) ? 1.0f : 0.0f;
-            fx = (float)x + ((w == 1 || w == 2) ? 1.0f : 0.0f);
-            fy = (float)y + ((w == 0 || w == 1) ? 1.0f : 0.0f);
-            glTexCoord2f(texcoordX, 0.0f); // useful iff using textures
-            glVertex3f(fx, fy, 0.0f);
-            glTexCoord2f(texcoordX, 1.0f);
-            glVertex3f(fx, fy, 1.0f);
-        }
 
-        w++;
-        w %= 4;
-    } while (w != p);
-    return 1;
-}
 int drawwalls() {
-    int dl;
+    int x, y, dl;
     glNewList(dl = glGenLists(1), GL_COMPILE);
-    glBegin(GL_QUAD_STRIP);
-    glVertex3f(0.0f, 0.0f, 0.0f);
-    glVertex3f(0.0f, 0.0f, 1.0f);
-    dw(0, 0, 0);
-    glEnd();
+    
+    texcoordX = 0.0f;
+    for (y = 0; y < MAZE_HEIGHT; y++) {
+        for (x = 0; x < MAZE_WIDTH; x++) {
+            
+            if (wall(x, y)) {
+                glBegin(GL_QUADS);
+                // left side
+                glNormal3fv(nrml[0]);
+                glColor3fv(clr[0]);
+                glTexCoord2f(0.0f, 0.0f);
+                glVertex3f(x + 0.0f, y + 0.0f, 0.0f);
+                glTexCoord2f(1.0f, 0.0f);
+                glVertex3f(x + 0.0f, y + 0.0f, 1.0f);
+                glTexCoord2f(1.0f, 1.0f);
+                glVertex3f(x + 0.0f, y + 1.0f, 1.0f);
+                glTexCoord2f(0.0f, 1.0f);
+                glVertex3f(x + 0.0f, y + 1.0f, 0.0f);
+                // right side
+                glNormal3fv(nrml[2]);
+                glColor3fv(clr[2]);
+                glTexCoord2f(0.0f, 0.0f);
+                glVertex3f(x + 1.0f, y + 0.0f, 0.0f);
+                glTexCoord2f(1.0f, 0.0f);
+                glVertex3f(x + 1.0f, y + 1.0f, 0.0f);
+                glTexCoord2f(1.0f, 1.0f);
+                glVertex3f(x + 1.0f, y + 1.0f, 1.0f);
+                glTexCoord2f(0.0f, 1.0f);
+                glVertex3f(x + 1.0f, y + 0.0f, 1.0f);
+                // front side
+                glNormal3fv(nrml[1]);
+                glColor3fv(clr[1]);
+                glTexCoord2f(0.0f, 0.0f);
+                glVertex3f(x + 0.0f, y + 1.0f, 0.0f);
+                glTexCoord2f(1.0f, 0.0f);
+                glVertex3f(x + 0.0f, y + 1.0f, 1.0f);
+                glTexCoord2f(1.0f, 1.0f);
+                glVertex3f(x + 1.0f, y + 1.0f, 1.0f);
+                glTexCoord2f(0.0f, 1.0f);
+                glVertex3f(x + 1.0f, y + 1.0f, 0.0f);
+                // back side
+                glNormal3fv(nrml[3]);
+                glColor3fv(clr[3]);
+                glTexCoord2f(0.0f, 0.0f);
+                glVertex3f(x + 0.0f, y + 0.0f, 0.0f);
+                glTexCoord2f(1.0f, 0.0f);
+                glVertex3f(x + 1.0f, y + 0.0f, 0.0f);
+                glTexCoord2f(1.0f, 1.0f);
+                glVertex3f(x + 1.0f, y + 0.0f, 1.0f);
+                glTexCoord2f(0.0f, 1.0f);
+                glVertex3f(x + 0.0f, y + 0.0f, 1.0f);
+                glEnd();
+            }
+        }
+    }
     glEndList();
     return dl;
 }
@@ -525,7 +651,12 @@ void navmaze(void) {
     glPopMatrix();
     glutSwapBuffers();
 
-    if (player_x > MAZE_WIDTH || player_y > MAZE_HEIGHT) {
+    if (player_x > MAZE_WIDTH || player_y > MAZE_HEIGHT || player_x < 0 || player_y < 0) {
+        generate_random_maze();
+        glDeleteLists(walllist, 1);
+        walllist = drawwalls();
+        glDeleteLists(mazelist, 1);
+        mazelist = drawtop();
         idlefunc = spinmaze;
     }
 }
@@ -731,7 +862,7 @@ int main(int argc, char **argv) {
 
     // bouton droit de la souris = menu
     glutAttachMenu(GLUT_RIGHT_BUTTON);
-
+    generate_random_maze();
     initGL();
 
     glutDisplayFunc(display);

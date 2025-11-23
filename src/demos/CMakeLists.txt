@@ -1,4 +1,3 @@
-
 set(SIMPLE_EXECUTABLES
     bounce
     glutplane
@@ -12,6 +11,7 @@ set(SIMPLE_EXECUTABLES
 
 foreach(target ${SIMPLE_EXECUTABLES})
     if(EXISTS "${CMAKE_SOURCE_DIR}/src/demos/${target}.c")
+        
         if(NOT WIN32)
             add_executable(${target}  ${target}.c)
         else()
