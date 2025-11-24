@@ -71,6 +71,13 @@ int mazelist = 0;
 int groundlist = 0;
 int cellinglist = 0;
 
+typedef struct {
+    float x, y;
+    enum { TREASURE, MONSTER, EXIT } type;
+} mazeobj;
+
+mazeobj ghost;
+
 // normal vectors for each wall direction
 float nrml[4][3] = {
     {-1.0f, 0.0f, 0.0f},
@@ -185,6 +192,14 @@ void generate_random_maze(void) {
         }
     }
     
+    int monster_start_room = rand() % num_rooms;
+    rand();
+    int monster_current_x = rooms[monster_start_room].x + rooms[monster_start_room].width / 2;
+    int monster_current_y = rooms[monster_start_room].y + rooms[monster_start_room].height / 2;
+    
+    ghost.x = (float)monster_current_x;
+    ghost.y = (float)monster_current_y;
+    ghost.type = MONSTER;
 
     mazedata[current_y][current_x] = ' ';
     visited[current_y][current_x] = 1;
@@ -588,6 +603,12 @@ void mapmaze(void) {
     glCallList(groundlist);
     glCallList(walllist);
     glCallList(mazelist);
+    glPushMatrix();
+    glTranslatef(ghost.x, ghost.y, 0.5f);
+    GLfloat light_position_ghost[] = {ghost.x, ghost.y, 0.5f, 1.0f};
+    glLightfv(GL_LIGHT0, GL_POSITION,       light_position_ghost);
+    glutSolidCube(0.5f);
+    glPopMatrix();
     glTranslatef(player_x, player_y, 0.5f);
     GLfloat light_position[] = {0, 0, 0.5f, 1.0f};
     glLightfv(GL_LIGHT0, GL_POSITION,       light_position);
@@ -627,27 +648,52 @@ void entermaze(void) {
 }
 
 void navmaze(void) {
-
     moveplayer();
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glLoadIdentity();
     
     glPushMatrix();
-    // 1) Construire la vue (caméra)
     glRotatef(-90.0f, 1.0f, 0.0f, 0.0f);
     if (enablebank)
         glRotatef(-player_b, 0.0f, 1.0f, 0.0f);
     glRotatef(player_h, 0.0f, 0.0f, 1.0f);
     glTranslatef(-player_x, -player_y, -0.5f);
-    GLfloat light_position[] = {player_x, player_y, 0.5f, 1.0f};
-    glLightfv(GL_LIGHT0, GL_POSITION,       light_position);
 
-    // 3) Dessiner la scène
+    GLfloat light_position[] = {player_x, player_y, 0.5f, 1.0f};
+    glLightfv(GL_LIGHT0, GL_POSITION, light_position);
+
     glCallList(groundlist);
     glCallList(cellinglist);
     glCallList(walllist);
     
+    glPushMatrix();
+    glTranslatef(ghost.x, ghost.y, 0.5f);
+    glutSolidCube(0.5f);
+    glPopMatrix();
+
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_ONE, GL_ONE);
+    glDepthFunc(GL_EQUAL);
+    glDepthMask(GL_FALSE);
+
+    
+    GLfloat light_position_ghost[] = {ghost.x, ghost.y, 0.5f, 1.0f};
+    glLightfv(GL_LIGHT0, GL_POSITION, light_position_ghost);
+
+    glCallList(groundlist);
+    glCallList(cellinglist);
+    glCallList(walllist);
+    
+    glPushMatrix();
+    glTranslatef(ghost.x, ghost.y, 0.5f);
+    glutSolidCube(0.5f);
+    glPopMatrix();
+
+    glDisable(GL_BLEND);
+    glDepthFunc(GL_LESS);
+    glDepthMask(GL_TRUE);
+
     glPopMatrix();
     glutSwapBuffers();
 

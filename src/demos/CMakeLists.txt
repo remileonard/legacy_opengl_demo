@@ -7,6 +7,7 @@ set(SIMPLE_EXECUTABLES
     enterprise
     road
     plasma
+    reflexion
 )
 
 foreach(target ${SIMPLE_EXECUTABLES})

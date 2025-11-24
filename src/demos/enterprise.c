@@ -17,6 +17,17 @@
 
 #define TARGET_FPS 60
 #define FRAME_TIME_MS (1000.0 / TARGET_FPS)
+#define CALC_NORMAL(v1x, v1y, v1z, v2x, v2y, v2z, v3x, v3y, v3z) \
+        { \
+            float ux = v2x - v1x, uy = v2y - v1y, uz = v2z - v1z; \
+            float vx = v3x - v1x, vy = v3y - v1y, vz = v3z - v1z; \
+            float nx = uy * vz - uz * vy; \
+            float ny = uz * vx - ux * vz; \
+            float nz = ux * vy - uy * vx; \
+            float len = sqrtf(nx*nx + ny*ny + nz*nz); \
+            if (len > 0.0001f) { nx /= len; ny /= len; nz /= len; } \
+            glNormal3f(nx, ny, nz); \
+        }
 
 enum entity_type {
     ENTITY_TYPE_PLAYER,
@@ -428,6 +439,7 @@ static void update_starfield(float delta_time) {
     previous_player_heading = player.h;
 }
 static void draw_starfield(void) {
+    glDisable(GL_LIGHTING);
     glPushMatrix();
     glTranslatef(-player.x * 0.2f, -player.y * 0.2f, -5.0f);
     glColor3f(1.0f, 1.0f, 1.0f);
@@ -663,84 +675,181 @@ static void render_top_left_2d(int viewport_width, int viewport_height) {
     );
 }
 static void draw_spaceship_top_view(void) {
-    // Corps principal - triangle vue de dessus
-    glBegin(GL_TRIANGLES);
-    glColor3f(0.6f, 0.6f, 0.7f);
-    glVertex2f(0.0f, 0.05f);        // Pointe avant
-    glVertex2f(-0.03f, -0.05f);     // Arrière gauche
-    glVertex2f(0.03f, -0.05f);      // Arrière droit
+    // Corps central (cou allongé) - vue de dessus
+    glBegin(GL_QUADS);
+    glColor3f(0.3f, 0.4f, 0.3f);
+    glVertex2f(-0.008f, 0.05f);      // Haut gauche du cou
+    glVertex2f(0.008f, 0.05f);       // Haut droit du cou
+    glVertex2f(0.008f, -0.08f);      // Bas droit du cou
+    glVertex2f(-0.008f, -0.08f);     // Bas gauche du cou
     glEnd();
     
-    // Cockpit - petit triangle au centre avant
+    // Tête/Cockpit (bec pointu)
     glBegin(GL_TRIANGLES);
-    glColor3f(0.2f, 0.5f, 0.8f);
-    glVertex2f(0.0f, 0.03f);
-    glVertex2f(-0.01f, 0.0f);
-    glVertex2f(0.01f, 0.0f);
+    glColor3f(0.4f, 0.5f, 0.4f);
+    glVertex2f(0.0f, 0.1f);          // Pointe avant
+    glVertex2f(-0.015f, 0.05f);      // Gauche
+    glVertex2f(0.015f, 0.05f);       // Droite
     glEnd();
+    
+    // Aile gauche (forme de rapace déployée)
+    glBegin(GL_POLYGON);
+    glColor3f(0.35f, 0.45f, 0.35f);
+    glVertex2f(-0.008f, 0.0f);       // Attache au corps
+    glVertex2f(-0.02f, 0.01f);       // Bord avant interne
+    glVertex2f(-0.055f, -0.03f);     // Pointe avant de l'aile
+    glVertex2f(-0.08f, -0.06f);      // Extrémité de l'aile
+    glVertex2f(-0.05f, -0.08f);      // Bord arrière externe
+    glVertex2f(-0.03f, -0.09f);      // Pointe arrière
+    glVertex2f(-0.015f, -0.08f);     // Retour vers le corps
+    glEnd();
+    
+    // Aile droite (symétrique)
+    glBegin(GL_POLYGON);
+    glColor3f(0.35f, 0.45f, 0.35f);
+    glVertex2f(0.008f, 0.0f);        // Attache au corps
+    glVertex2f(0.015f, -0.08f);      // Retour vers le corps
+    glVertex2f(0.03f, -0.09f);       // Pointe arrière
+    glVertex2f(0.05f, -0.08f);       // Bord arrière externe
+    glVertex2f(0.08f, -0.06f);       // Extrémité de l'aile
+    glVertex2f(0.055f, -0.03f);      // Pointe avant de l'aile
+    glVertex2f(0.02f, 0.01f);        // Bord avant interne
+    glEnd();
+    
+    // Détails des ailes - bords accentués
+    glColor3f(0.25f, 0.35f, 0.25f);
+    glLineWidth(1.5f);
+    
+    // Contour aile gauche
+    glBegin(GL_LINE_STRIP);
+    glVertex2f(-0.008f, 0.0f);
+    glVertex2f(-0.02f, 0.01f);
+    glVertex2f(-0.055f, -0.03f);
+    glVertex2f(-0.08f, -0.06f);
+    glVertex2f(-0.05f, -0.08f);
+    glVertex2f(-0.03f, -0.09f);
+    glEnd();
+    
+    // Contour aile droite
+    glBegin(GL_LINE_STRIP);
+    glVertex2f(0.008f, 0.0f);
+    glVertex2f(0.02f, 0.01f);
+    glVertex2f(0.055f, -0.03f);
+    glVertex2f(0.08f, -0.06f);
+    glVertex2f(0.05f, -0.08f);
+    glVertex2f(0.03f, -0.09f);
+    glEnd();
+    
+    glLineWidth(1.0f);
+    
+    // Moteurs rouges à l'arrière des ailes
+    glColor3f(1.0f, 0.2f, 0.0f);
     
     // Moteur gauche
-    glBegin(GL_TRIANGLES);
-    glColor3f(0.5f, 0.5f, 0.6f);
-    glVertex2f(-0.025f, -0.03f);
-    glVertex2f(-0.035f, -0.06f);
-    glVertex2f(-0.015f, -0.06f);
+    glBegin(GL_POLYGON);
+    glVertex2f(-0.062f, -0.065f);
+    glVertex2f(-0.068f, -0.065f);
+    glVertex2f(-0.068f, -0.075f);
+    glVertex2f(-0.062f, -0.075f);
     glEnd();
     
     // Moteur droit
-    glBegin(GL_TRIANGLES);
-    glColor3f(0.5f, 0.5f, 0.6f);
-    glVertex2f(0.025f, -0.03f);
-    glVertex2f(0.035f, -0.06f);
-    glVertex2f(0.015f, -0.06f);
+    glBegin(GL_POLYGON);
+    glVertex2f(0.062f, -0.065f);
+    glVertex2f(0.068f, -0.065f);
+    glVertex2f(0.068f, -0.075f);
+    glVertex2f(0.062f, -0.075f);
     glEnd();
     
+    // Canon disrupteur (petit point rouge sous le cockpit)
+    glColor3f(0.8f, 0.1f, 0.1f);
+    glPointSize(3.0f);
+    glBegin(GL_POINTS);
+    glVertex2f(0.0f, 0.07f);
+    glEnd();
+    glPointSize(1.0f);
 }
 static void draw_player_ship_top_view(void) {
-    // Corps principal - forme de flèche allongée
-    glBegin(GL_TRIANGLES);
-    glColor3f(0.8f, 0.3f, 0.3f);
-    glVertex2f(0.0f, 0.07f);        // Pointe avant longue
-    glVertex2f(-0.02f, -0.01f);     // Milieu gauche
-    glVertex2f(0.02f, -0.01f);      // Milieu droit
+    // Soucoupe principale (saucer section) - forme elliptique
+    glBegin(GL_TRIANGLE_FAN);
+    glColor3f(0.7f, 0.7f, 0.75f);
+    glVertex2f(0.0f, 0.0f); // Centre
+    
+    // Dessiner un cercle aplati (ellipse)
+    int segments = 20;
+    for (int i = 0; i <= segments; ++i) {
+        float angle = (float)i / (float)segments * 2.0f * 3.14159265f;
+        float x = cosf(angle) * 0.035f; // Largeur
+        float y = sinf(angle) * 0.035f; // Hauteur (plus court)
+        glVertex2f(x, y);
+    }
     glEnd();
     
-    // Section arrière du corps
-    glBegin(GL_QUADS);
-    glColor3f(0.7f, 0.2f, 0.2f);
-    glVertex2f(-0.02f, -0.01f);
-    glVertex2f(0.02f, -0.01f);
-    glVertex2f(0.015f, -0.04f);
-    glVertex2f(-0.015f, -0.04f);
-    glEnd();
-    
-    // Cockpit - capsule au centre
-    glBegin(GL_QUADS);
-    glColor3f(0.3f, 0.6f, 0.9f);
-    glVertex2f(-0.008f, 0.02f);
-    glVertex2f(0.008f, 0.02f);
-    glVertex2f(0.008f, 0.0f);
-    glVertex2f(-0.008f, 0.0f);
-    glEnd();
-    
-    // Réacteur gauche
-    glBegin(GL_QUADS);
+    // Bridge/pont (petit dôme au centre de la soucoupe)
+    glBegin(GL_TRIANGLE_FAN);
     glColor3f(0.5f, 0.5f, 0.6f);
-    glVertex2f(-0.025f, -0.04f);
-    glVertex2f(-0.015f, -0.04f);
-    glVertex2f(-0.015f, -0.05f);
-    glVertex2f(-0.025f, -0.05f);
+    glVertex2f(0.0f, 0.0f);
+    for (int i = 0; i <= segments; ++i) {
+        float angle = (float)i / (float)segments * 2.0f * 3.14159265f;
+        float x = cosf(angle) * 0.008f;
+        float y = sinf(angle) * 0.006f;
+        glVertex2f(x, y);
+    }
     glEnd();
     
-    
-    // Réacteur droit
+    // Cou de connexion (neck) - fin et allongé vers l'arrière
     glBegin(GL_QUADS);
-    glColor3f(0.5f, 0.5f, 0.6f);
-    glVertex2f(0.015f, -0.04f);
-    glVertex2f(0.025f, -0.04f);
-    glVertex2f(0.025f, -0.05f);
-    glVertex2f(0.015f, -0.05f);
+    glColor3f(0.6f, 0.6f, 0.65f);
+    glVertex2f(-0.004f, -0.025f);  // Haut gauche
+    glVertex2f(0.004f, -0.025f);   // Haut droit
+    glVertex2f(0.004f, -0.055f);   // Bas droit
+    glVertex2f(-0.004f, -0.055f);  // Bas gauche
     glEnd();
+    
+    // Section d'ingénierie (corps secondaire) - cylindre allongé
+    glBegin(GL_QUADS);
+    glColor3f(0.65f, 0.65f, 0.7f);
+    glVertex2f(-0.012f, -0.050f);
+    glVertex2f(0.012f, -0.050f);
+    glVertex2f(0.012f, -0.11f);
+    glVertex2f(-0.012f, -0.11f);
+    glEnd();
+    
+    
+    // Nacelle de distorsion gauche (warp nacelle)
+    glBegin(GL_QUADS);
+    glColor3f(0.4f, 0.5f, 0.6f);
+    glVertex2f(-0.042f, -0.05f);   // Avant gauche
+    glVertex2f(-0.032f, -0.05f);   // Avant droit
+    glVertex2f(-0.032f, -0.13f);   // Arrière droit
+    glVertex2f(-0.042f, -0.13f);   // Arrière gauche
+    glEnd();
+    
+
+    
+    // Nacelle de distorsion droite
+    glBegin(GL_QUADS);
+    glColor3f(0.4f, 0.5f, 0.6f);
+    glVertex2f(0.038f, -0.05f);
+    glVertex2f(0.048f, -0.05f);
+    glVertex2f(0.048f, -0.13f);
+    glVertex2f(0.038f, -0.13f);
+    glEnd();
+    
+    
+    // Détails - lignes de séparation sur la soucoupe
+    glColor3f(0.5f, 0.5f, 0.55f);
+    glLineWidth(1.0f);
+    glBegin(GL_LINES);
+    // Ligne horizontale
+    glVertex2f(-0.03f, 0.0f);
+    glVertex2f(0.03f, 0.0f);
+    // Ligne verticale
+    glVertex2f(0.0f, 0.02f);
+    glVertex2f(0.0f, -0.02f);
+    glEnd();
+    
+    glLineWidth(1.0f);
 }
 static void render_top_right_2d(int viewport_width, int viewport_height) {
     (void)viewport_width;
@@ -766,206 +875,313 @@ static void render_top_right_2d(int viewport_width, int viewport_height) {
             
             glBegin(GL_QUADS);
             glColor3f(0.0f, 1.0f, 0.0f);
-            glVertex2f(-0.02f, -0.02f);
-            glVertex2f(0.02f, -0.02f);
-            glVertex2f(0.02f, 0.02f);
-            glVertex2f(-0.02f, 0.02f);
+            glVertex2f(-0.01f, -0.02f);
+            glVertex2f(0.01f, -0.02f);
+            glVertex2f(0.01f, 0.02f);
+            glVertex2f(-0.01f, 0.02f);
             glEnd();
             
         } else if (current->entities->type == ENTITY_TYPE_ENEMY) {
-            draw_spaceship_top_view();   
+            glScalef(0.8f, 0.8f, 0.8f);
+            draw_spaceship();   
         }
         glPopMatrix();
         node = node->next;
     }
     glPushMatrix();
+    
     glTranslatef(player.x, player.y, 0.0f);
     glRotatef(player.h, 0.0f, 0.0f, 1.0f);
+    glPushMatrix();
     draw_player_ship_top_view();
+    glPopMatrix();
     glPopMatrix();
 }
 static void draw_spaceship(void) {
-    // Corps principal - forme de losange avec épaisseur
-    float body_height = 0.03f;
+    // =================================================================
+    // PARAMÈTRES DE GÉOMÉTRIE DU BIRD OF PREY
+    // =================================================================
     
-    // Fonction helper pour calculer la normale d'un triangle
-    #define CALC_NORMAL(v1x, v1y, v1z, v2x, v2y, v2z, v3x, v3y, v3z) \
-        { \
-            float ux = v2x - v1x, uy = v2y - v1y, uz = v2z - v1z; \
-            float vx = v3x - v1x, vy = v3y - v1y, vz = v3z - v1z; \
-            float nx = uy * vz - uz * vy; \
-            float ny = uz * vx - ux * vz; \
-            float nz = ux * vy - uy * vx; \
-            float len = sqrtf(nx*nx + ny*ny + nz*nz); \
-            if (len > 0.0001f) { nx /= len; ny /= len; nz /= len; } \
-            glNormal3f(nx, ny, nz); \
-        }
+    // Corps central (cou)
+    const float neck_width = 0.02f;
+    const float neck_front_y = 0.05f;
+    const float neck_back_y = -0.05f;
+    const float neck_thickness = 0.01f;
     
-    // Face supérieure du corps - triangle avant gauche
-    glBegin(GL_TRIANGLES);
-    glColor3f(0.6f, 0.6f, 0.7f);
-    CALC_NORMAL(0.0f, 0.1f, 0.0f, -0.05f, -0.05f, 0.0f, 0.0f, 0.0f, body_height);
-    glVertex3f(0.0f, 0.1f, 0.0f);
-    glVertex3f(-0.05f, -0.05f, 0.0f);
-    glVertex3f(0.0f, 0.0f, body_height);
+    // Cockpit (tête en bec)
+    const float head_tip_y = 0.1f;
+    const float head_base_y = neck_front_y;
+    const float head_width = 0.02f;
+    const float head_thickness = 0.01f;
     
-    // Face supérieure - triangle avant droit
-    CALC_NORMAL(0.0f, 0.1f, 0.0f, 0.0f, 0.0f, body_height, 0.05f, -0.05f, 0.0f);
-    glVertex3f(0.0f, 0.1f, 0.0f);
-    glVertex3f(0.0f, 0.0f, body_height);
-    glVertex3f(0.05f, -0.05f, 0.0f);
+    // Ailes (geometry principale)
+    const float wing_root_x = neck_width;           // Attache au corps
+    const float wing_root_y = neck_width;
+    const float wing_tip_x = 0.08f;                 // Extrémité externe
+    const float wing_tip_y = 0.01f;
+    const float wing_tip_z_top = -0.03f;
+    const float wing_tip_z_bottom = -0.04f;
+    const float wing_mid_x = 0.08f;                 // Point milieu arrière
+    const float wing_mid_y = -0.01f;
+    const float wing_back_x = 0.03f;                // Pointe arrière
+    const float wing_back_y = -0.05f;
+    const float wing_thickness_root = 0.01f;
+    const float wing_thickness_tip = 0.01f;
     
-    // Face supérieure - triangle arrière
-    CALC_NORMAL(-0.05f, -0.05f, 0.0f, 0.05f, -0.05f, 0.0f, 0.0f, 0.0f, body_height);
-    glVertex3f(-0.05f, -0.05f, 0.0f);
-    glVertex3f(0.05f, -0.05f, 0.0f);
-    glVertex3f(0.0f, 0.0f, body_height);
+    // Moteurs
+    const float engine_x = 0.065f;
+    const float engine_y = -0.07f;
+    const float engine_z = -0.035f;
+    const float engine_radius = 0.008f;
+    
+    // Canon disrupteur
+    const float cannon_y = 0.08f;
+    const float cannon_z = -0.015f;
+    const float cannon_scale = 0.01f;
+    
+    // =================================================================
+    // RENDU
+    // =================================================================
+    
+    // Corps central (cou allongé)
+    glBegin(GL_QUADS);
+    glColor3f(0.3f, 0.4f, 0.3f);
+    
+    // Dessus du cou
+    CALC_NORMAL(-neck_width, neck_front_y, neck_thickness, 
+                neck_width, neck_front_y, neck_thickness, 
+                neck_width, neck_back_y, neck_thickness);
+    glVertex3f(-neck_width, neck_front_y, neck_thickness);
+    glVertex3f(neck_width, neck_front_y, neck_thickness);
+    glVertex3f(neck_width, neck_back_y, neck_thickness);
+    glVertex3f(-neck_width, neck_back_y, neck_thickness);
+    
+    // Dessous du cou
+    glColor3f(0.2f, 0.3f, 0.2f);
+    CALC_NORMAL(-neck_width, neck_front_y, -neck_thickness, 
+                -neck_width, neck_back_y, -neck_thickness, 
+                neck_width, neck_back_y, -neck_thickness);
+    glVertex3f(-neck_width, neck_front_y, -neck_thickness);
+    glVertex3f(-neck_width, neck_back_y, -neck_thickness);
+    glVertex3f(neck_width, neck_back_y, -neck_thickness);
+    glVertex3f(neck_width, neck_front_y, -neck_thickness);
+    
+    // Côtés du cou
+    glColor3f(0.25f, 0.35f, 0.25f);
+    CALC_NORMAL(-neck_width, neck_front_y, neck_thickness, 
+                -neck_width, neck_back_y, neck_thickness, 
+                -neck_width, neck_back_y, -neck_thickness);
+    glVertex3f(-neck_width, neck_front_y, neck_thickness);
+    glVertex3f(-neck_width, neck_back_y, neck_thickness);
+    glVertex3f(-neck_width, neck_back_y, -neck_thickness);
+    glVertex3f(-neck_width, neck_front_y, -neck_thickness);
+    
+    CALC_NORMAL(neck_width, neck_front_y, neck_thickness, 
+                neck_width, neck_front_y, -neck_thickness, 
+                neck_width, neck_back_y, -neck_thickness);
+    glVertex3f(neck_width, neck_front_y, neck_thickness);
+    glVertex3f(neck_width, neck_front_y, -neck_thickness);
+    glVertex3f(neck_width, neck_back_y, -neck_thickness);
+    glVertex3f(neck_width, neck_back_y, neck_thickness);
     glEnd();
     
-    // Face inférieure du corps
+    // Tête/Cockpit (forme de bec rapace)
     glBegin(GL_TRIANGLES);
-    glColor3f(0.4f, 0.4f, 0.5f);
-    CALC_NORMAL(0.0f, 0.1f, 0.0f, 0.0f, 0.0f, -body_height, -0.05f, -0.05f, 0.0f);
-    glVertex3f(0.0f, 0.1f, 0.0f);
-    glVertex3f(0.0f, 0.0f, -body_height);
-    glVertex3f(-0.05f, -0.05f, 0.0f);
+    glColor3f(0.4f, 0.5f, 0.4f);
     
-    CALC_NORMAL(0.0f, 0.1f, 0.0f, 0.05f, -0.05f, 0.0f, 0.0f, 0.0f, -body_height);
-    glVertex3f(0.0f, 0.1f, 0.0f);
-    glVertex3f(0.05f, -0.05f, 0.0f);
-    glVertex3f(0.0f, 0.0f, -body_height);
+    // Dessus de la tête - pointe vers l'avant
+    CALC_NORMAL(0.0f, head_tip_y, 0.0f, 
+                -head_width, head_base_y, head_thickness, 
+                head_width, head_base_y, head_thickness);
+    glVertex3f(0.0f, head_tip_y, 0.0f);
+    glVertex3f(-head_width, head_base_y, head_thickness);
+    glVertex3f(head_width, head_base_y, head_thickness);
     
-    CALC_NORMAL(-0.05f, -0.05f, 0.0f, 0.0f, 0.0f, -body_height, 0.05f, -0.05f, 0.0f);
-    glVertex3f(-0.05f, -0.05f, 0.0f);
-    glVertex3f(0.0f, 0.0f, -body_height);
-    glVertex3f(0.05f, -0.05f, 0.0f);
+    // Côté gauche de la tête
+    CALC_NORMAL(0.0f, head_tip_y, 0.0f, 
+                -head_width, head_base_y, -head_thickness, 
+                -head_width, head_base_y, head_thickness);
+    glVertex3f(0.0f, head_tip_y, 0.0f);
+    glVertex3f(-head_width, head_base_y, -head_thickness);
+    glVertex3f(-head_width, head_base_y, head_thickness);
+    
+    // Côté droit de la tête
+    CALC_NORMAL(0.0f, head_tip_y, 0.0f, 
+                head_width, head_base_y, head_thickness, 
+                head_width, head_base_y, -head_thickness);
+    glVertex3f(0.0f, head_tip_y, 0.0f);
+    glVertex3f(head_width, head_base_y, head_thickness);
+    glVertex3f(head_width, head_base_y, -head_thickness);
+    
+    // Dessous de la tête
+    glColor3f(0.3f, 0.4f, 0.3f);
+    CALC_NORMAL(0.0f, head_tip_y, 0.0f, 
+                head_width, head_base_y, -head_thickness, 
+                -head_width, head_base_y, -head_thickness);
+    glVertex3f(0.0f, head_tip_y, 0.0f);
+    glVertex3f(head_width, head_base_y, -head_thickness);
+    glVertex3f(-head_width, head_base_y, -head_thickness);
     glEnd();
     
-    // Côtés du corps
+    // =============== AILE GAUCHE ===============
     glBegin(GL_TRIANGLES);
-    glColor3f(0.5f, 0.5f, 0.6f);
-    // Avant gauche
-    CALC_NORMAL(0.0f, 0.1f, 0.0f, 0.0f, 0.0f, body_height, 0.0f, 0.0f, -body_height);
-    glVertex3f(0.0f, 0.1f, 0.0f);
-    glVertex3f(0.0f, 0.0f, body_height);
-    glVertex3f(0.0f, 0.0f, -body_height);
+    glColor3f(0.35f, 0.45f, 0.35f);
     
-    // Arrière
-    CALC_NORMAL(-0.05f, -0.05f, 0.0f, 0.0f, 0.0f, -body_height, 0.0f, 0.0f, body_height);
-    glVertex3f(-0.05f, -0.05f, 0.0f);
-    glVertex3f(0.0f, 0.0f, -body_height);
-    glVertex3f(0.0f, 0.0f, body_height);
+    // Face supérieure de l'aile gauche
+    CALC_NORMAL(-wing_root_x, wing_root_y, 0.0f, 
+                -wing_tip_x, wing_tip_y, wing_tip_z_top, 
+                -wing_mid_x, wing_mid_y, wing_tip_z_top - wing_thickness_tip);
+    glVertex3f(-wing_root_x, wing_root_y, 0.0f);
+    glVertex3f(-wing_tip_x, wing_tip_y, wing_tip_z_top);
+    glVertex3f(-wing_mid_x, wing_mid_y, wing_tip_z_top - wing_thickness_tip);
     
-    CALC_NORMAL(0.05f, -0.05f, 0.0f, 0.0f, 0.0f, body_height, 0.0f, 0.0f, -body_height);
-    glVertex3f(0.05f, -0.05f, 0.0f);
-    glVertex3f(0.0f, 0.0f, body_height);
-    glVertex3f(0.0f, 0.0f, -body_height);
+    // Pointe arrière de l'aile gauche
+    CALC_NORMAL(-wing_root_x, wing_root_y, 0.0f, 
+                -wing_mid_x, wing_mid_y, wing_tip_z_top - wing_thickness_tip, 
+                -wing_back_x, wing_back_y, 0.0f);
+    glVertex3f(-wing_root_x, wing_root_y, 0.0f);
+    glVertex3f(-wing_mid_x, wing_mid_y, wing_tip_z_top - wing_thickness_tip);
+    glVertex3f(-wing_back_x, wing_back_y, 0.0f);
+    
+    // Bord avant de l'aile gauche
+    glColor3f(0.3f, 0.4f, 0.3f);
+    CALC_NORMAL(-wing_root_x, wing_root_y, 0.0f, 
+                -wing_back_x, wing_back_y, 0.0f, 
+                -wing_root_x, head_base_y, -wing_thickness_root);
+    glVertex3f(-wing_root_x, wing_root_y, 0.0f);
+    glVertex3f(-wing_back_x, wing_back_y, 0.0f);
+    glVertex3f(-wing_root_x, head_base_y, -wing_thickness_root);
+    
+    // Face inférieure de l'aile gauche
+    glColor3f(0.25f, 0.35f, 0.25f);
+    CALC_NORMAL(-wing_root_x, wing_root_y, -wing_thickness_root, 
+                -wing_mid_x, wing_mid_y, wing_tip_z_bottom, 
+                -wing_tip_x, wing_tip_y, wing_tip_z_bottom);
+    glVertex3f(-wing_root_x, wing_root_y, -wing_thickness_root);
+    glVertex3f(-wing_mid_x, wing_mid_y, wing_tip_z_bottom);
+    glVertex3f(-wing_tip_x, wing_tip_y, wing_tip_z_bottom);
     glEnd();
     
+    // Bords de l'aile gauche (épaisseur)
+    glBegin(GL_QUADS);
+    glColor3f(0.28f, 0.38f, 0.28f);
     
-    // Cockpit - pyramide plus prononcée
-    float cockpit_height = 0.04f;
-    glBegin(GL_TRIANGLES);
-    glColor3f(0.2f, 0.5f, 0.8f);
-    // Sommet vers l'avant
-    CALC_NORMAL(0.01f, 0.06f, cockpit_height, -0.015f, 0.02f, 0.0f, 0.015f, 0.02f, 0.0f);
-    glVertex3f(0.01f, 0.06f, cockpit_height);
-    glVertex3f(-0.015f, 0.02f, 0.0f);
-    glVertex3f(0.015f, 0.02f, 0.0f);
+    // Bord avant extérieur
+    CALC_NORMAL(-wing_root_x, wing_root_y, 0.0f, 
+                -wing_tip_x, wing_tip_y, wing_tip_z_top, 
+                -wing_tip_x, wing_tip_y, wing_tip_z_bottom);
+    glVertex3f(-wing_root_x, wing_root_y, 0.0f);
+    glVertex3f(-wing_tip_x, wing_tip_y, wing_tip_z_top);
+    glVertex3f(-wing_tip_x, wing_tip_y, wing_tip_z_bottom);
+    glVertex3f(-wing_root_x, wing_root_y, -wing_thickness_root);
     
-    CALC_NORMAL(0.01f, 0.06f, cockpit_height, -0.015f, 0.02f, 0.0f, 0.0f, 0.0f, 0.0f);
-    glVertex3f(0.01f, 0.06f, cockpit_height);
-    glVertex3f(-0.015f, 0.02f, 0.0f);
-    glVertex3f(0.0f, 0.0f, 0.0f);
+    // Bord milieu
+    CALC_NORMAL(-wing_tip_x, wing_tip_y, wing_tip_z_top, 
+                -wing_mid_x, wing_mid_y, wing_tip_z_top - wing_thickness_tip, 
+                -wing_mid_x, wing_mid_y, wing_tip_z_bottom);
+    glVertex3f(-wing_tip_x, wing_tip_y, wing_tip_z_top);
+    glVertex3f(-wing_mid_x, wing_mid_y, wing_tip_z_top - wing_thickness_tip);
+    glVertex3f(-wing_mid_x, wing_mid_y, wing_tip_z_bottom);
+    glVertex3f(-wing_tip_x, wing_tip_y, wing_tip_z_bottom);
     
-    CALC_NORMAL(0.01f, 0.06f, cockpit_height, 0.0f, 0.0f, 0.0f, 0.015f, 0.02f, 0.0f);
-    glVertex3f(0.01f, 0.06f, cockpit_height);
-    glVertex3f(0.0f, 0.0f, 0.0f);
-    glVertex3f(0.015f, 0.02f, 0.0f);
+    // Bord arrière
+    CALC_NORMAL(-wing_mid_x, wing_mid_y, wing_tip_z_top - wing_thickness_tip, 
+                -wing_back_x, wing_back_y, 0.0f, 
+                -wing_back_x, wing_back_y, -wing_thickness_root);
+    glVertex3f(-wing_mid_x, wing_mid_y, wing_tip_z_top - wing_thickness_tip);
+    glVertex3f(-wing_back_x, wing_back_y, 0.0f);
+    glVertex3f(-wing_back_x, wing_back_y, -wing_thickness_root);
+    glVertex3f(-wing_mid_x, wing_mid_y, wing_tip_z_bottom);
     
-    // Base
-    glColor3f(0.15f, 0.4f, 0.7f);
-    CALC_NORMAL(-0.015f, 0.02f, 0.0f, 0.015f, 0.02f, 0.0f, 0.0f, 0.0f, 0.0f);
-    glVertex3f(-0.015f, 0.02f, 0.0f);
-    glVertex3f(0.015f, 0.02f, 0.0f);
-    glVertex3f(0.0f, 0.0f, 0.0f);
+    // Bord interne avant
+    CALC_NORMAL(-wing_back_x, wing_back_y, 0.0f, 
+                -wing_root_x, wing_root_y, 0.0f, 
+                -wing_root_x, wing_root_y, -wing_thickness_root);
+    glVertex3f(-wing_back_x, wing_back_y, 0.0f);
+    glVertex3f(-wing_root_x, wing_root_y, 0.0f);
+    glVertex3f(-wing_root_x, wing_root_y, -wing_thickness_root);
+    glVertex3f(-wing_back_x, wing_back_y, -wing_thickness_root);
     glEnd();
     
-    // Moteurs - cylindres épais
-    float motor_radius = 0.012f;
-    float motor_length = 0.04f;
-    
-    // Moteur gauche
-    glPushMatrix();
-    glTranslatef(-0.03f, -0.06f, 0.0f);
-    glColor3f(1.0f, 0.3f, 0.0f);
+    // =============== AILE DROITE (symétrique) ===============
     glBegin(GL_TRIANGLES);
-    // Arrière (flamme)
-    CALC_NORMAL(-motor_radius, -motor_length, 0.0f, motor_radius, -motor_length, 0.0f, 0.0f, -motor_length, motor_radius);
-    glVertex3f(-motor_radius, -motor_length, 0.0f);
-    glVertex3f(motor_radius, -motor_length, 0.0f);
-    glVertex3f(0.0f, -motor_length, motor_radius);
+    glColor3f(0.35f, 0.45f, 0.35f);
     
-    CALC_NORMAL(-motor_radius, -motor_length, 0.0f, 0.0f, -motor_length, motor_radius, 0.0f, -motor_length, -motor_radius);
-    glVertex3f(-motor_radius, -motor_length, 0.0f);
-    glVertex3f(0.0f, -motor_length, motor_radius);
-    glVertex3f(0.0f, -motor_length, -motor_radius);
+    // Face supérieure de l'aile droite
+    CALC_NORMAL(wing_root_x, wing_root_y, 0.0f, 
+                wing_mid_x, wing_mid_y, wing_tip_z_top - wing_thickness_tip, 
+                wing_tip_x, wing_tip_y, wing_tip_z_top);
+    glVertex3f(wing_root_x, wing_root_y, 0.0f);
+    glVertex3f(wing_mid_x, wing_mid_y, wing_tip_z_top - wing_thickness_tip);
+    glVertex3f(wing_tip_x, wing_tip_y, wing_tip_z_top);
     
-    CALC_NORMAL(motor_radius, -motor_length, 0.0f, 0.0f, -motor_length, -motor_radius, 0.0f, -motor_length, motor_radius);
-    glVertex3f(motor_radius, -motor_length, 0.0f);
-    glVertex3f(0.0f, -motor_length, -motor_radius);
-    glVertex3f(0.0f, -motor_length, motor_radius);
+    // Pointe arrière de l'aile droite
+    CALC_NORMAL(wing_root_x, wing_root_y, 0.0f, 
+                wing_back_x, wing_back_y, 0.0f, 
+                wing_mid_x, wing_mid_y, wing_tip_z_top - wing_thickness_tip);
+    glVertex3f(wing_root_x, wing_root_y, 0.0f);
+    glVertex3f(wing_back_x, wing_back_y, 0.0f);
+    glVertex3f(wing_mid_x, wing_mid_y, wing_tip_z_top - wing_thickness_tip);
     
-    // Corps
-    glColor3f(0.6f, 0.6f, 0.7f);
-    CALC_NORMAL(-motor_radius, 0.0f, 0.0f, -motor_radius, -motor_length, 0.0f, 0.0f, 0.0f, motor_radius);
-    glVertex3f(-motor_radius, 0.0f, 0.0f);
-    glVertex3f(-motor_radius, -motor_length, 0.0f);
-    glVertex3f(0.0f, 0.0f, motor_radius);
+    // Bord avant de l'aile droite
+    glColor3f(0.3f, 0.4f, 0.3f);
+    CALC_NORMAL(wing_root_x, wing_root_y, 0.0f, 
+                wing_root_x, head_base_y, -wing_thickness_root, 
+                wing_back_x, wing_back_y, 0.0f);
+    glVertex3f(wing_root_x, wing_root_y, 0.0f);
+    glVertex3f(wing_root_x, head_base_y, -wing_thickness_root);
+    glVertex3f(wing_back_x, wing_back_y, 0.0f);
     
-    CALC_NORMAL(motor_radius, 0.0f, 0.0f, 0.0f, 0.0f, motor_radius, motor_radius, -motor_length, 0.0f);
-    glVertex3f(motor_radius, 0.0f, 0.0f);
-    glVertex3f(0.0f, 0.0f, motor_radius);
-    glVertex3f(motor_radius, -motor_length, 0.0f);
+    // Face inférieure de l'aile droite
+    glColor3f(0.25f, 0.35f, 0.25f);
+    CALC_NORMAL(wing_root_x, wing_root_y, -wing_thickness_root, 
+                wing_tip_x, wing_tip_y, wing_tip_z_bottom, 
+                wing_mid_x, wing_mid_y, wing_tip_z_bottom);
+    glVertex3f(wing_root_x, wing_root_y, -wing_thickness_root);
+    glVertex3f(wing_tip_x, wing_tip_y, wing_tip_z_bottom);
+    glVertex3f(wing_mid_x, wing_mid_y, wing_tip_z_bottom);
     glEnd();
-    glPopMatrix();
     
-    // Moteur droit
-    glPushMatrix();
-    glTranslatef(0.03f, -0.06f, 0.0f);
-    glColor3f(1.0f, 0.3f, 0.0f);
-    glBegin(GL_TRIANGLES);
-    // Arrière (flamme)
-    CALC_NORMAL(-motor_radius, -motor_length, 0.0f, motor_radius, -motor_length, 0.0f, 0.0f, -motor_length, motor_radius);
-    glVertex3f(-motor_radius, -motor_length, 0.0f);
-    glVertex3f(motor_radius, -motor_length, 0.0f);
-    glVertex3f(0.0f, -motor_length, motor_radius);
+    // Bords de l'aile droite (épaisseur)
+    glBegin(GL_QUADS);
+    glColor3f(0.28f, 0.38f, 0.28f);
     
-    CALC_NORMAL(-motor_radius, -motor_length, 0.0f, 0.0f, -motor_length, motor_radius, 0.0f, -motor_length, -motor_radius);
-    glVertex3f(-motor_radius, -motor_length, 0.0f);
-    glVertex3f(0.0f, -motor_length, motor_radius);
-    glVertex3f(0.0f, -motor_length, -motor_radius);
+    // Bord avant extérieur
+    CALC_NORMAL(wing_root_x, wing_root_y, 0.0f, 
+                wing_root_x, wing_root_y, -wing_thickness_root, 
+                wing_tip_x, wing_tip_y, wing_tip_z_bottom);
+    glVertex3f(wing_root_x, wing_root_y, 0.0f);
+    glVertex3f(wing_root_x, wing_root_y, -wing_thickness_root);
+    glVertex3f(wing_tip_x, wing_tip_y, wing_tip_z_bottom);
+    glVertex3f(wing_tip_x, wing_tip_y, wing_tip_z_top);
     
-    CALC_NORMAL(motor_radius, -motor_length, 0.0f, 0.0f, -motor_length, -motor_radius, 0.0f, -motor_length, motor_radius);
-    glVertex3f(motor_radius, -motor_length, 0.0f);
-    glVertex3f(0.0f, -motor_length, -motor_radius);
-    glVertex3f(0.0f, -motor_length, motor_radius);
+    // Bord milieu
+    CALC_NORMAL(wing_tip_x, wing_tip_y, wing_tip_z_top, 
+                wing_tip_x, wing_tip_y, wing_tip_z_bottom, 
+                wing_mid_x, wing_mid_y, wing_tip_z_bottom);
+    glVertex3f(wing_tip_x, wing_tip_y, wing_tip_z_top);
+    glVertex3f(wing_tip_x, wing_tip_y, wing_tip_z_bottom);
+    glVertex3f(wing_mid_x, wing_mid_y, wing_tip_z_bottom);
+    glVertex3f(wing_mid_x, wing_mid_y, wing_tip_z_top - wing_thickness_tip);
     
-    // Corps
-    glColor3f(0.6f, 0.6f, 0.7f);
-    CALC_NORMAL(-motor_radius, 0.0f, 0.0f, -motor_radius, -motor_length, 0.0f, 0.0f, 0.0f, motor_radius);
-    glVertex3f(-motor_radius, 0.0f, 0.0f);
-    glVertex3f(-motor_radius, -motor_length, 0.0f);
-    glVertex3f(0.0f, 0.0f, motor_radius);
+    // Bord arrière
+    CALC_NORMAL(wing_mid_x, wing_mid_y, wing_tip_z_top - wing_thickness_tip, 
+                wing_mid_x, wing_mid_y, wing_tip_z_bottom, 
+                wing_back_x, wing_back_y, -wing_thickness_root);
+    glVertex3f(wing_mid_x, wing_mid_y, wing_tip_z_top - wing_thickness_tip);
+    glVertex3f(wing_mid_x, wing_mid_y, wing_tip_z_bottom);
+    glVertex3f(wing_back_x, wing_back_y, -wing_thickness_root);
+    glVertex3f(wing_back_x, wing_back_y, 0.0f);
     
-    CALC_NORMAL(motor_radius, 0.0f, 0.0f, 0.0f, 0.0f, motor_radius, motor_radius, -motor_length, 0.0f);
-    glVertex3f(motor_radius, 0.0f, 0.0f);
-    glVertex3f(0.0f, 0.0f, motor_radius);
-    glVertex3f(motor_radius, -motor_length, 0.0f);
+    // Bord interne avant
+    CALC_NORMAL(wing_back_x, wing_back_y, 0.0f, 
+                wing_back_x, wing_back_y, -wing_thickness_root, 
+                wing_root_x, wing_root_y, -wing_thickness_root);
+    glVertex3f(wing_back_x, wing_back_y, 0.0f);
+    glVertex3f(wing_back_x, wing_back_y, -wing_thickness_root);
+    glVertex3f(wing_root_x, wing_root_y, -wing_thickness_root);
+    glVertex3f(wing_root_x, wing_root_y, 0.0f);
     glEnd();
-    glPopMatrix();
-    
-    #undef CALC_NORMAL
 }
 static void render_bottom_3d(int viewport_width, int viewport_height) {
     if (viewport_height <= 0) {
@@ -990,6 +1206,7 @@ static void render_bottom_3d(int viewport_width, int viewport_height) {
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
     draw_starfield();
+    glEnable(GL_LIGHTING);
     // XY -> plan horizontal
     glRotatef(-90.0f, 1.0f, 0.0f, 0.0f);
     glRotatef(-player.h, 0.0f, 0.0f, 1.0f);
@@ -1007,13 +1224,18 @@ static void render_bottom_3d(int viewport_width, int viewport_height) {
         } else if (current->entities->type == ENTITY_TYPE_ENEMY) {
             glColor3f(1.0f, 0.0f, 0.0f);
             glRotatef(current->entities->h, 0.0f, 0.0f, 1.0f);
+            glPushMatrix();
+            glScalef(1.2f, 1.4f, 0.8f);
             draw_spaceship();
+            glPopMatrix();
         }
         glPopMatrix();
         node = node->next;
     }
 
     // Crosshair overlay (écran)
+    glDisable(GL_LIGHTING);
+    glLineWidth(2.0f);
     glMatrixMode(GL_PROJECTION);
     glPushMatrix();
     glLoadIdentity();

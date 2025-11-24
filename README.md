@@ -25,6 +25,7 @@ A collection of smaller demos including:
 - **scube**: Spinning cube demonstration
 - **stars**: Starfield effect
 - **maze**: 3D maze navigation demo
+- **reflection**: Stencil buffer reflections
 
 ### 🌀 Distort
 Real-time image distortion effects including ripple and rubber-like deformations. Demonstrates texture manipulation techniques.
