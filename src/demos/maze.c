@@ -71,9 +71,11 @@ int mazelist = 0;
 int groundlist = 0;
 int cellinglist = 0;
 
-typedef struct {
+typedef struct mazeobj {
     float x, y;
+    float h, s, m, t, b, str;
     enum { TREASURE, MONSTER, EXIT } type;
+    void (*think)(struct mazeobj* self);
 } mazeobj;
 
 mazeobj ghost;
@@ -125,6 +127,152 @@ static void specialUp(int key, int x, int y);
 static void display(void);
 static void initGL(void);
 
+int obj_forward(float px, float py, float bf, mazeobj *obj) {
+    int x = ((int)obj->x);
+    int y = ((int)obj->y);
+    int h = 0; // number of walls hit
+    if ((px > x + 1.0f - bf) && wall(x + 1, y)) {
+        px = (float)(x) + 1.0f - bf;
+        h++;
+    }
+    if (py > y + 1.0f - bf && wall(x, y + 1)) {
+        py = (float)(y) + 1.0f - bf;
+        h++;
+    }
+    if (px < x + bf && wall(x - 1, y)) {
+        px = (float)(x) + bf;
+        h++;
+    }
+    if (py < y + bf && wall(x, y - 1)) {
+        py = (float)(y) + bf;
+        h++;
+    }
+    obj->x = px;
+    obj->y = py;
+    return h;
+}
+void ghost_think(mazeobj *self) {
+    // Algorithme "left-hand rule" : toujours suivre le mur à gauche
+    float heading_rad = self->h * 3.1415926f / 180.0f;
+    float sinH = sinf(heading_rad);
+    float cosH = cosf(heading_rad);
+    float target_x = self->x + self->m * (self->s * sinH + self->str * cosH);
+    float target_y = self->y + self->m * (self->s * cosH - self->str * sinH);
+    
+    int current_cell_x = (int)(self->x);
+    int current_cell_y = (int)(self->y);
+    
+    // Déterminer la direction actuelle (arrondi au plus proche multiple de 90)
+    int direction = ((int)(self->h + 45.0f)) % 360;
+    direction = (direction / 90) * 90;
+    if (direction < 0) direction += 360;
+    
+    // Calculer les coordonnées de la cellule précédente selon notre direction
+    int prev_cell_x = current_cell_x;
+    int prev_cell_y = current_cell_y;
+    
+    switch (direction) {
+        case 0:   // Nord - on venait du sud
+            prev_cell_y = current_cell_y - 1;
+            break;
+        case 90:  // Est - on venait de l'ouest
+            prev_cell_x = current_cell_x - 1;
+            break;
+        case 180: // Sud - on venait du nord
+            prev_cell_y = current_cell_y + 1;
+            break;
+        case 270: // Ouest - on venait de l'est
+            prev_cell_x = current_cell_x + 1;
+            break;
+    }
+    
+    // Vérifier les murs autour de la position actuelle
+    int walls_current[4] = {0, 0, 0, 0};
+    walls_current[0] = wall(current_cell_x + 1, current_cell_y);     // droite (est)
+    walls_current[1] = wall(current_cell_x, current_cell_y + 1);     // haut (nord)
+    walls_current[2] = wall(current_cell_x - 1, current_cell_y);     // gauche (ouest)
+    walls_current[3] = wall(current_cell_x, current_cell_y - 1);     // bas (sud)
+    
+    // Vérifier s'il y avait un mur à notre gauche dans la cellule précédente
+    int had_left_wall_before = 0;
+    
+    // Indices relatifs selon la direction
+    int left_idx, front_idx, right_idx;
+    
+    switch (direction) {
+        case 0:   // Nord
+            left_idx = 2;   // ouest
+            front_idx = 1;  // nord
+            right_idx = 0;  // est
+            // Dans la cellule précédente (sud), le mur à notre gauche était à l'ouest
+            had_left_wall_before = wall(prev_cell_x - 1, prev_cell_y);
+            break;
+        case 90:  // Est
+            left_idx = 1;   // nord
+            front_idx = 0;  // est
+            right_idx = 3;  // sud
+            // Dans la cellule précédente (ouest), le mur à notre gauche était au nord
+            had_left_wall_before = wall(prev_cell_x, prev_cell_y + 1);
+            break;
+        case 180: // Sud
+            left_idx = 0;   // est
+            front_idx = 3;  // sud
+            right_idx = 2;  // ouest
+            // Dans la cellule précédente (nord), le mur à notre gauche était à l'est
+            had_left_wall_before = wall(prev_cell_x + 1, prev_cell_y);
+            break;
+        case 270: // Ouest
+            left_idx = 3;   // sud
+            front_idx = 2;  // ouest
+            right_idx = 1;  // nord
+            // Dans la cellule précédente (est), le mur à notre gauche était au sud
+            had_left_wall_before = wall(prev_cell_x, prev_cell_y - 1);
+            break;
+        default:
+            left_idx = front_idx = right_idx = 0;
+            break;
+    }
+    
+    int has_left_wall = walls_current[left_idx];
+    
+    // Si on n'a plus de mur à gauche mais qu'on en avait un avant,
+    // c'est qu'on vient de passer un passage : tourner à gauche
+    if (!has_left_wall && had_left_wall_before) {
+        self->h = (float)((direction + 270) % 360);
+        obj_forward(target_x, target_y, 0.2f, self);
+        return;
+    }
+    
+    // Si on n'a toujours pas de mur à gauche, on est dans une salle :
+    // continuer tout droit
+    if (!has_left_wall && !had_left_wall_before) {
+        // Vérifier s'il y a un mur devant
+        if (walls_current[front_idx]) {
+            // Mur devant : tourner à droite
+            self->h = (float)((direction + 90) % 360);
+        }
+        // Sinon continuer tout droit (pas de changement de self->h)
+        obj_forward(target_x, target_y, 0.2f, self);
+        return;
+    }
+    
+    // Algorithme left-hand rule classique si on a un mur à gauche
+    if (!walls_current[left_idx]) {
+        // Tourner à gauche
+        self->h = (float)((direction + 270) % 360);
+    } else if (!walls_current[front_idx]) {
+        // Continuer tout droit
+        // self->h reste inchangé
+    } else if (!walls_current[right_idx]) {
+        // Tourner à droite
+        self->h = (float)((direction + 90) % 360);
+    } else {
+        // Faire demi-tour
+        self->h = (float)((direction + 180) % 360);
+    }
+    
+    obj_forward(target_x, target_y, 0.2f, self);
+}
 void generate_random_maze(void) {
     int x, y;
     Cell stack[MAZE_WIDTH * MAZE_HEIGHT];
@@ -199,6 +347,13 @@ void generate_random_maze(void) {
     
     ghost.x = (float)monster_current_x;
     ghost.y = (float)monster_current_y;
+    ghost.b = 0.0f;
+    ghost.h = 0.0f;
+    ghost.s = 0.1f;
+    ghost.m = 0.5f;
+    ghost.str = 0.0f;
+    ghost.t = 0.0f;
+    ghost.think = ghost_think;
     ghost.type = MONSTER;
 
     mazedata[current_y][current_x] = ' ';
@@ -591,7 +746,8 @@ void mapmaze(void) {
     static float spin = 720.0f;
     
     moveplayer();
-
+    ghost.think(&ghost);
+    
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glLoadIdentity();
 
@@ -605,9 +761,16 @@ void mapmaze(void) {
     glCallList(mazelist);
     glPushMatrix();
     glTranslatef(ghost.x, ghost.y, 0.5f);
-    GLfloat light_position_ghost[] = {ghost.x, ghost.y, 0.5f, 1.0f};
-    glLightfv(GL_LIGHT0, GL_POSITION,       light_position_ghost);
     glutSolidCube(0.5f);
+    glRotatef(ghost.h, 0.0f, 0.0f, 1.0f);
+    glDisable(GL_LIGHTING);
+    glColor3f(1.0f, 0.0f, 0.0f);
+    glBegin(GL_LINES);
+    glVertex3f(0.0f, 0.0f, 0.0f);
+    glVertex3f(0.0f, 2.0f, 0.0f);
+    glEnd();
+    glEnable(GL_LIGHTING);
+
     glPopMatrix();
     glTranslatef(player_x, player_y, 0.5f);
     GLfloat light_position[] = {0, 0, 0.5f, 1.0f};
@@ -649,7 +812,7 @@ void entermaze(void) {
 
 void navmaze(void) {
     moveplayer();
-
+    ghost.think(&ghost);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glLoadIdentity();
     
