@@ -1,8 +1,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
-#include "../porting/iris2ogl.h"
-#include "../porting/irix_network.h"
+#include "porting/iris2ogl.h"
+#include "porting/irix_network.h"
 #include "cycles.h"
 
 /* zip is way cool -> cycle-search == colours all over the place */

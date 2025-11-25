@@ -27,7 +27,6 @@ add_definitions(-Uno_AUDIO)
 
 # Sources
 file(GLOB CYCLES_SOURCES "src/cycles/*.c")
-file(GLOB PORTING_SOURCES "src/porting/*.c")
 
 # Exclure sound.c si AUDIO n'est pas défini
 list(FILTER CYCLES_SOURCES EXCLUDE REGEX ".*sound\\.c$")
@@ -38,21 +37,19 @@ if(WIN32)
         WIN32
         src/main.c
         ${CYCLES_SOURCES}
-        ${PORTING_SOURCES}
     )
     set_target_properties( cycles PROPERTIES LINK_FLAGS "/ENTRY:\"mainCRTStartup\"" )
 else()
     add_executable(cycles
         src/main.c
         ${CYCLES_SOURCES}
-        ${PORTING_SOURCES}
     )
 endif()
 target_include_directories(cycles PRIVATE
     ${OPENGL_INCLUDE_DIRS}
     ${GLUT_INCLUDE_DIRS}
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
     ${CMAKE_CURRENT_SOURCE_DIR}/src
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/porting
     ${CMAKE_CURRENT_SOURCE_DIR}/src/cycles
 )
 
@@ -61,4 +58,5 @@ target_link_libraries(cycles
     ${GLUT_LIBRARIES}
     ${CMAKE_THREAD_LIBS_INIT}
     ${PLATFORM_LIBS}
+    porting
 )

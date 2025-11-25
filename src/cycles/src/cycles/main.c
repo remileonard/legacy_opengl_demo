@@ -6,7 +6,7 @@
  *       Nick Fitton  <jalippo@pixel.maths.monash.edu.au>
  */
 
-#include "../porting/iris2ogl.h"
+#include "porting/iris2ogl.h"
 #include "cycles.h"
 #include <stdio.h>
 #include <stdlib.h>

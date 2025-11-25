@@ -2,7 +2,7 @@
  * all the gl drawing routines
  */
 
-#include "../porting/iris2ogl.h"
+#include "porting/iris2ogl.h"
 #include "cycles.h"
 #include <math.h>
 #include <stdio.h>

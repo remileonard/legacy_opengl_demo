@@ -6,7 +6,11 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 find_package(OpenGL REQUIRED)
 find_package(GLUT REQUIRED)
 
+add_subdirectory(src/porting)
+
 add_subdirectory(src/libtk)
+add_subdirectory(src/libgobj)
+
 
 add_subdirectory(src/smooth)
 add_subdirectory(src/ideas)

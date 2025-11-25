@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "../porting/iris2ogl.h"
+#include "porting/iris2ogl.h"
 #include "cycles.h"
 
 extern CYCLE *good, bike[CYCLES];

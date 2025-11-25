@@ -1,7 +1,7 @@
 
 #include <stdlib.h>
 #include <math.h>
-#include "../porting/iris2ogl.h"
+#include "porting/iris2ogl.h"
 #include "cycles.h"
 
 Object tail_obj, engine_obj, chassis_top;

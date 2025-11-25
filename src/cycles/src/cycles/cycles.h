@@ -1,5 +1,5 @@
 
-#include "../porting/iris2ogl.h"
+#include "porting/iris2ogl.h"
 
 #define DIM 200.0	    /* size of playing field */
 #define TRAIL_HEIGHT 3.0    /* height of trails  */
