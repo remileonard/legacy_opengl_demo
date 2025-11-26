@@ -109,6 +109,135 @@ void swaptmesh(void) {
     // This is a no-op for compatibility
 }
 
+// === Rendering State Functions ===
+void backface(Boolean enable) {
+    // IRIS GL backface culling
+    if (enable) {
+        glEnable(GL_CULL_FACE);
+        glCullFace(GL_BACK);
+    } else {
+        glDisable(GL_CULL_FACE);
+    }
+}
+
+void blendfunction(int sfactor, int dfactor) {
+    // IRIS GL blending function
+    // Map IRIS GL blend factors to OpenGL blend factors
+    GLenum gl_sfactor, gl_dfactor;
+    
+    switch (sfactor) {
+        case BF_ZERO:  gl_sfactor = GL_ZERO; break;
+        case BF_ONE:   gl_sfactor = GL_ONE; break;
+        case BF_DC:    gl_sfactor = GL_DST_COLOR; break;
+        case BF_SC:    gl_sfactor = GL_SRC_COLOR; break;
+        case BF_SA:    gl_sfactor = GL_SRC_ALPHA; break;
+        case BF_MSA:   gl_sfactor = GL_ONE_MINUS_SRC_ALPHA; break;
+        default:       gl_sfactor = GL_ONE; break;
+    }
+    
+    switch (dfactor) {
+        case BF_ZERO:  gl_dfactor = GL_ZERO; break;
+        case BF_ONE:   gl_dfactor = GL_ONE; break;
+        case BF_DC:    gl_dfactor = GL_DST_COLOR; break;
+        case BF_SC:    gl_dfactor = GL_SRC_COLOR; break;
+        case BF_SA:    gl_dfactor = GL_SRC_ALPHA; break;
+        case BF_MSA:   gl_dfactor = GL_ONE_MINUS_SRC_ALPHA; break;
+        default:       gl_dfactor = GL_ZERO; break;
+    }
+    
+    glBlendFunc(gl_sfactor, gl_dfactor);
+    
+    // Enable blending if factors are not (ONE, ZERO)
+    if (sfactor != BF_ONE || dfactor != BF_ZERO) {
+        glEnable(GL_BLEND);
+    } else {
+        glDisable(GL_BLEND);
+    }
+}
+
+void zwritemask(unsigned long mask) {
+    // IRIS GL depth buffer write mask
+    // If mask is 0, disable depth writes; otherwise enable
+    glDepthMask(mask != 0 ? GL_TRUE : GL_FALSE);
+}
+
+void wmpack(unsigned long mask) {
+    // IRIS GL color write mask (packed format)
+    // If mask is 0, disable all color writes; otherwise enable
+    if (mask == 0) {
+        glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+    } else {
+        glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+    }
+}
+
+// === Texture Coordinate Functions ===
+void t2f(float texcoord[2]) {
+    // IRIS GL texture coordinate (2D)
+    glTexCoord2fv(texcoord);
+}
+
+// === Picking/Feedback Functions ===
+static short *feedback_buffer = NULL;
+static long feedback_size = 0;
+static int feedback_active = FALSE;
+
+void feedback(short *buffer, long size) {
+    // IRIS GL feedback mode - simplified implementation
+    // OpenGL feedback is different, so we'll use a simple stub
+    feedback_buffer = buffer;
+    feedback_size = size;
+    feedback_active = TRUE;
+    
+    // In a full implementation, we'd switch to GL_FEEDBACK mode
+    // For now, just track that we're in feedback mode
+}
+
+int endfeedback(short *buffer) {
+    // End feedback mode and return number of values written
+    // For our simplified implementation, we'll just check if anything was drawn
+    // Return 0 if nothing was drawn (culled), non-zero otherwise
+    
+    feedback_active = FALSE;
+    
+    // Simple heuristic: assume geometry is visible
+    // A full implementation would actually process GL feedback buffer
+    return 1;  // Non-zero means geometry is visible
+}
+
+void loadname(short name) {
+    // IRIS GL load name for selection
+    glLoadName((GLuint)name);
+}
+
+void pushname(short name) {
+    // IRIS GL push name for selection
+    glPushName((GLuint)name);
+}
+
+void popname(void) {
+    // IRIS GL pop name for selection
+    glPopName();
+}
+
+// === Graphics Descriptor Functions ===
+int getgdesc(int descriptor) {
+    // IRIS GL graphics descriptor query
+    switch (descriptor) {
+        case GD_TEXTURE:
+            // Check if texturing is supported
+            return 1;  // Modern OpenGL always supports texturing
+        case GD_ZBUFFER:
+            // Check if depth buffer is available
+            return 1;  // GLUT always creates a depth buffer
+        case GD_STEREO:
+            // Check if stereo is supported
+            return 0;  // Not commonly supported
+        default:
+            return 0;
+    }
+}
+
 // === UNIX Compatibility Functions ===
 
 // times() implementation for Windows

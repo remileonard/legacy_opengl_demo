@@ -25,12 +25,7 @@
 float weight();
 
 
-setrotation(obj, tnum, angle, axis)
-    object_t *obj;
-    int tnum;
-    int angle;
-    char axis;
-{
+void setrotation(object_t * obj, int tnum, int angle,char axis) {
     obj->tlist[tnum].angle = angle;
     switch(axis)
     {
@@ -49,10 +44,7 @@ setrotation(obj, tnum, angle, axis)
 }
 
 
-setscale(obj, tnum, x, y, z)
-    object_t *obj;
-    int tnum;
-    float x, y, z;
+void setscale(object_t *obj, int tnum,float  x,float  y,float  z)
 {
     obj->tlist[tnum].type = SCALE;
     obj->tlist[tnum].x = x;
@@ -61,10 +53,7 @@ setscale(obj, tnum, x, y, z)
 }
 
 
-settranslation(obj, tnum, x, y, z)
-    object_t *obj;
-    int tnum;
-    float x, y, z;
+void settranslation(object_t *obj, int tnum,float  x,float  y,float  z)
 {
     obj->tlist[tnum].type = TRANSLATE;
     obj->tlist[tnum].x = x;
@@ -76,8 +65,7 @@ settranslation(obj, tnum, x, y, z)
 /*
  *  routines to generate normals for an object
  */
-normalize(obj)
-    object_t *obj;
+void normalize(object_t *obj)
 {
     int i;
 
@@ -105,8 +93,7 @@ normalize(obj)
 }
 
 
-ssect_norm(sect)
-    geometry_t *sect;
+int ssect_norm(geometry_t *sect)
 {
     int i;
     float nm;
@@ -139,8 +126,7 @@ ssect_norm(sect)
 }
 
 
-spoly_norm(p)
-    polygon_t *p;
+int spoly_norm(polygon_t *p)
 {
     float px, py, pz, qx, qy, qz, nx, ny, nz, nm;
     float w;
@@ -182,8 +168,7 @@ spoly_norm(p)
 }
 
 
-float weight(p)
-    polygon_t *p;
+float weight(polygon_t *p)
 {
     float xmax, ymax, zmax;
     float xmin, ymin, zmin;
@@ -218,8 +203,7 @@ float weight(p)
 }
 
 
-fsect_norm(sect)
-    geometry_t *sect;
+int fsect_norm(geometry_t *sect)
 {
     int i;
     float nm;
@@ -229,8 +213,7 @@ fsect_norm(sect)
 }
 
 
-fpoly_norm(p)
-    polygon_t *p;
+int fpoly_norm(polygon_t *p)
 {
     float px, py, pz, qx, qy, qz, nx, ny, nz, nm;
     int i;
@@ -259,8 +242,7 @@ fpoly_norm(p)
 }
 
 
-compress(obj)
-    object_t *obj;
+void compress(object_t *obj)
 {
     int i;
 
@@ -269,8 +251,7 @@ compress(obj)
 }
 
 
-g_compress(g)
-    geometry_t *g;
+int g_compress(geometry_t *g)
 {
     polygon_t *p;
     float **new_vlist;
@@ -348,8 +329,7 @@ g_compress(g)
 }
 
 
-combine(obj)
-    object_t *obj;
+void combine(object_t *obj)
 {
     int i;
 
@@ -358,8 +338,7 @@ combine(obj)
 }
 
 
-g_combine(g)
-    geometry_t *g;
+int g_combine(geometry_t *g)
 {
     polygon_t *p;
     int *use;
@@ -399,9 +378,7 @@ g_combine(g)
 }
 
 
-scale_obj(obj, x, y, z)
-    object_t *obj;
-    float x, y, z;
+void scale_obj(object_t *obj,float x,float y,float z)
 {
     geometry_t *g;
     int i;
@@ -410,9 +387,7 @@ scale_obj(obj, x, y, z)
         scale_g(&obj->glist[i], x, y, z);
 }
 
-scale_g(g, x, y, z)
-    geometry_t *g;
-    float x, y, z;
+int scale_g(geometry_t *g,float  x,float  y,float  z)
 {
     int i;
 
@@ -425,9 +400,7 @@ scale_g(g, x, y, z)
 }
 
 
-translate_obj(obj, x, y, z)
-    object_t *obj;
-    float x, y, z;
+void translate_obj(object_t *obj,float x,float y,float z)
 {
     geometry_t *g;
     int i;
@@ -437,9 +410,7 @@ translate_obj(obj, x, y, z)
 }
 
 
-translate_g(g, x, y, z)
-    geometry_t *g;
-    float x, y, z;
+int translate_g(geometry_t *g,float x,float y,float z)
 {
     int i;
 
@@ -452,8 +423,7 @@ translate_g(g, x, y, z)
 }
 
 
-reverse_g(g)
-    geometry_t *g;
+void reverse_g(geometry_t *g)
 {
     polygon_t *p;
     int i, j, tmp[200];

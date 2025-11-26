@@ -19,9 +19,11 @@
 /*
  *  array offsets
  */
-#define X 0
-#define Y 1
-#define Z 2
+enum {
+    X = 0,
+    Y = 1,
+    Z = 2
+};
 
 
 /*
@@ -271,3 +273,10 @@ int fillbuf();
 int isbinary();
 
 object_t *breadobj(char *fname);
+
+/*
+ *  prototypes for light.c
+ */
+void setmaterial(int name);
+void lsuspend(int b);
+void drawobj(object_t *obj, long state);

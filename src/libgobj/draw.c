@@ -26,7 +26,7 @@ static long curmode;		/* current mode bits */
 static int gobj_inited = FALSE;
 
 
-drawobj(object_t *obj, long state)
+void drawobj(object_t *obj, long state)
 {
     int i;
 

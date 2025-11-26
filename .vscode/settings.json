@@ -33,7 +33,9 @@
         "assert.h": "c",
         "windows.h": "c",
         "iris2ogl.h": "c",
-        "stdlib.h": "c"
+        "stdlib.h": "c",
+        "math.h": "c",
+        "time.h": "c"
     },
     "C_Cpp.clang_format_fallbackStyle": "{ BasedOnStyle: LLVM, UseTab: Never, IndentWidth: 4, TabWidth: 4, Break BeforeBraces: Attach, AllowShortIfStatementsOnASingleLine: false, IndentCaseLabels: false, ColumnLimit: 120, A ccessModifierOffset: -4, NamespaceIndentation: All, FixNamespaceComments: false }"
 }

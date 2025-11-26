@@ -15,6 +15,7 @@
     #include <windows.h>
 #endif
 
+
 #include <GL/gl.h>
 #include <GL/glu.h>
 #include <GL/glut.h>
@@ -63,6 +64,19 @@ typedef int16_t Device;
 #define TRUE  1
 #define FALSE 0
 #endif
+
+// Blending function constants
+#define BF_ZERO         0
+#define BF_ONE          1
+#define BF_SA           4  // Source Alpha
+#define BF_MSA          5  // 1 - Source Alpha
+#define BF_DC           2  // Destination Color
+#define BF_SC           3  // Source Color
+
+// Graphics descriptor constants
+#define GD_TEXTURE      1
+#define GD_ZBUFFER      2
+#define GD_STEREO       3
 
 // === Color Management ===
 extern float iris_colormap[256][3];
@@ -167,6 +181,7 @@ void setpattern(int id);
 #define DEFLMODEL   1
 #define DEFMATERIAL 2
 #define DEFLIGHT    3
+#define MATERIAL    DEFMATERIAL  // Alias for lmbind
 
 #define LMNULL      0
 #define EMISSION    1
@@ -253,8 +268,24 @@ int32_t qread(int16_t *val);
 Boolean getbutton(Device dev);
 int32_t getvaluator(Device dev);
 
+// === Rendering State ===
+void backface(Boolean enable);
+void blendfunction(int sfactor, int dfactor);
+void zwritemask(unsigned long mask);
+void wmpack(unsigned long mask);
+
+// === Texture coordinates ===
+void t2f(float texcoord[2]);
+
+// === Picking/Feedback ===
+void feedback(short *buffer, long size);
+int endfeedback(short *buffer);
+void loadname(short name);
+void pushname(short name);
+void popname(void);
+
 // === Utility ===
-#define getgdesc(x) 0
+int getgdesc(int descriptor);
 #define finish() glFinish()
 
 // UNIX compatibility
@@ -263,7 +294,7 @@ char* iris_cuserid(char *buf);
 
 #include <string.h>
 
-// bstring.h compatibility - only define if not available
+
 #ifdef _WIN32
 // Windows doesn't have bcopy/bzero in standard headers
 static inline void bcopy(const void *src, void *dst, size_t len) {
@@ -273,8 +304,12 @@ static inline void bcopy(const void *src, void *dst, size_t len) {
 static inline void bzero(void *ptr, size_t len) {
     memset(ptr, 0, len);
 }
+
+static inline int bcmp(const void *s1, const void *s2, size_t n) {
+    return memcmp(s1, s2, n);
+}
 #else
-// Unix/Linux systems have bcopy/bzero in strings.h (included by string.h)
+// Unix/Linux systems have bcopy/bzero/bcmp in strings.h (included by string.h)
 // No need to redefine them
 #include <strings.h>
 #endif

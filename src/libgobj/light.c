@@ -19,12 +19,13 @@
  *  light.c
  */
 
-#include "gl.h"
+#include "gobj.h"
+#include "porting/iris2ogl.h"
 
 static int curmaterial = 0;
 
 
-setmaterial(name)
+void setmaterial(int name)
 {
     if (name != curmaterial)
     {
@@ -33,7 +34,7 @@ setmaterial(name)
     }
 }
 
-lsuspend(b)
+void lsuspend(int b)
 {
     if (b)
     {
