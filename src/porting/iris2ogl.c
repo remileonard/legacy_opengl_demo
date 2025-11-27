@@ -300,14 +300,328 @@ void setpattern(int id) {
 }
 
 // === Lighting ===
-
+static LightDef lights[MAX_LIGHTS];
+static MaterialDef materials[MAX_MATERIALS];
+static int current_material = 0;
+static int num_active_lights = 0;
+void resetmaterials(void) {
+    // Reset all materials to undefined
+    for (int i = 0; i < MAX_MATERIALS; i++) {
+        materials[i].defined = FALSE;
+    }
+}
 void lmdef(int deftype, int index, int np, float props[]) {
-    // Simplified lighting - would need full implementation for real use
-    // This is a stub for now
+    if (!props) return;
+    
+    // Note: np est ignoré dans IRIS GL - le tableau se termine par LMNULL
+    
+    switch (deftype) {
+        case DEFLIGHT: {
+            if (index < 0 || index >= MAX_LIGHTS) return;
+            
+            LightDef *light = &lights[index];
+            
+            // Initialize with defaults if not already defined
+            if (!light->defined) {
+                light->ambient[0] = light->ambient[1] = light->ambient[2] = 0.0f;
+                light->ambient[3] = 1.0f;
+                light->diffuse[0] = light->diffuse[1] = light->diffuse[2] = 1.0f;
+                light->diffuse[3] = 1.0f;
+                light->specular[0] = light->specular[1] = light->specular[2] = 1.0f;
+                light->specular[3] = 1.0f;
+                light->position[0] = light->position[1] = 0.0f;
+                light->position[2] = 1.0f;
+                light->position[3] = 0.0f; // Directional by default
+                light->spot_direction[0] = 0.0f;
+                light->spot_direction[1] = 0.0f;
+                light->spot_direction[2] = -1.0f;
+                light->spot_exponent = 0.0f;
+                light->spot_cutoff = 180.0f;
+                light->attenuation[0] = 1.0f; // constant
+                light->attenuation[1] = 0.0f; // linear
+                light->attenuation[2] = 0.0f; // quadratic
+                light->defined = TRUE;
+            }
+            
+            // Parse properties array - continue jusqu'à LMNULL
+            int i = 0;
+            while (1) {
+                int property = (int)props[i++];
+                
+                if (property == LMNULL) {
+                    break;
+                }
+                
+                switch (property) {
+                    case LCOLOR:
+                    case DIFFUSE:
+                        light->diffuse[0] = props[i++];
+                        light->diffuse[1] = props[i++];
+                        light->diffuse[2] = props[i++];
+                        light->diffuse[3] = 1.0f;
+                        break;
+                        
+                    case AMBIENT:
+                        light->ambient[0] = props[i++];
+                        light->ambient[1] = props[i++];
+                        light->ambient[2] = props[i++];
+                        light->ambient[3] = 1.0f;
+                        break;
+                        
+                    case SPECULAR:
+                        light->specular[0] = props[i++];
+                        light->specular[1] = props[i++];
+                        light->specular[2] = props[i++];
+                        light->specular[3] = 1.0f;
+                        break;
+                        
+                    case POSITION:
+                        light->position[0] = props[i++];
+                        light->position[1] = props[i++];
+                        light->position[2] = props[i++];
+                        light->position[3] = props[i++]; // w component
+                        break;
+                        
+                    case SPOTDIRECTION:
+                        light->spot_direction[0] = props[i++];
+                        light->spot_direction[1] = props[i++];
+                        light->spot_direction[2] = props[i++];
+                        break;
+                        
+                    case SPOTLIGHT:
+                        light->spot_exponent = props[i++];
+                        light->spot_cutoff = props[i++];
+                        break;
+                        
+                    default:
+                        // Propriété inconnue - sauter (ne devrait pas arriver)
+                        fprintf(stderr, "lmdef DEFLIGHT: unknown property %d\n", property);
+                        break;
+                }
+            }
+            
+            printf("DEBUG lmdef: Light %d defined - Diffuse(%.2f, %.2f, %.2f)\n",
+                   index, light->diffuse[0], light->diffuse[1], light->diffuse[2]);
+            break;
+        }
+        
+        case DEFMATERIAL: {
+            if (index < 0 || index >= MAX_MATERIALS) {
+                printf("ERROR lmdef: Material index %d out of range!\n", index);
+                return;
+            }
+            
+            MaterialDef *mat = &materials[index];
+            
+            // Initialize with defaults
+            if (!mat->defined) {
+                mat->ambient[0] = 0.2f; mat->ambient[1] = 0.2f;
+                mat->ambient[2] = 0.2f; mat->ambient[3] = 1.0f;
+                mat->diffuse[0] = 0.8f; mat->diffuse[1] = 0.8f;
+                mat->diffuse[2] = 0.8f; mat->diffuse[3] = 1.0f;
+                mat->specular[0] = 0.0f; mat->specular[1] = 0.0f;
+                mat->specular[2] = 0.0f; mat->specular[3] = 1.0f;
+                mat->emission[0] = 0.0f; mat->emission[1] = 0.0f;
+                mat->emission[2] = 0.0f; mat->emission[3] = 1.0f;
+                mat->shininess = 0.0f;
+                mat->defined = TRUE;
+            }
+            
+            // Parse properties - continue jusqu'à LMNULL
+            int i = 0;
+            while (1) {
+                int property = (int)props[i++];
+                
+                if (property == LMNULL) {
+                    break;
+                }
+                
+                switch (property) {
+                    case AMBIENT:
+                        mat->ambient[0] = props[i++];
+                        mat->ambient[1] = props[i++];
+                        mat->ambient[2] = props[i++];
+                        mat->ambient[3] = 1.0f;
+                        break;
+                        
+                    case DIFFUSE:
+                        mat->diffuse[0] = props[i++];
+                        mat->diffuse[1] = props[i++];
+                        mat->diffuse[2] = props[i++];
+                        mat->diffuse[3] = 1.0f;
+                        break;
+                        
+                    case SPECULAR:
+                        mat->specular[0] = props[i++];
+                        mat->specular[1] = props[i++];
+                        mat->specular[2] = props[i++];
+                        mat->specular[3] = 1.0f;
+                        break;
+                        
+                    case EMISSION:
+                        mat->emission[0] = props[i++];
+                        mat->emission[1] = props[i++];
+                        mat->emission[2] = props[i++];
+                        mat->emission[3] = 1.0f;
+                        break;
+                        
+                    case SHININESS:
+                        mat->shininess = props[i++];
+                        if (mat->shininess > 128.0f) mat->shininess = 128.0f;
+                        if (mat->shininess < 0.0f) mat->shininess = 0.0f;
+                        break;
+                    case ALPHA:
+                        mat->alpha = props[i++];
+                        if (mat->alpha > 1.0f) mat->alpha = 1.0f;
+                        if (mat->alpha < 0.0f) mat->alpha = 0.0f;
+                        
+                        // Mettre à jour tous les composants alpha
+                        mat->ambient[3] = mat->alpha;
+                        mat->diffuse[3] = mat->alpha;
+                        mat->specular[3] = mat->alpha;
+                        mat->emission[3] = mat->alpha;
+                        break;    
+                    default:
+                        fprintf(stderr, "lmdef DEFMATERIAL: unknown property %d\n", property);
+                        break;
+                }
+            }
+            
+            printf("DEBUG lmdef: Material %d defined - Ambient(%.2f, %.2f, %.2f) Diffuse(%.2f, %.2f, %.2f) Shininess(%.2f)\n",
+                   index,
+                   mat->ambient[0], mat->ambient[1], mat->ambient[2],
+                   mat->diffuse[0], mat->diffuse[1], mat->diffuse[2],
+                   mat->shininess);
+            break;
+        }
+        
+        case DEFLMODEL: {
+            // Global lighting model properties
+            int i = 0;
+            while (1) {
+                int property = (int)props[i++];
+                
+                if (property == LMNULL) {
+                    break;
+                }
+                
+                switch (property) {
+                    case AMBIENT:
+                        {
+                            GLfloat ambient[4] = {
+                                props[i++],
+                                props[i++],
+                                props[i++],
+                                1.0f
+                            };
+                            glLightModelfv(GL_LIGHT_MODEL_AMBIENT, ambient);
+                            printf("DEBUG lmdef: Light model ambient set to (%.2f, %.2f, %.2f)\n",
+                                   ambient[0], ambient[1], ambient[2]);
+                        }
+                        break;
+                        
+                    default:
+                        fprintf(stderr, "lmdef DEFLMODEL: unknown property %d\n", property);
+                        break;
+                }
+            }
+            break;
+        }
+        
+        default:
+            fprintf(stderr, "lmdef: unknown deftype %d\n", deftype);
+            break;
+    }
 }
 
 void lmbind(int target, int index) {
-    // Simplified lighting binding - stub
+    switch (target) {
+        case LIGHT0:
+        case LIGHT1:
+        case LIGHT2:
+        case LIGHT3:
+        case LIGHT4:
+        case LIGHT5:
+        case LIGHT6:
+        case LIGHT7: {
+            GLenum light_id = GL_LIGHT0 + target;
+            
+            if (index == 0) {
+                // Unbind/disable light
+                glDisable(light_id);
+            } else if (index > 0 && index < MAX_LIGHTS && lights[index].defined) {
+                // Bind and enable light
+                
+                LightDef *light = &lights[index];
+                
+                glEnable(GL_LIGHTING);
+                glEnable(light_id);
+                
+                glLightfv(light_id, GL_AMBIENT, light->ambient);
+                glLightfv(light_id, GL_DIFFUSE, light->diffuse);
+                glLightfv(light_id, GL_SPECULAR, light->specular);
+                glLightfv(light_id, GL_POSITION, light->position);
+                
+                if (light->spot_cutoff < 180.0f) {
+                    glLightfv(light_id, GL_SPOT_DIRECTION, light->spot_direction);
+                    glLightf(light_id, GL_SPOT_EXPONENT, light->spot_exponent);
+                    glLightf(light_id, GL_SPOT_CUTOFF, light->spot_cutoff);
+                }
+                
+                glLightf(light_id, GL_CONSTANT_ATTENUATION, light->attenuation[0]);
+                glLightf(light_id, GL_LINEAR_ATTENUATION, light->attenuation[1]);
+                glLightf(light_id, GL_QUADRATIC_ATTENUATION, light->attenuation[2]);
+                
+                if (target >= num_active_lights) {
+                    num_active_lights = target + 1;
+                }
+            }
+            break;
+        }
+        
+        case MATERIAL: {
+            if (index == 0) {
+                // Disable material (use default)
+                glEnable(GL_COLOR_MATERIAL);
+                glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
+                
+                // Restaurer un matériau neutre pour éviter les artefacts
+                GLfloat default_specular[] = {0.0f, 0.0f, 0.0f, 1.0f};
+                GLfloat default_emission[] = {0.0f, 0.0f, 0.0f, 1.0f};
+                
+                glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, default_specular);
+                glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, default_emission);
+                glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, 0.0f);
+                
+                current_material = 0;
+            } else if (index > 0 && index < MAX_MATERIALS && materials[index].defined) {
+                // Bind material
+                glDisable(GL_COLOR_MATERIAL);
+                MaterialDef *mat = &materials[index];
+                current_material = index;
+                if (index == 50) {
+                    int debug_break = 1;
+                }
+                glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, mat->ambient);
+                glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, mat->diffuse);
+                glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, mat->specular);
+                glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, mat->emission);
+                glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, mat->shininess);
+                // Si alpha < 1.0, activer le blending
+                if (mat->alpha < 1.0f) {
+                    glEnable(GL_BLEND);
+                    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+                } else {
+                    glDisable(GL_BLEND);
+                }
+            }
+            break;
+        }
+        
+        default:
+            fprintf(stderr, "lmbind: unknown target %d\n", target);
+            break;
+    }
 }
 
 void lmcolor(int mode) {

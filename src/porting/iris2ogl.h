@@ -78,6 +78,61 @@ typedef int16_t Device;
 #define GD_ZBUFFER      2
 #define GD_STEREO       3
 
+
+#define MAX_LIGHTS 8
+#define MAX_MATERIALS 256
+
+typedef struct {
+    GLfloat ambient[4];
+    GLfloat diffuse[4];
+    GLfloat specular[4];
+    GLfloat position[4];
+    GLfloat spot_direction[3];
+    GLfloat spot_exponent;
+    GLfloat spot_cutoff;
+    GLfloat attenuation[3]; // constant, linear, quadratic
+    Boolean defined;
+} LightDef;
+
+typedef struct {
+    GLfloat ambient[4];
+    GLfloat diffuse[4];
+    GLfloat specular[4];
+    GLfloat emission[4];
+    GLfloat shininess;
+    GLfloat alpha;
+    Boolean defined;
+} MaterialDef;
+
+// IRIS GL lighting constants
+#define DEFLIGHT    100
+#define DEFMATERIAL 101
+#define DEFLMODEL   102
+
+#define LMNULL      0
+#define AMBIENT     1
+#define DIFFUSE     2
+#define SPECULAR    3
+#define EMISSION    4
+#define SHININESS   5
+#define POSITION    6
+#define SPOTDIRECTION 7
+#define SPOTLIGHT   8
+#define LCOLOR      9
+#define MATERIAL    10
+#define ALPHA       11
+#define COLORINDEXES 12
+
+#define LIGHT0      0
+#define LIGHT1      1
+#define LIGHT2      2
+#define LIGHT3      3
+#define LIGHT4      4
+#define LIGHT5      5
+#define LIGHT6      6
+#define LIGHT7      7
+
+#define LOCALVIEWER 1
 // === Color Management ===
 extern float iris_colormap[256][3];
 
@@ -159,6 +214,7 @@ void delobj(Object obj);
 #define MPROJECTION 1
 #define MVIEWING    2
 
+void resetmaterials(void);
 void mmode(int mode);
 void perspective(Angle fov, float aspect, Coord near, Coord far);
 void ortho(Coord left, Coord right, Coord bottom, Coord top, Coord near, Coord far);
@@ -177,22 +233,9 @@ void linewidth(int width);
 void defpattern(int id, int size, Pattern16 pattern);
 void setpattern(int id);
 
-// === Lighting ===
-#define DEFLMODEL   1
-#define DEFMATERIAL 2
-#define DEFLIGHT    3
-#define MATERIAL    DEFMATERIAL  // Alias for lmbind
 
-#define LMNULL      0
-#define EMISSION    1
-#define AMBIENT     2
-#define DIFFUSE     3
-#define SPECULAR    4
-#define SHININESS   5
-#define ALPHA       6
-#define COLORINDEXES 7
-#define POSITION    100
-#define LCOLOR      101
+
+
 
 void lmdef(int deftype, int index, int np, float props[]);
 void lmbind(int target, int index);
