@@ -10,6 +10,7 @@ add_subdirectory(src/porting)
 
 add_subdirectory(src/libtk)
 add_subdirectory(src/libgobj)
+add_subdirectory(src/libdemo)
 
 
 add_subdirectory(src/smooth)
@@ -24,3 +25,4 @@ add_subdirectory(src/buttonfly)
 add_subdirectory(src/insect)
 add_subdirectory(src/cycles)
 add_subdirectory(src/objviewer)
+add_subdirectory(src/flip)

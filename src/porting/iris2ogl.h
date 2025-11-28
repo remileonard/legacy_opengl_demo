@@ -77,7 +77,17 @@ typedef int16_t Device;
 #define GD_TEXTURE      1
 #define GD_ZBUFFER      2
 #define GD_STEREO       3
-
+#define GD_ZMIN         0.0f
+#define GD_ZMAX         1.0f
+#define GD_BLEND        4
+#define GD_BITS_NORM_SNG_RED 5
+#define GD_BITS_NORM_SNG_GREEN 6
+#define GD_BITS_NORM_SNG_BLUE 7
+#define GD_BITS_NORM_ZBUFFER 8
+#define GD_LINESMOOTH_RGB 9
+#define GD_BITS_NORM_DBL_RED   5
+#define GD_BITS_NORM_DBL_GREEN 6
+#define GD_BITS_NORM_DBL_BLUE  7
 
 #define MAX_LIGHTS 8
 #define MAX_MATERIALS 256
@@ -104,6 +114,12 @@ typedef struct {
     Boolean defined;
 } MaterialDef;
 
+typedef struct {
+    GLfloat ambient[4];
+    Boolean local_viewer;
+    Boolean defined;
+} LightModelDef;
+
 // IRIS GL lighting constants
 #define DEFLIGHT    100
 #define DEFMATERIAL 101
@@ -122,6 +138,9 @@ typedef struct {
 #define MATERIAL    10
 #define ALPHA       11
 #define COLORINDEXES 12
+#define ATTENUATION  13
+#define LMODEL      14
+#define LOCALVIEWER 15
 
 #define LIGHT0      0
 #define LIGHT1      1
@@ -132,10 +151,10 @@ typedef struct {
 #define LIGHT6      6
 #define LIGHT7      7
 
-#define LOCALVIEWER 1
+
 // === Color Management ===
 extern float iris_colormap[256][3];
-
+void set_iris_colormap(int index, float r, float g, float b);
 void iris_init_colormap(void);
 void cpack(uint32_t color);
 void mapcolor(Colorindex index, RGBvalue r, RGBvalue g, RGBvalue b);
@@ -255,14 +274,17 @@ void charstr(const char *str);
 int is_scaled_font(fmfonthandle font, ScaledFont** out_sf);
 void cmov(Coord x, Coord y, Coord z);
 void cmov2(Coord x, Coord y);
+void cmov2i(Icoord x, Icoord y); 
 
 // === Window Management ===
 void openwindow(void);
 void winopen(const char *title);
 void winclose(int win);
+int winget(void);
 int getwindow(void);  // Return current window ID (renamed to avoid conflict with window())
 void window(Coord left, Coord right, Coord bottom, Coord top, Coord near, Coord far);  // Set projection window
 void winposition(int x, int y, int width, int height);
+void wintitle(const char *title);
 void getsize(int *width, int *height);
 void getorigin(int *x, int *y);
 void reshapeviewport(void);
@@ -289,6 +311,17 @@ void set_win_coords(void);
 #define KEYBD           1      // Keyboard device
 #define MOUSEX          2      // Mouse X position
 #define MOUSEY          3      // Mouse Y position
+#define CURSORX         4      // Logical cursor X (alias de MOUSEX)
+#define CURSORY         5      // Logical cursor Y (alias de MOUSEY)
+#define SBTX            6      // Spaceball translate X
+#define SBTY            7      // Spaceball translate Y
+#define SBTZ            8      // Spaceball translate Z
+#define SBRX            9      // Spaceball rotate X
+#define SBRY            10     // Spaceball rotate Y
+#define SBRZ            11     // Spaceball rotate Z
+#define SBPERIOD        12     // Spaceball polling period (ms)
+
+
 #define LEFTMOUSE       100
 #define MIDDLEMOUSE     101
 #define RIGHTMOUSE      102
@@ -303,6 +336,7 @@ void set_win_coords(void);
 #define AKEY            111
 #define REDRAW          112
 #define INPUTCHANGE     113
+#define WINQUIT         114
 
 void qdevice(Device dev);
 void unqdevice(Device dev);
@@ -395,4 +429,73 @@ typedef struct {
     Coord x, y, z;
 } Point;
 
+
+#define ZF_NEVER    0
+#define ZF_LESS     1
+#define ZF_EQUAL    2
+#define ZF_LEQUAL   3
+#define ZF_GREATER  4
+#define ZF_NOTEQUAL 5
+#define ZF_GEQUAL   6
+#define ZF_ALWAYS   7
+void zfunction(int func);
+
+void czclear(unsigned long cval, unsigned long zval);
+void smoothline(Boolean on);
+void subpixel(Boolean on);
+char *gversion(char *machinetype);
+
+double drand48(void);
+void srand48(long seedval);
+
+
+
+
+// Pup menu style flags (for setpup)
+#define PUP_BOX    0x0001
+#define PUP_CHECK  0x0002
+
+typedef int32_t Menu;
+
+// Type de callback IRISGL utilisé dans flip.c : soit void f(void),
+// soit void f(int) (flip passe souvent une int "n", "ls", etc.)
+typedef void (*PupFunc0)(void);
+typedef void (*PupFunc1)(int);
+
+#define MAX_PUP_MENUS   64
+#define MAX_PUP_ITEMS   64
+
+typedef struct {
+    char     label[128];
+    int      value;        // valeur %x passée à la fonction
+    int      flags;        // PUP_BOX / PUP_CHECK (visuel/logique)
+} PupItem;
+
+typedef struct {
+    int       used;
+    int       glut_menu_id;
+    int       item_count;
+    PupItem   items[MAX_PUP_ITEMS];
+
+    // callback commun pour ce menu lorsqu'un item %F / %f est choisi
+    PupFunc1  callback_int;   // utilisé quand %F est présent (void f(int))
+    PupFunc0  callback_void;  // utilisé quand %f (void f(void))
+    int       has_F;          // ce menu fournit une valeur %x à la fonction
+    int       has_f;          // ce menu appelle juste f() sans param
+} PupMenu;
+
+// Pup menu API
+Menu  newpup(void);
+Menu  addtopup(Menu m, const char *label, ...);
+void  setpup(Menu m, int item, int flags);
+int   dopup(Menu m);
+void  freepup(Menu m);
+
+
+
+void setdepth(unsigned long znear, unsigned long zfar);
+void lsetdepth(unsigned long znear, unsigned long zfar);
+
+void qenter(Device dev, int16_t val);
+void gexit(void);
 #endif // IRIS2OGL_H

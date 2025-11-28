@@ -90,15 +90,43 @@ void window(Coord left, Coord right, Coord bottom, Coord top, Coord ccnear, Coor
 extern int iris_get_mouse_x(void);
 extern int iris_get_mouse_y(void);
 
+// Forward declarations for spaceball state accessors (à définir dans iris2ogl.c)
+extern float iris_get_spaceball_tx(void);
+extern float iris_get_spaceball_ty(void);
+extern float iris_get_spaceball_tz(void);
+extern float iris_get_spaceball_rx(void);
+extern float iris_get_spaceball_ry(void);
+extern float iris_get_spaceball_rz(void);
+extern int   iris_get_spaceball_period_ms(void);
+
 int32_t getvaluator(Device dev) {
-    // Return the current value of a valuator device
     switch (dev) {
-        case MOUSEX:
-            return iris_get_mouse_x();
-        case MOUSEY:
-            return iris_get_mouse_y();
-        default:
-            return 0;
+    // Souris / curseur
+    case MOUSEX:
+    case CURSORX:
+        return (int32_t)iris_get_mouse_x();
+    case MOUSEY:
+    case CURSORY:
+        return (int32_t)iris_get_mouse_y();
+
+    // Spaceball : on renvoie des valeurs mises à l’échelle (milliers)
+    case SBTX:
+        return (int32_t)(iris_get_spaceball_tx() * 1000.0f);
+    case SBTY:
+        return (int32_t)(iris_get_spaceball_ty() * 1000.0f);
+    case SBTZ:
+        return (int32_t)(iris_get_spaceball_tz() * 1000.0f);
+    case SBRX:
+        return (int32_t)(iris_get_spaceball_rx() * 1000.0f);
+    case SBRY:
+        return (int32_t)(iris_get_spaceball_ry() * 1000.0f);
+    case SBRZ:
+        return (int32_t)(iris_get_spaceball_rz() * 1000.0f);
+    case SBPERIOD:
+        return (int32_t)iris_get_spaceball_period_ms();
+
+    default:
+        return 0;
     }
 }
 
@@ -233,6 +261,31 @@ int getgdesc(int descriptor) {
         case GD_STEREO:
             // Check if stereo is supported
             return 0;  // Not commonly supported
+        case GD_BLEND:
+            return 1;
+        case GD_BITS_NORM_SNG_RED: {
+            GLint bits = 0;
+            glGetIntegerv(GL_RED_BITS, &bits);
+            return bits;
+        }
+        case GD_BITS_NORM_SNG_GREEN: {
+            GLint bits = 0;
+            glGetIntegerv(GL_GREEN_BITS, &bits);
+            return bits;
+        }
+        case GD_BITS_NORM_SNG_BLUE: {
+            GLint bits = 0;
+            glGetIntegerv(GL_BLUE_BITS, &bits);
+            return bits;
+        }
+        case GD_BITS_NORM_ZBUFFER: {
+            GLint bits = 0;
+            glGetIntegerv(GL_DEPTH_BITS, &bits);
+            return bits;         // en pratique: 16, 24 ou 32
+        }
+        case GD_LINESMOOTH_RGB:
+            // On considère que le lissage de lignes RGB est disponible
+            return 1;
         default:
             return 0;
     }

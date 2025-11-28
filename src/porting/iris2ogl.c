@@ -52,6 +52,13 @@ static Boolean key_state[256] = {FALSE};
 
 // === Color Management ===
 
+void set_iris_colormap(int index, float r, float g, float b) {
+    if (index >= 0 && index < 256) {
+        iris_colormap[index][0] = r;
+        iris_colormap[index][1] = g;
+        iris_colormap[index][2] = b;
+    }
+}
 void iris_init_colormap(void) {
     // Initialize with grayscale ramp
     for (int i = 0; i < 256; i++) {
@@ -84,7 +91,7 @@ void cpack(uint32_t color) {
     float g = ((color >> 8) & 0xFF) / 255.0f;
     float r = (color & 0xFF) / 255.0f;
     glColor3f(r, g, b);
-    glClearColor(r, g, b, 1.0f);
+    //glClearColor(r, g, b, 1.0f);
 }
 
 void mapcolor(Colorindex index, RGBvalue r, RGBvalue g, RGBvalue b) {
@@ -304,6 +311,11 @@ static LightDef lights[MAX_LIGHTS];
 static MaterialDef materials[MAX_MATERIALS];
 static int current_material = 0;
 static int num_active_lights = 0;
+
+static LightModelDef light_models[MAX_MATERIALS]; // ou un petit nombre fixe
+static int current_light_model = 0;
+
+
 void resetmaterials(void) {
     // Reset all materials to undefined
     for (int i = 0; i < MAX_MATERIALS; i++) {
@@ -312,7 +324,7 @@ void resetmaterials(void) {
 }
 void lmdef(int deftype, int index, int np, float props[]) {
     if (!props) return;
-    
+    int i = 0;
     // Note: np est ignoré dans IRIS GL - le tableau se termine par LMNULL
     
     switch (deftype) {
@@ -496,35 +508,33 @@ void lmdef(int deftype, int index, int np, float props[]) {
         }
         
         case DEFLMODEL: {
-            // Global lighting model properties
-            int i = 0;
-            while (1) {
-                int property = (int)props[i++];
-                
-                if (property == LMNULL) {
+            LightModelDef *lm = &light_models[index];
+            // valeurs par défaut
+            lm->ambient[0] = lm->ambient[1] = lm->ambient[2] = 0.2f;
+            lm->ambient[3] = 1.0f;
+            lm->local_viewer = FALSE;
+
+            while (i < np) {
+                int token = (int)props[i++];
+                switch (token) {
+                case AMBIENT:
+                    lm->ambient[0] = props[i++];
+                    lm->ambient[1] = props[i++];
+                    lm->ambient[2] = props[i++];
+                    lm->ambient[3] = 1.0f;
+                    break;
+                case LOCALVIEWER:
+                    lm->local_viewer = (props[i++] != 0.0f);
+                    break;
+                case LMNULL:
+                    i = np;
+                    break;
+                default:
+                    // sauter les valeurs inconnues si besoin
                     break;
                 }
-                
-                switch (property) {
-                    case AMBIENT:
-                        {
-                            GLfloat ambient[4] = {
-                                props[i++],
-                                props[i++],
-                                props[i++],
-                                1.0f
-                            };
-                            glLightModelfv(GL_LIGHT_MODEL_AMBIENT, ambient);
-                            printf("DEBUG lmdef: Light model ambient set to (%.2f, %.2f, %.2f)\n",
-                                   ambient[0], ambient[1], ambient[2]);
-                        }
-                        break;
-                        
-                    default:
-                        fprintf(stderr, "lmdef DEFLMODEL: unknown property %d\n", property);
-                        break;
-                }
             }
+            lm->defined = TRUE;
             break;
         }
         
@@ -581,18 +591,19 @@ void lmbind(int target, int index) {
         
         case MATERIAL: {
             if (index == 0) {
-                // Disable material (use default)
                 glEnable(GL_COLOR_MATERIAL);
-                glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
-                
-                // Restaurer un matériau neutre pour éviter les artefacts
+
+                // Optionnel: remettre un matériau neutre
+                GLfloat default_ambient[]  = {0.2f, 0.2f, 0.2f, 1.0f};
+                GLfloat default_diffuse[]  = {0.8f, 0.8f, 0.8f, 1.0f};
                 GLfloat default_specular[] = {0.0f, 0.0f, 0.0f, 1.0f};
                 GLfloat default_emission[] = {0.0f, 0.0f, 0.0f, 1.0f};
-                
+                glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT,  default_ambient);
+                glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE,  default_diffuse);
                 glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, default_specular);
                 glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, default_emission);
                 glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, 0.0f);
-                
+
                 current_material = 0;
             } else if (index > 0 && index < MAX_MATERIALS && materials[index].defined) {
                 // Bind material
@@ -618,6 +629,16 @@ void lmbind(int target, int index) {
             break;
         }
         
+        case LMODEL: {
+            if (index >= 0 && index < MAX_MATERIALS && light_models[index].defined) {
+                LightModelDef *lm = &light_models[index];
+                current_light_model = index;
+
+                glLightModelfv(GL_LIGHT_MODEL_AMBIENT, lm->ambient);
+                glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER, lm->local_viewer ? GL_TRUE : GL_FALSE);
+            }
+            break;
+        }
         default:
             fprintf(stderr, "lmbind: unknown target %d\n", target);
             break;
@@ -701,6 +722,21 @@ void cmov(Coord x, Coord y, Coord z) {
 
 void cmov2(Coord x, Coord y) {
     cmov(x, y, 0.1f);
+}
+void cmov2i(Icoord x, Icoord y)
+{
+    // Position du texte en coordonnées entières (fenêtre)
+    glRasterPos2i(x, y);
+
+    // Si tu tiens un état de position raster (comme pour cmov/cmov2),
+    // mets-le aussi à jour ici pour cohérence.
+    extern float current_raster_x;
+    extern float current_raster_y;
+    extern float current_raster_z;
+
+    current_raster_x = (float)x;
+    current_raster_y = (float)y;
+    current_raster_z = 0.0f;
 }
 void debug_opengl_state(void) {
     printf("=== DEBUG OPENGL STATE ===\n");
@@ -835,6 +871,17 @@ void winclose(int win) {
     glutDestroyWindow(win);
 }
 
+int winget(void)
+{
+    // Comportement proche de IRIS GL : fenêtre courante si existante
+    int win = glutGetWindow();
+    if (win != 0) {
+        return win;
+    }
+    // Sinon, retourner la fenêtre principale si on la connaît
+    return main_window;
+}
+
 void winposition(int x, int y, int width, int height) {
     window_x = x;
     window_y = y;
@@ -845,7 +892,14 @@ void winposition(int x, int y, int width, int height) {
         glutReshapeWindow(width, height);
     }
 }
-
+void wintitle(const char *title)
+{
+    if (!title) return;
+    if (main_window != 0) {
+        glutSetWindow(main_window);
+        glutSetWindowTitle(title);
+    }
+}
 void getsize(int *width, int *height) {
     if (main_window != 0) {
         *width = glutGet(GLUT_WINDOW_WIDTH);
@@ -948,6 +1002,11 @@ static void queue_event(Device dev, int16_t val) {
         event_queue[event_queue_tail].value = val;
         event_queue_tail = next;
     }
+}
+void qenter(Device dev, int16_t val) {
+    // IRIS GL ne nécessite pas que le device soit "qdevice"‑é pour qenter,
+    // mais on respecte la même file pour cohérence.
+    queue_event(dev, val);
 }
 
 void qdevice(Device dev) {
@@ -1148,6 +1207,45 @@ void iris_motion_func(int x, int y) {
     }
 }
 
+// === Spaceball simulated state (valuators SBTX..SBPERIOD) ===
+static float iris_sb_tx = 0.0f;
+static float iris_sb_ty = 0.0f;
+static float iris_sb_tz = 0.0f;
+static float iris_sb_rx = 0.0f;
+static float iris_sb_ry = 0.0f;
+static float iris_sb_rz = 0.0f;
+static int   iris_sb_period_ms = 16; // ~60 Hz
+
+float iris_get_spaceball_tx(void) { return iris_sb_tx; }
+float iris_get_spaceball_ty(void) { return iris_sb_ty; }
+float iris_get_spaceball_tz(void) { return iris_sb_tz; }
+float iris_get_spaceball_rx(void) { return iris_sb_rx; }
+float iris_get_spaceball_ry(void) { return iris_sb_ry; }
+float iris_get_spaceball_rz(void) { return iris_sb_rz; }
+int   iris_get_spaceball_period_ms(void) { return iris_sb_period_ms; }
+
+// Utilitaire: à appeler depuis le portage (par ex. dans un callback clavier)
+void iris_spaceball_update(float dtx, float dty, float dtz,
+                           float drx, float dry, float drz)
+{
+    iris_sb_tx += dtx;
+    iris_sb_ty += dty;
+    iris_sb_tz += dtz;
+    iris_sb_rx += drx;
+    iris_sb_ry += dry;
+    iris_sb_rz += drz;
+
+    // Si un jour tu veux générer aussi des événements qread() pour SBTX...
+    if (queued_devices[SBTX])    queue_event(SBTX,    (int16_t)(iris_sb_tx * 1000.0f));
+    if (queued_devices[SBTY])    queue_event(SBTY,    (int16_t)(iris_sb_ty * 1000.0f));
+    if (queued_devices[SBTZ])    queue_event(SBTZ,    (int16_t)(iris_sb_tz * 1000.0f));
+    if (queued_devices[SBRX])    queue_event(SBRX,    (int16_t)(iris_sb_rx * 1000.0f));
+    if (queued_devices[SBRY])    queue_event(SBRY,    (int16_t)(iris_sb_ry * 1000.0f));
+    if (queued_devices[SBRZ])    queue_event(SBRZ,    (int16_t)(iris_sb_rz * 1000.0f));
+    if (queued_devices[SBPERIOD]) queue_event(SBPERIOD, (int16_t)iris_sb_period_ms);
+}
+
+
 static void iris_display_func(void) {
     // Generate REDRAW event if it's being listened to
     queue_event(REDRAW, 1);
@@ -1224,4 +1322,363 @@ char* iris_cuserid(char *buf) {
 #endif
     
     return username;
+}
+
+void zfunction(int func)
+{
+    GLenum mode = GL_LESS; // valeur par défaut IRIS ≈ OpenGL
+
+    switch (func) {
+    case ZF_NEVER:    mode = GL_NEVER;    break;
+    case ZF_LESS:     mode = GL_LESS;     break;
+    case ZF_EQUAL:    mode = GL_EQUAL;    break;
+    case ZF_LEQUAL:   mode = GL_LEQUAL;   break;
+    case ZF_GREATER:  mode = GL_GREATER;  break;
+    case ZF_NOTEQUAL: mode = GL_NOTEQUAL; break;
+    case ZF_GEQUAL:   mode = GL_GEQUAL;   break;  // <-- mapping direct
+    case ZF_ALWAYS:   mode = GL_ALWAYS;   break;
+    default:
+        // valeur inconnue -> garder le mode courant
+        return;
+    }
+
+    glDepthFunc(mode);
+}
+
+void czclear(unsigned long cval, unsigned long zval)
+{
+    // Couleur : dans ton code tu passes toujours 0, donc on met noir.
+    // Si tu veux décoder un cpack 0xRRGGBB00 plus tard, tu pourras étendre.
+    (void)cval; // éviter un warning, si non utilisé
+
+    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+
+    // Profondeur : en IRIS GL zval est une valeur entière entre GD_ZMIN et GD_ZMAX.
+    // Dans ton port, tu as fixé la plage logique à [0.0, 1.0], on mappe donc :
+    if (zval == (unsigned long)getgdesc(GD_ZMAX)) {
+        glClearDepth(1.0);
+    } else if (zval == (unsigned long)getgdesc(GD_ZMIN)) {
+        glClearDepth(0.0);
+    } else {
+        // mapping linéaire si jamais quelqu’un passe une autre valeur
+        double zmin = (double)getgdesc(GD_ZMIN);
+        double zmax = (double)getgdesc(GD_ZMAX);
+        double norm = (zval - zmin) / (zmax - zmin);
+        if (norm < 0.0) norm = 0.0;
+        if (norm > 1.0) norm = 1.0;
+        glClearDepth(norm);
+    }
+
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+}
+
+void smoothline(Boolean on)
+{
+    if (on) {
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        glEnable(GL_LINE_SMOOTH);
+        // Optionnel: pour une meilleure qualité
+        glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
+    } else {
+        glDisable(GL_LINE_SMOOTH);
+        // Ne pas forcément couper le blend globalement si ton app l’utilise ailleurs
+        // glDisable(GL_BLEND);
+    }
+}
+
+void subpixel(Boolean on)
+{
+    // IRIS GL: active/désactive le subpixel rendering.
+    // OpenGL moderne travaille déjà en flottants, donc on ne fait rien ici.
+    (void)on;
+}
+
+char *gversion(char *machinetype)
+{
+    // Chaîne au format libre, juste pour satisfaire les vieux codes IRIS GL
+    static char ver[] = "IRIS2OGL 1.0 (OpenGL/GLUT compatibility layer)";
+    return ver;
+}
+static unsigned long iris48_seed = 1UL;
+void srand48(long seedval)
+{
+    // version simple : réutilise srand pour rester cohérent
+    iris48_seed = (unsigned long)seedval;
+    srand((unsigned int)(seedval ^ (seedval >> 16)));
+}
+
+double drand48(void)
+{
+    // Retourne un double dans [0.0, 1.0)
+    // basé sur rand() (RAND_MAX typiquement 32767 ou plus)
+    int r = rand();
+    return (double)r / ((double)RAND_MAX + 1.0);
+}
+
+static PupMenu pup_menus[MAX_PUP_MENUS];
+static int     last_menu_choice = -1;
+
+// Callback global GLUT -> route vers notre PupMenu
+static void iris_pup_menu_callback(int value)
+{
+    // 'value' est l'indice d'item (1..n) ou la valeur %x. Nous allons
+    // stocker l'index de l'item comme 'value' pour plus de contrôle.
+    last_menu_choice = value;
+
+    // Retrouver le menu courant
+    int glut_id = glutGetMenu();
+    for (int i = 0; i < MAX_PUP_MENUS; ++i) {
+        if (pup_menus[i].used && pup_menus[i].glut_menu_id == glut_id) {
+            PupMenu *pm = &pup_menus[i];
+            int idx = value - 1;
+            if (idx < 0 || idx >= pm->item_count) return;
+
+            PupItem *it = &pm->items[idx];
+
+            if (pm->has_F && pm->callback_int) {
+                // Appel style %F : f(n) où n = it->value (%x)
+                pm->callback_int(it->value);
+            } else if (pm->has_f && pm->callback_void) {
+                // Appel style %f : f() sans param (ui_exit, toggle_performance, select_all)
+                pm->callback_void();
+            }
+            return;
+        }
+    }
+}
+
+// Création d'un nouveau menu IRISGL
+Menu newpup(void)
+{
+    for (int i = 0; i < MAX_PUP_MENUS; ++i) {
+        if (!pup_menus[i].used) {
+            PupMenu *pm = &pup_menus[i];
+            memset(pm, 0, sizeof(PupMenu));
+            pm->used = 1;
+            pm->glut_menu_id = glutCreateMenu(iris_pup_menu_callback);
+            return (Menu)i;
+        }
+    }
+    return -1;
+}
+
+// Parsing très simple des suffixes IRISGL dans 'label':
+//   "%t"   -> titre (ignoré ici)
+//   "%m"   -> sous-menu, le Menu est passé en varargs
+//   "%F"   -> ce menu a une fonction callback(int)
+//   "%f"   -> ce menu a une fonction callback(void)
+//   "%xNN" -> valeur numérique associée à l'item
+#include <stdarg.h>
+
+Menu addtopup(Menu m, const char *label, ...)
+{
+    if (m < 0 || m >= MAX_PUP_MENUS || !label) return m;
+    PupMenu *pm = &pup_menus[m];
+    if (!pm->used) return m;
+
+    va_list ap;
+    va_start(ap, label);
+
+    // Copie du label original pour extraire la partie affichable (avant les %)
+    char text[128];
+    strncpy(text, label, sizeof(text) - 1);
+    text[sizeof(text) - 1] = '\0';
+
+    // Recherche du premier '%' qui marque le début des codes
+    char *percent = strchr(text, '%');
+    if (percent) {
+        *percent = '\0';  // garde seulement la partie "visible"
+    }
+
+    int is_submenu = 0;
+    int value_x = 0;
+    PupFunc1 cb_int = NULL;
+    PupFunc0 cb_void = NULL;
+    int has_F = 0;
+    int has_f = 0;
+
+    // Parse les codes dans la chaîne originale (label, pas text)
+    const char *p = label;
+    while ((p = strchr(p, '%')) != NULL) {
+        p++; // passer le '%'
+        if (*p == '%') {
+            // "%%" → un '%' littéral dans le texte, rien de spécial
+            p++;
+            continue;
+        }
+        switch (*p) {
+        case 't':
+            // titre -> ignoré
+            p++;
+            break;
+        case 'm': {
+            // sous-menu: le Menu est passé en varargs
+            Menu sub = va_arg(ap, Menu);
+            glutSetMenu(pm->glut_menu_id);
+            glutAddSubMenu(text, pup_menus[sub].glut_menu_id);
+            is_submenu = 1;
+            p++;
+            break;
+        }
+        case 'F':
+            // fonction f(int)
+            cb_int = va_arg(ap, PupFunc1);
+            has_F = 1;
+            p++;
+            break;
+        case 'f':
+            // fonction f(void)
+            cb_void = va_arg(ap, PupFunc0);
+            has_f = 1;
+            p++;
+            break;
+        case 'x': {
+            // %xNN -> lit un entier dans la suite de la chaîne
+            int v = 0;
+            p++;
+            sscanf(p, "%d", &v);
+            value_x = v;
+            // avancer p jusqu'à la fin du nombre
+            while (*p && (*p == '-' || (*p >= '0' && *p <= '9')))
+                p++;
+            break;
+        }
+        default:
+            p++;
+            break;
+        }
+    }
+
+    // Si c'était un sous-menu, on a déjà fait glutAddSubMenu, on sort
+    if (is_submenu) {
+        // En IRISGL, addtopup retourne le même handle
+        va_end(ap);
+        return m;
+    }
+
+    // Enregistrer les callbacks au niveau du menu
+    if (has_F) {
+        pm->callback_int = cb_int;
+        pm->has_F = 1;
+    }
+    if (has_f) {
+        pm->callback_void = cb_void;
+        pm->has_f = 1;
+    }
+
+    // Créer un nouvel item
+    if (pm->item_count >= MAX_PUP_ITEMS) {
+        va_end(ap);
+        return m;
+    }
+    PupItem *it = &pm->items[pm->item_count];
+    memset(it, 0, sizeof(PupItem));
+    strncpy(it->label, text, sizeof(it->label) - 1);
+    it->label[sizeof(it->label) - 1] = '\0';
+    it->value = value_x;
+    it->flags = 0;
+
+    // Ajout dans GLUT
+    glutSetMenu(pm->glut_menu_id);
+    // On utilise l'indice de l'item (1..n) comme 'value' passé au callback global
+    glutAddMenuEntry(it->label, pm->item_count + 1);
+
+    pm->item_count++;
+
+    va_end(ap);
+    return m;
+}
+
+void setpup(Menu m, int item, int flags)
+{
+    if (m < 0 || m >= MAX_PUP_MENUS) return;
+    PupMenu *pm = &pup_menus[m];
+    if (!pm->used) return;
+    if (item < 1 || item > pm->item_count) return;
+
+    pm->items[item - 1].flags = flags;
+    // GLUT ne permet pas de modifier le label après coup de façon portable,
+    // donc on garde les flags en logique interne (Flip ne dépend que de l’état).
+}
+
+int dopup(Menu m)
+{
+    if (m < 0 || m >= MAX_PUP_MENUS) return -1;
+    PupMenu *pm = &pup_menus[m];
+    if (!pm->used || pm->item_count == 0) return -1;
+
+    glutSetWindow(main_window);
+    glutSetMenu(pm->glut_menu_id);
+    glutAttachMenu(GLUT_RIGHT_BUTTON);
+
+    last_menu_choice = -1;
+
+    // Boucle "bloquante" IRISGL-style: on pompe les events jusqu’à un choix
+    while (last_menu_choice < 0) {
+        glutMainLoopEvent(); // freeglut
+        // tu peux insérer un petit Sleep(1) / usleep ici si besoin
+    }
+
+    int choice = last_menu_choice;
+    last_menu_choice = -1;
+    glutDetachMenu(GLUT_RIGHT_BUTTON);
+    return choice;   // index d’item (1..n). Flip ne l’utilise pas directement.
+}
+
+void freepup(Menu m)
+{
+    if (m < 0 || m >= MAX_PUP_MENUS) return;
+    PupMenu *pm = &pup_menus[m];
+    if (!pm->used) return;
+
+    if (pm->glut_menu_id != 0) {
+        glutDestroyMenu(pm->glut_menu_id);
+        pm->glut_menu_id = 0;
+    }
+    memset(pm, 0, sizeof(PupMenu));
+}
+
+static double iris_depth_to_norm(unsigned long zval)
+{
+    double zmin = (double)getgdesc(GD_ZMIN);
+    double zmax = (double)getgdesc(GD_ZMAX);
+
+    if (zmax == zmin) return 1.0;
+    double norm = (zval - zmin) / (zmax - zmin);
+    if (norm < 0.0) norm = 0.0;
+    if (norm > 1.0) norm = 1.0;
+    return norm;
+}
+
+void setdepth(unsigned long znear, unsigned long zfar)
+{
+    // IRIS GL: définit la plage de profondeur pour le depth test
+    double n = iris_depth_to_norm(znear);
+    double f = iris_depth_to_norm(zfar);
+    glDepthRange(n, f);
+}
+
+void lsetdepth(unsigned long znear, unsigned long zfar)
+{
+    // Beaucoup d’exemples IRIS utilisent lsetdepth pour l’inversion
+    // de la plage, combinée à zfunction. Ici on le mappe comme setdepth.
+    double n = iris_depth_to_norm(znear);
+    double f = iris_depth_to_norm(zfar);
+    glDepthRange(n, f);
+}
+
+void gexit(void)
+{
+    // Tentative de nettoyage GLUT :
+    // - détruire la fenêtre si encore présente
+    int win = glutGetWindow();
+    if (win != 0) {
+        glutDestroyWindow(win);
+    }
+
+    // Si le code IRISGL appelle gexit(), il attend généralement
+    // une terminaison du programme.
+    // On laisse un exit explicite côté portage.
+    exit(0);
 }

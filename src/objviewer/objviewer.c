@@ -45,10 +45,169 @@
 #define MAT_F14YELLOW	51
 #define MAT_WHITE	52
 
+
+#define C_BLACK		0
+#define C_WHITE		1
+#define C_RED		2
+#define C_DRED		3
+#define C_GREEN		4
+#define C_BLUE		5
+#define C_YELLOW	6
+#define C_ORANGE	7
+#define C_INST_BROWN	8
+#define C_HBLUE		9
+#define C_GREY		10
+
+/*
+ *  missile contrail
+ */
+#define C_MC_FLAME	16
+#define C_MC_TRAIL	17
+
+/*
+ *  non ramp
+ */
+#define C_DIRT		18
+#define C_SWAMP		19
+#define C_SKY		20
+
+/*
+ *  ramps
+ */
+#define C_GREY_0	21
+#define C_GREY_1	22
+#define C_GREY_2	23
+#define C_GREY_3	24
+#define C_GREY_4	25
+#define C_GREY_5	26
+#define C_GREY_6	27
+#define C_GREY_7	28
+#define C_GREY_8	29
+#define C_GREY_9	30
+#define C_GREY_10	31
+#define C_GREY_11	32
+#define C_GREY_12	33
+
+#define C_SILVER_0	34
+#define C_SILVER_1	35
+#define C_SILVER_2	36
+#define C_SILVER_3	37
+#define C_SILVER_4	38
+#define C_SILVER_5	39
+#define C_SILVER_6	40
+#define C_SILVER_7	41
+#define C_SILVER_8	42
+#define C_SILVER_9	43
+
+#define C_PURPLE_0	44
+#define C_PURPLE_1	45
+#define C_PURPLE_2	46
+#define C_PURPLE_3	47
+#define C_PURPLE_4	48
+
+#define C_LIME_0	49
+#define C_LIME_1	50
+#define C_LIME_2	51
+#define C_LIME_3	52
+#define C_LIME_4	53
+
+#define C_TAN_0		54
+#define C_TAN_1		55
+#define C_TAN_2		56
+#define C_TAN_3		57
+#define C_TAN_4		58
+
+#define C_ORANGE_0	59
+#define C_ORANGE_1	60
+#define C_ORANGE_2	61
+#define C_ORANGE_3	62
+#define C_ORANGE_4	63
+
+
+/*
+ *  fixed
+ */
+#define RGB_BLACK	0x00, 0x00, 0x00
+#define RGB_WHITE	0xff, 0xff, 0xff
+#define RGB_RED		0xff, 0x00, 0x00
+#define RGB_DRED	0x30, 0x00, 0x00
+#define RGB_GREEN	0x00, 0xff, 0x00
+#define RGB_BLUE	0x00, 0x00, 0xff
+#define RGB_YELLOW	0xff, 0xff, 0x00
+#define RGB_ORANGE	0xff, 0xc0, 0x00
+#define RGB_INST_BROWN	0x60, 0x50, 0x40
+#define RGB_HBLUE	0x50, 0x90, 0xe0
+#define RGB_GREY	0x80, 0x80, 0x80
+
+/*
+ *  missile contrail
+ */
+#define RGB_MC_FLAME	0xff, 0x40, 0x10
+#define RGB_MC_TRAIL	0xd0, 0xd0, 0xd0
+
+/*
+ * non ramp
+ */
+#define RGB_DIRT	0x70, 0x60, 0x30
+#define RGB_SWAMP	0x50, 0x90, 0x50
+#define RGB_SKY		0x50, 0xa0, 0xf0
+
+/* ramps */
+#define RGB_GREY_0	0xe0, 0xe0, 0xe0
+#define RGB_GREY_1	0xd0, 0xd0, 0xd0
+#define RGB_GREY_2	0xc0, 0xc0, 0xc0
+#define RGB_GREY_3	0xb0, 0xb0, 0xb0
+#define RGB_GREY_4	0xa0, 0xa0, 0xa0
+#define RGB_GREY_5	0x90, 0x90, 0x90
+#define RGB_GREY_6	0x80, 0x80, 0x80
+#define RGB_GREY_7	0x70, 0x70, 0x70
+#define RGB_GREY_8	0x60, 0x60, 0x60
+#define RGB_GREY_9	0x50, 0x50, 0x50
+#define RGB_GREY_10	0x40, 0x40, 0x40
+#define RGB_GREY_11	0x30, 0x30, 0x30
+#define RGB_GREY_12	0x20, 0x20, 0x20
+
+#define RGB_SILVER_0	160, 176, 188
+#define RGB_SILVER_1	150, 166, 178
+#define RGB_SILVER_2	140, 156, 168
+#define RGB_SILVER_3	130, 146, 158
+#define RGB_SILVER_4	120, 136, 148
+#define RGB_SILVER_5	110, 126, 138
+#define RGB_SILVER_6	100, 116, 128
+#define RGB_SILVER_7	 90, 106, 118
+#define RGB_SILVER_8	 80,  96, 108
+#define RGB_SILVER_9	 70,  86,  98
+
+#define RGB_PURPLE_0	0xd0, 0x00, 0xd0
+#define RGB_PURPLE_1	0xb0, 0x00, 0xb0
+#define RGB_PURPLE_2	0x90, 0x00, 0x90
+#define RGB_PURPLE_3	0x70, 0x00, 0x70
+#define RGB_PURPLE_4	0x50, 0x00, 0x50
+
+#define RGB_LIME_0	0xb0, 0xd0, 0xa0
+#define RGB_LIME_1	0x90, 0xb0, 0x80
+#define RGB_LIME_2	0x70, 0x90, 0x60
+#define RGB_LIME_3	0x50, 0x70, 0x40
+#define RGB_LIME_4	0x30, 0x50, 0x20
+
+#define RGB_TAN_0	0xb0, 0x90, 0x70
+#define RGB_TAN_1	0x9c, 0x7c, 0x5c
+#define RGB_TAN_2	0x88, 0x68, 0x48
+#define RGB_TAN_3	0x74, 0x54, 0x34
+#define RGB_TAN_4	0x60, 0x40, 0x20
+
+#define RGB_ORANGE_0	0xc8, 0x46, 0x00
+#define RGB_ORANGE_1	0xa8, 0x39, 0x00
+#define RGB_ORANGE_2	0x88, 0x2c, 0x00
+#define RGB_ORANGE_3	0x68, 0x1f, 0x00
+#define RGB_ORANGE_4	0x48, 0x12, 0x00
+
 #define IDM_APPLICATION_EXIT (101)
 
 #define TARGET_FPS 60
 #define FRAME_TIME_MS (1000.0 / TARGET_FPS)
+
+short rgb_table[64][3];
 
 #define M_PI 3.14159265358979323846
 // Variables pour la rotation de la caméra
@@ -197,8 +356,8 @@ float mat_prop[] = {AMBIENT,	0.3, 0.3, 0.3,
 		    ALPHA,	0.5,
 		    LMNULL};
 
-float mat_borange[] = {AMBIENT,	  0.5, 0.25, 0.0,
-		       DIFFUSE,	  0.5, 0.25, 0.0,
+float mat_borange[] = {AMBIENT,	  0.0, 0.25, 0.9,
+		       DIFFUSE,	  0.0, 0.25, 0.9,
 		       SPECULAR,  0.0, 0.0, 0.0,
 		       SHININESS, 0.0,
 		       LMNULL};
@@ -243,7 +402,7 @@ float mat_mtrail[] = {AMBIENT,	 0.7, 0.7, 0.7,
 		      LMNULL};
 
 float mat_f14black[] = {AMBIENT,   0.1, 0.1, 0.1,
-			DIFFUSE,   1.0, 0.1, 0.1,
+			DIFFUSE,   0.1, 0.1, 0.1,
 			SPECULAR,  0.3, 0.3, 0.3,
 			SHININESS, 30.0,
 			LMNULL};
@@ -282,7 +441,72 @@ float inst_light[] = {AMBIENT, 0.3, 0.3, 0.3,
 		      POSITION, 0.0, 1.0, 0.5, 0.0,
 		      LMNULL};
 
-
+void load_rgb_table(int index, unsigned char r, unsigned char g, unsigned char b)
+{
+    set_iris_colormap(index, r/255.0f, g/255.0f, b/255.0f);
+}
+void init_color_tables()
+{
+    load_rgb_table(C_BLACK, RGB_BLACK);
+    load_rgb_table(C_WHITE, RGB_WHITE);
+    load_rgb_table(C_RED, RGB_RED);
+    load_rgb_table(C_DRED, RGB_DRED);
+    load_rgb_table(C_GREEN, RGB_GREEN);
+    load_rgb_table(C_BLUE, RGB_BLUE);
+    load_rgb_table(C_YELLOW, RGB_YELLOW);
+    load_rgb_table(C_ORANGE, RGB_ORANGE);
+    load_rgb_table(C_INST_BROWN, RGB_INST_BROWN);
+    load_rgb_table(C_HBLUE, RGB_HBLUE);
+    load_rgb_table(C_GREY, RGB_GREY);
+    load_rgb_table(C_MC_FLAME, RGB_MC_FLAME);
+    load_rgb_table(C_MC_TRAIL, RGB_MC_TRAIL);
+    load_rgb_table(C_DIRT, RGB_DIRT);
+    load_rgb_table(C_SWAMP, RGB_SWAMP);
+    load_rgb_table(C_SKY, RGB_SKY);
+    load_rgb_table(C_GREY_0, RGB_GREY_0);
+    load_rgb_table(C_GREY_1, RGB_GREY_1);
+    load_rgb_table(C_GREY_2, RGB_GREY_2);
+    load_rgb_table(C_GREY_3, RGB_GREY_3);
+    load_rgb_table(C_GREY_4, RGB_GREY_4);
+    load_rgb_table(C_GREY_5, RGB_GREY_5);
+    load_rgb_table(C_GREY_6, RGB_GREY_6);
+    load_rgb_table(C_GREY_7, RGB_GREY_7);
+    load_rgb_table(C_GREY_8, RGB_GREY_8);
+    load_rgb_table(C_GREY_9, RGB_GREY_9);
+    load_rgb_table(C_GREY_10, RGB_GREY_10);
+    load_rgb_table(C_GREY_11, RGB_GREY_11);
+    load_rgb_table(C_GREY_12, RGB_GREY_12);
+    load_rgb_table(C_SILVER_0, RGB_SILVER_0);
+    load_rgb_table(C_SILVER_1, RGB_SILVER_1);
+    load_rgb_table(C_SILVER_2, RGB_SILVER_2);
+    load_rgb_table(C_SILVER_3, RGB_SILVER_3);
+    load_rgb_table(C_SILVER_4, RGB_SILVER_4);
+    load_rgb_table(C_SILVER_5, RGB_SILVER_5);
+    load_rgb_table(C_SILVER_6, RGB_SILVER_6);
+    load_rgb_table(C_SILVER_7, RGB_SILVER_7);
+    load_rgb_table(C_SILVER_8, RGB_SILVER_8);
+    load_rgb_table(C_SILVER_9, RGB_SILVER_9);
+    load_rgb_table(C_PURPLE_0, RGB_PURPLE_0);
+    load_rgb_table(C_PURPLE_1, RGB_PURPLE_1);
+    load_rgb_table(C_PURPLE_2, RGB_PURPLE_2);
+    load_rgb_table(C_PURPLE_3, RGB_PURPLE_3);
+    load_rgb_table(C_PURPLE_4, RGB_PURPLE_4);
+    load_rgb_table(C_LIME_0, RGB_LIME_0);
+    load_rgb_table(C_LIME_1, RGB_LIME_1);
+    load_rgb_table(C_LIME_2, RGB_LIME_2);
+    load_rgb_table(C_LIME_3, RGB_LIME_3);
+    load_rgb_table(C_LIME_4, RGB_LIME_4);
+    load_rgb_table(C_TAN_0, RGB_TAN_0);
+    load_rgb_table(C_TAN_1, RGB_TAN_1);
+    load_rgb_table(C_TAN_2, RGB_TAN_2);
+    load_rgb_table(C_TAN_3, RGB_TAN_3);
+    load_rgb_table(C_TAN_4, RGB_TAN_4);
+    load_rgb_table(C_ORANGE_0, RGB_ORANGE_0);
+    load_rgb_table(C_ORANGE_1, RGB_ORANGE_1);
+    load_rgb_table(C_ORANGE_2, RGB_ORANGE_2);
+    load_rgb_table(C_ORANGE_3, RGB_ORANGE_3);
+    load_rgb_table(C_ORANGE_4, RGB_ORANGE_4);
+}
 init_lighting()
 {
     resetmaterials();
@@ -498,14 +722,17 @@ static void display(void) {
         
         GLfloat light_position[] = {5.0f, 10.0f, 5.0f, 1.0f};
         glLightfv(GL_LIGHT0, GL_POSITION, light_position);
-        //glEnable(GL_COLOR_MATERIAL);
+        glEnable(GL_COLOR_MATERIAL);
         glEnable(GL_LIGHT0);
 
         // Dessiner l'objet
         if (obj) {
             //glColor3f(0.8f, 0.8f, 0.8f);
             
-            drawobj(obj, 0x1);
+            drawobj(obj, 0x0001);
+            drawobj(obj, 0x0001 | EV_RIGHT);
+            drawobj(obj, 0x0001 | EV_ABOVE);
+            drawobj(obj, 0x0001 | EV_BEHIND); // Dessiner avec normales et textures
             GLenum error = glGetError();
             if (error != GL_NO_ERROR) {
                 printf("ERROR: OpenGL error during macro test: %d\n", error);
@@ -520,6 +747,7 @@ static void display(void) {
 static void initGL(void) {
     last_frame_time = clock();
     iris_init_colormap();
+    init_color_tables();
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
     gluPerspective(60.0, 1.0, 0.1, 6000.0);
@@ -532,7 +760,8 @@ static void initGL(void) {
 int main(int argc, char **argv) {
     glutInit(&argc, argv);
     //init_lighting();
-    obj = readobj("f14.d");
+    obj = readobj("stealth.d");
+    iris_init_colormap();
     init_lighting();
     if (!obj) {
         fprintf(stderr, "Failed to load object file 'f18.d'\n");

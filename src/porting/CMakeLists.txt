@@ -1,3 +1,5 @@
+project(porting C)
+
 file (GLOB SC_SOURCE "*.c")
 file (GLOB SC_HEADER "*.h")
 
