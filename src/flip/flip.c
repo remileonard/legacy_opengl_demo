@@ -384,7 +384,7 @@ char *title;
 	long xorg, yorg, xdim, ydim;
 	char machinetype[20];
 
-	if (getgdesc(GD_BITS_NORM_SNG_RED) == 0)
+	/*if (getgdesc(GD_BITS_NORM_SNG_RED) == 0)
 	{
 		system("inform 'Your system must support RGB mode to run flip'");
 		exit(1);
@@ -393,7 +393,7 @@ char *title;
 	{
 		system("inform 'Your system must have a z-buffer to run flip'");
 		exit(1);
-	}
+	}*/
 	if (getgdesc(GD_LINESMOOTH_RGB))
 		smoothlines_supported = 1;
 	else smoothlines_supported = 0;

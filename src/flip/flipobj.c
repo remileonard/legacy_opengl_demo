@@ -66,9 +66,9 @@ char *name;
 	 * has to map in the next virtual page and re-start the DMA transfer).
 	 */
 	nlongs = 8 * obj->npoints;
-	obj->data = (int32_t *) malloc(nlongs*sizeof(int32_t) + 4096);
-	//obj->data = (int32_t *) (((int)(obj->data)) + 0xfff);
-	//obj->data = (int32_t *) (((int)(obj->data)) & 0xfffff000);
+	obj->data = (float *) malloc(nlongs*sizeof(int32_t) + 4096);
+	/*obj->data = (float *) (((int)(obj->data)) + 0xfff);
+	obj->data = (float *) (((int)(obj->data)) & 0xfffff000);*/
 	ip = (int32_t *)obj->data;
 	for (i = 0;  i < nlongs/4;  i++, ip += 4) {
 		fread(ip, 3 * sizeof(int32_t), 1, inf);
@@ -82,8 +82,8 @@ char *name;
 /*
  *	This has to be done first
  */
-	swirl_randomize(obj);
-	find_edges(obj);
+	//swirl_randomize(obj);
+	//find_edges(obj);
 
 	return obj;
 }

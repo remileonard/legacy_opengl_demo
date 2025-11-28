@@ -48,7 +48,7 @@ typedef struct {
     int ablend;	/* Alpha-blend me? */
 	int swirl;	/* Go crazy with swirling? */
 	char *fname ;	/* Filename for menus */
-    int32_t *data;	/* Raw polygon data */
+    float *data;	/* Raw polygon data */
 	float *swirldata;	/* Randomized data for swirling */
 	flipedge *edge;	/* Processed edges */
 	int nedges;

@@ -71,7 +71,13 @@ int n;
 
 	vsize = n * 2;
 	vh = (h_vertex *) malloc(sizeof(h_vertex) * vsize);
-	for (i = 0; i < vsize; i++) vh[i].num = (-1);
+	if (!vh) {
+        fprintf(stderr, "h_init_vertex: malloc FAILED\n");
+        exit(1);
+    }
+	for (i = 0; i < vsize; i++) {
+		vh[i].num = (-1);
+	}
 }
 void h_destroy_vertex()
 {
