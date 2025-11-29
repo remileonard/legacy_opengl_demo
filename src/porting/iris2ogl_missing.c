@@ -103,10 +103,8 @@ int32_t getvaluator(Device dev) {
     switch (dev) {
     // Souris / curseur
     case MOUSEX:
-    case CURSORX:
         return (int32_t)iris_get_mouse_x();
     case MOUSEY:
-    case CURSORY:
         return (int32_t)iris_get_mouse_y();
 
     // Spaceball : on renvoie des valeurs mises à l’échelle (milliers)

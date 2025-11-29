@@ -125,22 +125,22 @@ ui_init()
 	    qdevice(CURSORY);
 
 	    add_event(ANY, REDRAW, gid, ui_redraw, NULL);
-	    add_event(gid, LEFTMOUSE, DOWN, ui_lmdown, NULL);
-	    add_event(gid, LEFTMOUSE, UP, ui_lmup, NULL);
-	    add_event(gid, MIDDLEMOUSE, DOWN, ui_mmdown, NULL);
-	    add_event(gid, MIDDLEMOUSE, UP, ui_mmup, NULL);
-	    add_event(gid, CURSORX, ANY, ui_schedulemouse, NULL);
-	    add_event(gid, CURSORY, ANY, ui_schedulemouse, NULL);
+	    add_event(ANY, LEFTMOUSE, DOWN, ui_lmdown, NULL);
+	    add_event(ANY, LEFTMOUSE, UP, ui_lmup, NULL);
+	    add_event(ANY, MIDDLEMOUSE, DOWN, ui_mmdown, NULL);
+	    add_event(ANY, MIDDLEMOUSE, UP, ui_mmup, NULL);
+	    add_event(ANY, CURSORX, ANY, ui_schedulemouse, NULL);
+	    add_event(ANY, CURSORY, ANY, ui_schedulemouse, NULL);
 
 	    add_update(&mouse_noisy, ui_mouseupdate, NULL);
 
-	    add_event(gid, SBTX, ANY, ui_SBevent, (void *)SBTX);
-	    add_event(gid, SBTY, ANY, ui_SBevent, (void *)SBTY);
-	    add_event(gid, SBTZ, ANY, ui_SBevent, (void *)SBTZ);
-	    add_event(gid, SBRX, ANY, ui_SBevent, (void *)SBRX);
-	    add_event(gid, SBRY, ANY, ui_SBevent, (void *)SBRY);
-	    add_event(gid, SBRZ, ANY, ui_SBevent, (void *)SBRZ);
-	    add_event(gid, SBPERIOD, ANY, ui_SBevent, (void *)SBPERIOD);
+	    add_event(ANY, SBTX, ANY, ui_SBevent, (void *)SBTX);
+	    add_event(ANY, SBTY, ANY, ui_SBevent, (void *)SBTY);
+	    add_event(ANY, SBTZ, ANY, ui_SBevent, (void *)SBTZ);
+	    add_event(ANY, SBRX, ANY, ui_SBevent, (void *)SBRX);
+	    add_event(ANY, SBRY, ANY, ui_SBevent, (void *)SBRY);
+	    add_event(ANY, SBRZ, ANY, ui_SBevent, (void *)SBRZ);
+	    add_event(ANY, SBPERIOD, ANY, ui_SBevent, (void *)SBPERIOD);
 	    qdevice(SBTX);
 	    qdevice(SBTY);
 	    qdevice(SBTZ);
@@ -172,6 +172,7 @@ ui_mouseupdate()
 	nmy = getvaluator(CURSORY);
 	if (omy == (-1)) omy = nmy;
 
+	printf("ui_mouseupdate: omx=%d omy=%d nmx=%d nmy=%d\n", omx, omy, nmx, nmy);
 	if (panflag)
 		ui_pan();
 	else if (zoomflag)
@@ -185,7 +186,9 @@ ui_mouseupdate()
 		
 		ui_to_worldspace(omx-origx, omy-origy, &p1x, &p1y);
 		ui_to_worldspace(nmx-origx, nmy-origy, &p2x, &p2y);
+		printf("trackball: p1=(%f,%f) p2=(%f,%f)\n", p1x, p1y, p2x, p2y);
 		trackball(r, p1x, p1y, p2x, p2y);
+		printf("trackball: r=(%f,%f,%f,%f)\n", r[0], r[1], r[2], r[3]);
 		(*user_fn)(r, t);
 	}
 	omx = nmx; omy = nmy;
@@ -197,6 +200,7 @@ static void
 ui_schedulemouse()
 {
     mouse_noisy = TRUE;
+	printf("ui_schedulemouse\n");
 }
 
 /*

@@ -66,7 +66,7 @@ trackball(float q[4], float p1x, float p1y, float p2x, float p2y)
 		vzero(q); q[3] = 1.0; /* Zero rotation */
 		return;
 	}
-
+	printf("trackball inputs: p1=(%f,%f) p2=(%f,%f)\n", p1x, p1y, p2x, p2y);
 /*
  * First, figure out z-coordinates for projection of P1 and P2 to
  * deformed sphere
@@ -74,6 +74,8 @@ trackball(float q[4], float p1x, float p1y, float p2x, float p2y)
 	vset(p1,p1x,p1y,tb_project_to_sphere(TRACKBALLSIZE,p1x,p1y));
 	vset(p2,p2x,p2y,tb_project_to_sphere(TRACKBALLSIZE,p2x,p2y));
 
+	printf("trackball p1 3D=(%f,%f,%f) p2 3D=(%f,%f,%f)\n",
+       p1[0], p1[1], p1[2], p2[0], p2[1], p2[2]);
 /*
  *	Now, we want the cross product of P1 and P2
  */
@@ -90,7 +92,8 @@ trackball(float q[4], float p1x, float p1y, float p2x, float p2y)
 	if (t > 1.0) t = 1.0;
 	if (t < -1.0) t = -1.0;
 	phi = 2.0 * asin(t);
-
+	printf("trackball axis=(%f,%f,%f) d=%f t=%f phi=%f\n",
+       a[0], a[1], a[2], vlength(d), t, phi);
 	axis_to_quat(a,phi,q);
 }
 
@@ -100,10 +103,32 @@ trackball(float q[4], float p1x, float p1y, float p2x, float p2y)
 void
 axis_to_quat(float a[3], float phi, float q[4])
 {
-	vnormal(a);
-	vcopy(a,q);
-	vscale(q,fsin(phi/2.0));
-	q[3] = fcos(phi/2.0);
+    float mag;
+
+    /* norme de l’axe */
+    mag = a[0]*a[0] + a[1]*a[1] + a[2]*a[2];
+
+    /* axe dégénéré ou numériquement pourri → pas de rotation */
+    if (mag <= 1e-12f || mag != mag) { /* mag!=mag teste NaN */
+        q[0] = q[1] = q[2] = 0.0f;
+        q[3] = 1.0f;
+        return;
+    }
+
+    mag = fsqrt(mag);
+    q[0] = a[0] / mag;
+    q[1] = a[1] / mag;
+    q[2] = a[2] / mag;
+
+    {
+        float half = phi * 0.5f;
+        float s = fsin(half);
+        float c = fcos(half);
+        q[0] *= s;
+        q[1] *= s;
+        q[2] *= s;
+        q[3] = c;
+    }
 }
 
 /*
@@ -113,17 +138,22 @@ axis_to_quat(float a[3], float phi, float q[4])
 static float
 tb_project_to_sphere(float r, float x, float y)
 {
-	float d, t, z;
+    float d, t, z;
 
-	d = fsqrt(x*x + y*y);
-	if (d < r*M_SQRT1_2)  	/* Inside sphere */
-	z = fsqrt(r*r - d*d);
-	else
-	{ 			/* On hyperbola */
-		t = r / M_SQRT2;
-		z = t*t / d;
-	}
-	return z;
+    d = fsqrt(x*x + y*y);
+    if (d < r*M_SQRT1_2) {  /* Inside sphere */
+        float arg = r*r - d*d;
+        if (arg < 0.0f) arg = 0.0f;
+        z = fsqrt(arg);
+    } else {                        /* On hyperbola */
+        t = r / M_SQRT2;
+        z = t*t / d;
+    }
+
+    /* Petit plancher pour éviter un vecteur (0,0,0) exact */
+    if (z == 0.0f) z = 1e-4f;
+
+    return z;
 }
 
 /*
@@ -185,11 +215,17 @@ add_quats(float q1[4], float q2[4], float dest[4])
 static void
 normalize_quat(float q[4])
 {
-	int i;
-	float mag;
-
-	mag = (q[0]*q[0] + q[1]*q[1] + q[2]*q[2] + q[3]*q[3]);
-	for (i = 0; i < 4; i++) q[i] /= mag;
+    float mag = q[0]*q[0] + q[1]*q[1] + q[2]*q[2] + q[3]*q[3];
+    if (mag <= 0.0f) {
+        q[0] = q[1] = q[2] = 0.0f;
+        q[3] = 1.0f;
+        return;
+    }
+    mag = fsqrt(mag);
+    q[0] /= mag;
+    q[1] /= mag;
+    q[2] /= mag;
+    q[3] /= mag;
 }
 
 /*

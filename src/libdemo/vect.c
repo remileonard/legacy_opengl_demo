@@ -26,7 +26,8 @@
  */
 #include <stdio.h>
 #include "vect.h"
-
+#include "porting/iris2ogl.h"
+#define fsqrt(x) (sqrtf(x))
 float *
 vnew()
 {
@@ -198,7 +199,7 @@ vtransform(const float *v, const Matrix mat, float *vt)
 void
 vtransform4(const float *v, const Matrix mat, float *vt)
 {
-	float t[3];
+	float t[4];
 
 	t[0] = v[0]*mat[0][0] + v[1]*mat[1][0] + v[2]*mat[2][0] + mat[3][0];
 	t[1] = v[0]*mat[0][1] + v[1]*mat[1][1] + v[2]*mat[2][1] + mat[3][1];

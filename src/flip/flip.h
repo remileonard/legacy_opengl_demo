@@ -52,6 +52,7 @@ typedef struct {
 	float *swirldata;	/* Randomized data for swirling */
 	flipedge *edge;	/* Processed edges */
 	int nedges;
+	int colors;	/* Has colors */
 	float er[4];	/* Cumulative rotation */
 	float espin[4];	/* Incremental rotation to spin */
 	float trans[3];	/* Translation */

@@ -165,7 +165,7 @@ void RGBcolor(RGBvalue r, RGBvalue g, RGBvalue b);
 void iris_set_color_index(int index);
 
 // === Primitives ===
-#define clear() glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+void clear();
 #define zclear() glClear(GL_DEPTH_BUFFER_BIT)
 
 // swapbuffers - swap buffers and request a new display update
@@ -235,6 +235,7 @@ void delobj(Object obj);
 
 void resetmaterials(void);
 void mmode(int mode);
+long getmmode(void);
 void perspective(Angle fov, float aspect, Coord near, Coord far);
 void ortho(Coord left, Coord right, Coord bottom, Coord top, Coord near, Coord far);
 void ortho2(Coord left, Coord right, Coord bottom, Coord top);
@@ -311,8 +312,8 @@ void set_win_coords(void);
 #define KEYBD           1      // Keyboard device
 #define MOUSEX          2      // Mouse X position
 #define MOUSEY          3      // Mouse Y position
-#define CURSORX         4      // Logical cursor X (alias de MOUSEX)
-#define CURSORY         5      // Logical cursor Y (alias de MOUSEY)
+#define CURSORX         2      // Logical cursor X (alias de MOUSEX)
+#define CURSORY         3      // Logical cursor Y (alias de MOUSEY)
 #define SBTX            6      // Spaceball translate X
 #define SBTY            7      // Spaceball translate Y
 #define SBTZ            8      // Spaceball translate Z

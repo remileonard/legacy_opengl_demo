@@ -101,13 +101,23 @@ void mapcolor(Colorindex index, RGBvalue r, RGBvalue g, RGBvalue b) {
         iris_colormap[index][2] = b / 255.0f;
     }
 }
+void clear() {
+    // lire la couleur courante
+    GLfloat color[4];
+    glGetFloatv(GL_CURRENT_COLOR, color);
 
+    // configurer la couleur d’effacement à partir de la couleur courante
+    glClearColor(color[0], color[1], color[2], 1.0f);
+
+    // effacer le color buffer
+    glClear(GL_COLOR_BUFFER_BIT);
+}
 // === Buffer Swapping ===
 
 void swapbuffers(void) {
     glutSwapBuffers();
     // Request a new display update so GLUT keeps generating REDRAW events
-    glutPostRedisplay();
+    //glutPostRedisplay();
 }
 
 // === Geometric Primitives ===
@@ -202,6 +212,10 @@ void mmode(int mode) {
             fprintf(stderr, "mmode: unknown mode %d\n", mode);
             break;
     }
+}
+long getmmode(void)
+{
+    return current_matrix_mode;
 }
 
 void perspective(Angle fov, float aspect, Coord near_val, Coord far_val) {
@@ -412,8 +426,6 @@ void lmdef(int deftype, int index, int np, float props[]) {
                 }
             }
             
-            printf("DEBUG lmdef: Light %d defined - Diffuse(%.2f, %.2f, %.2f)\n",
-                   index, light->diffuse[0], light->diffuse[1], light->diffuse[2]);
             break;
         }
         
@@ -499,11 +511,6 @@ void lmdef(int deftype, int index, int np, float props[]) {
                 }
             }
             
-            printf("DEBUG lmdef: Material %d defined - Ambient(%.2f, %.2f, %.2f) Diffuse(%.2f, %.2f, %.2f) Shininess(%.2f)\n",
-                   index,
-                   mat->ambient[0], mat->ambient[1], mat->ambient[2],
-                   mat->diffuse[0], mat->diffuse[1], mat->diffuse[2],
-                   mat->shininess);
             break;
         }
         
@@ -846,6 +853,14 @@ void iris_mouse_func(int button, int state, int x, int y);
 void iris_motion_func(int x, int y);
 
 void winopen(const char *title) {
+    // Initialize GLUT if not already done
+    static int glut_initialized = 0;
+    if (!glut_initialized) {
+        int argc = 1;
+        char *argv[1] = {(char *)"iris_gl_emulator"};
+        glutInit(&argc, argv);
+        glut_initialized = 1;
+    }
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
     glutInitWindowSize(window_width, window_height);
     glutInitWindowPosition(window_x, window_y);
@@ -1028,31 +1043,46 @@ void unqdevice(Device dev) {
 }
 
 Boolean qtest(void) {
-    // Process any pending GLUT events to populate the queue
-    // This is crucial for window events and display callbacks
+    /* 1) Si la file contient déjà des événements, ne touche pas à GLUT */
+    if (event_queue_head != event_queue_tail) {
+        return TRUE;
+    }
+
+    /* 2) Sinon, on laisse GLUT traiter au plus une vague d'événements */
     glutMainLoopEvent();
-    
-    return (event_queue_head != event_queue_tail) ? TRUE : FALSE;
+
+    /* 3) Re-tester la file IRIS */
+    if (event_queue_head != event_queue_tail) {
+        return TRUE;
+    } else {
+        return FALSE;
+    }
 }
 
+
 int32_t qread(int16_t *val) {
-    // If queue is empty, process GLUT events until we get one
-    while (event_queue_head == event_queue_tail) {
-        // Process pending GLUT events
-        // This requires freeglut with glutMainLoopEvent support
+    // qread doit BLOQUER jusqu'à ce qu'il y ait un event
+    for (;;) {
+        // Si on a quelque chose dans la file, on le renvoie tout de suite
+        if (event_queue_head != event_queue_tail) {
+            Event evt = event_queue[event_queue_head];
+            event_queue_head = (event_queue_head + 1) % EVENT_QUEUE_SIZE;
+            *val = evt.value;
+            return evt.device;
+        }
+
+        // Sinon, on laisse GLUT produire des événements UNE fois
         glutMainLoopEvent();
-        
-        // Check if window was closed
+
+        // Gestion fenêtre fermée: pas d'event → retourne 0
         if (glutGetWindow() == 0) {
             *val = 0;
             return 0;
         }
+
+        // Et on reboucle. On pourrait ajouter un petit Sleep(1) ici si jamais
+        // glutMainLoopEvent ne bloque pas suffisamment.
     }
-    
-    Event evt = event_queue[event_queue_head];
-    event_queue_head = (event_queue_head + 1) % EVENT_QUEUE_SIZE;
-    *val = evt.value;
-    return evt.device;
 }
 
 Boolean getbutton(Device dev) {
@@ -1160,7 +1190,7 @@ void iris_special_up_func(int key, int x, int y) {
 void iris_mouse_func(int button, int state, int x, int y) {
     Device dev = 0;
     Boolean pressed = (state == GLUT_DOWN);
-    
+    printf("iris_mouse_func: button=%d state=%d\n", button, state); 
     switch (button) {
         case GLUT_LEFT_BUTTON:
             dev = LEFTMOUSE;
@@ -1248,7 +1278,9 @@ void iris_spaceball_update(float dtx, float dty, float dtz,
 
 static void iris_display_func(void) {
     // Generate REDRAW event if it's being listened to
-    queue_event(REDRAW, 1);
+    if (queued_devices[REDRAW]) {
+        queue_event(REDRAW, 1);
+    }
     // Don't actually draw here - let the application handle it
     // The application will call swapbuffers() when ready
 }
@@ -1263,7 +1295,7 @@ static void iris_idle_func(void) {
     #else
     usleep(1000);
     #endif
-    queue_event(REDRAW, 1);
+    //queue_event(REDRAW, 1);
 }
 
 void iris_reshape_func(int width, int height) {

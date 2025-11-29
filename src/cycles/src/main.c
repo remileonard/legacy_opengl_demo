@@ -15,7 +15,6 @@ extern int cycles_main_impl(int argc, char **argv);
 
 int main(int argc, char **argv) {
     // Initialize GLUT first
-    glutInit(&argc, argv);
     
     // Initialize the color map
     iris_init_colormap();

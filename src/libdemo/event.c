@@ -125,14 +125,14 @@ event()
     initialize();
 
 	/* Something in the queue?  Handle it */
-    if (qtest())
-	while (qtest())
-	    find_event();
-	/*
-	 * Or, if there's no update function, wait for something to appear
-	 */
-    else if (do_updates() == 0)
-	find_event();
+    if (qtest()) {
+		while (qtest()) {
+			find_event();
+		}
+	} else if (do_updates() == 0) {
+		find_event();	
+	}
+	
 }
 
 /*
@@ -158,7 +158,7 @@ do_updates()
 {
     update_p	scan;
     int		updated = 0;
-
+	printf("do_updates called\n");
     for (scan = update_list; scan; scan = scan->next)
 	{
 		if (*scan->flag)
@@ -189,6 +189,7 @@ find_event()
 
     device = qread(&s);
     state = s;
+	printf("find_event: dev=%d state=%d\n", device, state);
     for (scan = event_list, flag=0; scan; scan = scan->next)
 	{
 		if ( ((scan->window == ANY) || (context == scan->window))

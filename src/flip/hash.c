@@ -36,9 +36,9 @@ typedef struct {
 /*
  * The actual hash tables...
  */
-static h_vertex *vh = NULL;
+static h_vertex vh[150000];
 static int vsize = 0;
-static h_edge *eh = NULL;
+static h_edge eh[150000];
 static int esize = 0;
 
 /*
@@ -70,18 +70,18 @@ int n;
 	int i;
 
 	vsize = n * 2;
-	vh = (h_vertex *) malloc(sizeof(h_vertex) * vsize);
+	/*vh = (h_vertex *) malloc(sizeof(h_vertex) * vsize);
 	if (!vh) {
         fprintf(stderr, "h_init_vertex: malloc FAILED\n");
         exit(1);
-    }
+    }*/
 	for (i = 0; i < vsize; i++) {
 		vh[i].num = (-1);
 	}
 }
 void h_destroy_vertex()
 {
-	free(vh);
+	//free(vh);
 	lastv = vsize = 0;
 }
 
@@ -140,13 +140,13 @@ int n;
 {
 	int i;
 	esize = n * 2;
-	eh = (h_edge *) malloc(sizeof(h_edge) * esize);
+	//eh = (h_edge *) malloc(sizeof(h_edge) * esize);
 	for (i = 0; i < esize; i++) eh[i].num = (-1);
 }
 void
 h_destroy_edge()
 {
-	free(eh);
+	//free(eh);
 	laste = esize = 0;
 }
 
