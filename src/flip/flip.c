@@ -295,7 +295,7 @@ void draw_objects() {
 #include <sys/times.h>
 #endif
 #define FRAMES 60 /* Update polygons/sec every FRAMES frames */
-void draw_rate(n) int n;
+void draw_rate(int n)
 {
     static int numdrawn = 0;
     static long lastt = 0;
@@ -343,7 +343,7 @@ void draw_rate(n) int n;
 /*
  * Initialize graphics
  */
-void init_windows(title) char *title;
+void init_windows(char *title)
 {
     long xorg, yorg, xdim, ydim;
     char machinetype[20];
@@ -420,8 +420,7 @@ void init_windows(title) char *title;
     translate(0.0, 0.0, -1.1);
 }
 
-void parse_args(argc, argv) int argc;
-char **argv;
+void parse_args(int argc, char **argv)
 {
     int whichobj = 0; /* Which one we're doing now */
     int i, c, err, still;
@@ -562,7 +561,7 @@ char **argv;
     lobj.espin[3] = 1.0;
     vzero(lobj.trans); /* and no translation */
 }
-void rand_rotation(e) float *e;
+void rand_rotation(float *e)
 {
     static int init = 0;
     int i;
@@ -728,7 +727,7 @@ void remake_dtmenu(int n) {
     }
 }
 
-void remake_objmenu(n) int n;
+void remake_objmenu(int n)
 {
     char temp[64];
 
@@ -790,14 +789,14 @@ void toggle_spinlights(void) {
     remake_lightmenu();
     remake_menus();
 }
-void toggle_display(n) int n;
+void toggle_display(int n)
 {
     fobj[n]->display = !fobj[n]->display;
 
     remake_objmenu(n);
     remake_menus();
 }
-void toggle_drawtype(n) int n;
+void toggle_drawtype(int n)
 {
     int obj;
     enum DrawType dt;
@@ -841,7 +840,7 @@ void select_all() {
     remake_menus();
 }
 
-void toggle_select(n) int n;
+void toggle_select(int n)
 {
     int t;
 
