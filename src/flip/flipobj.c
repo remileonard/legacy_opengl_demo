@@ -15,9 +15,10 @@
  * rights reserved under the Copyright Laws of the United States.
  */
 #include <math.h>
-#include "stdio.h"
-#include "porting/iris2ogl.h"
+#include <stdio.h>
+#include <stdlib.h>
 
+#include "porting/iris2ogl.h"
 #include "flip.h"
 #include "hash.h"
 
@@ -30,68 +31,107 @@ int32_t swap_int32(int32_t val)
            ((int32_t)bytes[3]);
 }
 
-flipobj
-*readflipobj(name)
-char *name;
+flipobj *readflipobj(char *name)
 {
-	FILE	*inf;
-	flipobj	*obj;
-	int32_t		i, j;
-	int32_t		nlongs;
-	int32_t		magic;
-	int32_t		*ip;
+    FILE    *inf;
+    flipobj *obj;
+    int32_t i;
+    int32_t nlongs;
+    int32_t magic;    // champ "colors"/magic ignoré
+    int32_t *ip;
 
-	inf = fopen(name,"rb");
-	if(!inf) {
-		fprintf(stderr,"readfast: can't open input file %s\n",name);
-		exit(1);
-	}
-	fread(&magic, sizeof(int32_t), 1, inf);
-    magic = swap_int32(magic); // swap endian
-	if(magic != FASTMAGIC) {
-	fprintf(stderr,"readfast: bad magic in object file\n");
-	fclose(inf);
-		exit(1);
-	}
-	obj = (flipobj *)malloc(sizeof(flipobj));
-	fread(&obj->npoints, sizeof(int32_t), 1, inf);
+    inf = fopen(name, "rb");
+    if (!inf) {
+        fprintf(stderr, "readflipobj: can't open input file %s\n", name);
+        exit(1);
+    }
+
+    /* Lecture du magic global (FASTMAGIC) déjà gérée chez toi avant,
+       si tu gardes ça, ne relis pas ici. Je pars de ta version : */
+    int32_t fileMagic;
+    fread(&fileMagic, sizeof(int32_t), 1, inf);
+    fileMagic = swap_int32(fileMagic);
+    if (fileMagic != FASTMAGIC) {
+        fprintf(stderr, "readflipobj: bad magic in object file\n");
+        fclose(inf);
+        exit(1);
+    }
+
+    obj = (flipobj *)malloc(sizeof(flipobj));
+    if (!obj) {
+        fprintf(stderr, "readflipobj: malloc flipobj FAILED\n");
+        fclose(inf);
+        exit(1);
+    }
+
+    /* npoints et "colors" viennent du fichier en 32 bits big-endian */
+    fread(&obj->npoints, sizeof(int32_t), 1, inf);
     obj->npoints = swap_int32(obj->npoints);
-	fread(&obj->colors, sizeof(int32_t), 1, inf);
-    obj->colors = swap_int32(obj->colors);
 
-	/*
-	 * Insure that the data is quad-word aligned and begins on a page
-	 * boundary.  This shields us from the performance loss which occurs 
-	 * whenever we try to fetch data which straddles a page boundary  (the OS
-	 * has to map in the next virtual page and re-start the DMA transfer).
-	 */
-	nlongs = 8 * obj->npoints;
-    obj->data = (int32_t *)malloc(nlongs * sizeof(int32_t) + 4096);
-    // obj->data = (int32_t *)(((intptr_t)(obj->data)) + 0xfff);
-    // obj->data = (int32_t *)(((intptr_t)(obj->data)) & 0xfffff000);
-    ip = obj->data;
-	int len = 0;
-    for (i = 0; i < nlongs / 4; i++, ip += 4)
-    {
-        len = fread(ip, 3 * sizeof(int32_t), 1, inf);
-		if (len != 1) {
-			fprintf(stderr, "readflipobj: read error on data\n");
-			fclose(inf);
-			exit(1);
-		}
+    /* IGNORE COLORS FIELD: on le lit juste pour avancer dans le fichier */
+    fread(&magic, sizeof(int32_t), 1, inf);
+    magic = swap_int32(magic);
+    obj->colors = magic;   /* ou ignore, selon ce que tu veux */
+
+    nlongs = 8 * obj->npoints;          /* nombre d'int au total */
+
+    /* Buffer brut en int32_t */
+    int32_t *raw = (int32_t *)malloc(nlongs * sizeof(int32_t));
+    if (!raw) {
+        fprintf(stderr, "readflipobj: malloc raw FAILED (nlongs=%d)\n", nlongs);
+        fclose(inf);
+        exit(1);
+    }
+	long pos_after_header = ftell(inf);    // après magic, npoints, colors
+	fseek(inf, 0, SEEK_END);
+	long end = ftell(inf);
+	long bytes_available = end - pos_after_header;
+	fseek(inf, pos_after_header, SEEK_SET);
+    /* Reproduire exactement la logique originale: 3 int lus sur 4 */
+    ip = raw;
+    for (i = 0; i < nlongs / 4; i++, ip += 4) {
+        int len = fread(ip, 3 * sizeof(int32_t), 1, inf);
+        if (len != 1) {
+            fprintf(stderr, "readflipobj: read error on data (i=%d)\n", i);
+            free(raw);
+            fclose(inf);
+            exit(1);
+        }
         ip[0] = swap_int32(ip[0]);
         ip[1] = swap_int32(ip[1]);
         ip[2] = swap_int32(ip[2]);
+        /* ip[3] reste à 0, comme dans l’original */
     }
+	
     fclose(inf);
+	long bytes_needed = (nlongs / 4) * 3 * sizeof(int32_t); // = 6 * npoints * 4
+	printf("available=%ld needed=%ld\n", bytes_available, bytes_needed);
+    /* Conversion vers float* exploitable par le reste du code */
+    obj->data = (float *)malloc(nlongs * sizeof(float));
+    if (!obj->data) {
+        fprintf(stderr, "readflipobj: malloc data FAILED (nlongs=%d)\n", nlongs);
+        free(raw);
+        exit(1);
+    }
 
-/*
- *	This has to be done first
- */
-	swirl_randomize(obj);
-	find_edges(obj);
+    for (i = 0; i < nlongs; i++) {
+        union { int32_t i; float f; } u;
+        u.i = raw[i];
+        obj->data[i] = u.f;
+    }
 
-	return obj;
+    free(raw);
+
+	printf("readflipobj: npoints=%d\n", obj->npoints);
+	printf("readflipobj: data[0]=%g data[last]=%g\n",
+       obj->data[0],
+       obj->data[8 * obj->npoints - 1]);
+    /* Ensuite tu peux réactiver */
+    swirl_randomize(obj);
+	fflush(stdout);
+    find_edges(obj);
+
+    return obj;
 }
 
 void
@@ -176,12 +216,12 @@ flipobj *obj;
 /*
  *	Use hash functions to find all unique edges
  */
-find_edges(obj)
-flipobj *obj;
+int find_edges(flipobj *obj)
 {
 	int i, j, v0, v1, n;
 	float *p, *end;
-
+	printf("about to call find_edges: npoints=%d\n", obj->npoints);
+	fflush(stdout);
 	h_init_vertex(obj->npoints * 2);
 	h_init_edge(obj->npoints * 4);
 
@@ -239,4 +279,5 @@ flipobj *obj;
 	}
 	h_destroy_vertex();
 	h_destroy_edge();
+	return 0;
 }

@@ -27,6 +27,7 @@
 #include "light.h"
 #include "porting/iris2ogl.h"
 #include <stdio.h>
+#include <stdlib.h>
 
 #define HDWBUG /* needed for CLOVER1 zfunction(GE_ZERO) hdwr bug */
 
@@ -67,7 +68,8 @@ void update_objeulers(void);
 void rand_rotation(float *);
 void alpha_on(void), alpha_off(void);
 void toggle_display(int), toggle_select(int);
-void toggle_alpha(int), toggle_drawtype(int);
+void toggle_alpha(int);
+void toggle_drawtype(int);
 void toggle_swirl(int);
 void toggle_performance(void);
 void toggle_lightsource(int);
@@ -82,7 +84,6 @@ void select_lmodel(int), remake_lmmenu(int);
 void anything_moving(int *);
 
 void main(int argc, char **argv) {
-    readflipobj("x29.bin");
     parse_args(argc, argv); /* This reads in the files, too */
     init_windows(argv[0]);
     make_lights();
@@ -220,7 +221,7 @@ void draw_objects() {
 
             /* And then rotate */
             build_rotmatrix(m, fobj[i]->er);
-            
+
             multmatrix(m);
 
             if (fobj[i]->type == SUBSMOOTHLINES && smoothlines_supported) {
@@ -433,6 +434,7 @@ char **argv;
     /*
      * If on a machine that can't double-buffer, stay still!
      */
+    
     if (getgdesc(GD_BITS_NORM_DBL_RED) == 0)
         still = TRUE;
 
@@ -454,6 +456,7 @@ char **argv;
             break;
         case 'h': /* Help */
         default:
+            printf("error parsing args\n");
             err = TRUE;
             break;
         }
@@ -465,20 +468,18 @@ char **argv;
             ++nobjs;
     }
 
-    /*if (err || nobjs==0 )
+    if (err || nobjs==0 )
     {
         fprintf(stderr, "Usage:\n");
         fprintf(stderr, "%s [-sh] [-W[xorg,yorg,]width,height] modelname [modelname]\n",argv[0]);
         fprintf(stderr, "\t-s Means stay still, objects won't get random rotation\n");
         fprintf(stderr, "\t-h Help (this message)\n");
         exit(1);
-    }*/
-    nobjs = 1; /* TEMPORARY HACK TO AVOID ARG PROBLEMS */
+    }
 
     fobj = (flipobj **)malloc(sizeof(flipobj *) * nobjs);
-	optind = 0; /* TEMPORARY HACK TO AVOID ARG PROBLEMS */
-    for (i = optind; i < 1; i++) {
-        char temp[64];
+    for (i = optind; i < argc; i++) {
+        char temp[256];
         FILE *fp;
         int j, loaded;
 
@@ -486,22 +487,25 @@ char **argv;
          *	First check to see if this object has already been loaded
          */
         loaded = (-1);
-        /*for (j = optind; j < i; j++) {
+        for (j = optind; j < i; j++) {
             if (strcmp(argv[j], argv[i]) == 0) {
                 loaded = j - optind;
             }
-        }*/
+        }
+        printf("Reading %s\n", argv[i]);
         if (loaded == (-1)) {
             /*
              * Ok, try to read in first from current directory,
              *	then from the demos directory
              */
-            if ((fp = fopen("x29.bin", "r")) != NULL) {
+            if ((fp = fopen(argv[i], "r")) != NULL) {
                 fclose(fp);
-                fobj[whichobj] = readflipobj("x29.bin");
+                printf("Reading %s\n", argv[i]);
+                fobj[whichobj] = readflipobj(argv[i]);
             } else {
                 strcpy(temp, MODELDIR);
-                strcat(temp, "x29.bin");
+                strcat(temp, argv[i]);
+                printf("Trying %s\n", temp);
                 fobj[whichobj] = readflipobj(temp);
             }
             if (fobj[whichobj] == NULL) {
@@ -510,8 +514,13 @@ char **argv;
                 exit(1);
             }
             {
+                /*  7/12/96, ratmandu: deleting apparently no longer
+                               necessary local declaration
+                               of strrchr
                 char *t, *strrchr(char *, int);
-                t = strrchr("x29.bin", '/');
+                         */
+                char *t;
+                t = strrchr(argv[i], '/');
                 t = (t == NULL) ? argv[i] : t + 1;
                 fobj[whichobj]->fname = t;
             }
@@ -742,18 +751,18 @@ void remake_objmenu(n) int n;
 
     if (blending_supported) {
         if (fobj[n]->ablend == TRUE)
-            sprintf(temp, "Make Opaque %%f %%x%d", n);
+            sprintf(temp, "Make Opaque %%F %%x%d", n);
         else
-            sprintf(temp, "Make Transparent %%f %%x%d", n);
+            sprintf(temp, "Make Transparent %%F %%x%d", n);
         addtopup(objmenus[n], temp, toggle_alpha);
     }
 
     addtopup(objmenus[n], "Display Object as... %m", dtmenus[n]);
 
     if (fobj[n]->swirl == 0)
-        sprintf(temp, "Swirl me %%f %%x%d", n);
+        sprintf(temp, "Swirl me %%F %%x%d", n);
     else
-        sprintf(temp, "Stop swirling %%f %%x%d", n);
+        sprintf(temp, "Stop swirling %%F %%x%d", n);
     addtopup(objmenus[n], temp, toggle_swirl);
 }
 
@@ -808,15 +817,13 @@ void toggle_displights(void) {
     remake_lightmenu();
     remake_menus();
 }
-void toggle_alpha(n) int n;
-{
+void toggle_alpha(int n) {
     fobj[n]->ablend = !fobj[n]->ablend;
 
     remake_objmenu(n);
     remake_menus();
 }
-void toggle_swirl(n) int n;
-{
+void toggle_swirl(int n) {
     fobj[n]->swirl = !fobj[n]->swirl;
 
     remake_objmenu(n);

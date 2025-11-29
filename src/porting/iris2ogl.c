@@ -1454,11 +1454,7 @@ static int     last_menu_choice = -1;
 // Callback global GLUT -> route vers notre PupMenu
 static void iris_pup_menu_callback(int value)
 {
-    // 'value' est l'indice d'item (1..n) ou la valeur %x. Nous allons
-    // stocker l'index de l'item comme 'value' pour plus de contrôle.
     last_menu_choice = value;
-
-    // Retrouver le menu courant
     int glut_id = glutGetMenu();
     for (int i = 0; i < MAX_PUP_MENUS; ++i) {
         if (pup_menus[i].used && pup_menus[i].glut_menu_id == glut_id) {
@@ -1468,11 +1464,13 @@ static void iris_pup_menu_callback(int value)
 
             PupItem *it = &pm->items[idx];
 
-            if (pm->has_F && pm->callback_int) {
-                // Appel style %F : f(n) où n = it->value (%x)
+            if (it->has_F && it->callback_int) {
+                it->callback_int(it->value);   // ex: toggle_alpha(n)
+            } else if (it->has_f && it->callback_void) {
+                it->callback_void();           // ex: ui_exit()
+            } else if (pm->has_F && pm->callback_int) {
                 pm->callback_int(it->value);
             } else if (pm->has_f && pm->callback_void) {
-                // Appel style %f : f() sans param (ui_exit, toggle_performance, select_all)
                 pm->callback_void();
             }
             return;
@@ -1610,6 +1608,14 @@ Menu addtopup(Menu m, const char *label, ...)
     it->label[sizeof(it->label) - 1] = '\0';
     it->value = value_x;
     it->flags = 0;
+    if (has_F) {
+        it->callback_int = cb_int;
+        it->has_F = 1;
+    }
+    if (has_f) {
+        it->callback_void = cb_void;
+        it->has_f = 1;
+    }
 
     // Ajout dans GLUT
     glutSetMenu(pm->glut_menu_id);

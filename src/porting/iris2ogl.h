@@ -470,6 +470,10 @@ typedef struct {
     char     label[128];
     int      value;        // valeur %x passée à la fonction
     int      flags;        // PUP_BOX / PUP_CHECK (visuel/logique)
+    PupFunc1 callback_int; // pour %F : void f(int)
+    PupFunc0 callback_void;// pour %f : void f(void)
+    int      has_F;
+    int      has_f;
 } PupItem;
 
 typedef struct {

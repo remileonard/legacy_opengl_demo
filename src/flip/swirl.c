@@ -110,12 +110,24 @@ flipobj *obj;
 
 	/* First, copy data over... */
 	obj->swirldata = (float *)malloc(sizeof(float) * 8 * obj->npoints);
+	if (!obj->swirldata) {
+		fprintf(stderr, "swirl_randomize: malloc FAILED (npoints=%d)\n", obj->npoints);
+		exit(1);
+	}
 	memcpy(obj->swirldata, obj->data, sizeof(float) * 8 * obj->npoints);
-
+	int totalInts = 8 * obj->npoints;  /* nombre d'int/float au total */
+    
     for (i = 0; i < obj->npoints / 8; i++)
 	{
 		off1 =(rand() % (obj->npoints / 4)) * 32;
 		off2 =(rand() % (obj->npoints / 4)) * 32;
+		if (off1 + 32 > totalInts || off2 + 32 > totalInts) {
+            fprintf(stderr,
+                    "swirl_randomize: OUT OF BOUNDS off1=%d off2=%d totalInts=%d\n",
+                    off1, off2, totalInts);
+            exit(1);
+        }
+
 		ip = ip1 = (int *)obj->swirldata;
 		ip += off1;
 		ip1 += off2;

@@ -22,6 +22,7 @@
  *  See hash.h for programmer's interface.
  */
 #include <stdio.h>
+#include <stdlib.h>
 #include "hash.h"
 
 typedef struct {
@@ -36,9 +37,9 @@ typedef struct {
 /*
  * The actual hash tables...
  */
-static h_vertex vh[150000];
+static h_vertex *vh = NULL;
 static int vsize = 0;
-static h_edge eh[150000];
+static h_edge *eh = NULL;
 static int esize = 0;
 
 /*
@@ -63,25 +64,30 @@ h_get_ne()
 /*
  *	Create a hash table for n vertices
  */
-void
-h_init_vertex(n)
-int n;
+void h_init_vertex(int n)
 {
-	int i;
+    int i;
 
-	vsize = n * 2;
-	/*vh = (h_vertex *) malloc(sizeof(h_vertex) * vsize);
-	if (!vh) {
-        fprintf(stderr, "h_init_vertex: malloc FAILED\n");
+    vsize = n * 2;
+    printf("h_init_vertex: n=%d vsize=%d\n", n, vsize);
+	fflush(stdout);
+	size_t hvsi = sizeof(h_vertex);
+    vh = (h_vertex *)malloc(hvsi * vsize);
+
+
+    if (!vh) {
+        fprintf(stderr, "h_init_vertex: malloc FAILED (vsize=%d)\n", vsize);
         exit(1);
-    }*/
-	for (i = 0; i < vsize; i++) {
-		vh[i].num = (-1);
-	}
+    }
+
+    for (i = 0; i < vsize; i++) {
+        vh[i].num = -1;
+        vh[i].v   = NULL;
+    }
 }
 void h_destroy_vertex()
 {
-	//free(vh);
+	free(vh);
 	lastv = vsize = 0;
 }
 
@@ -89,9 +95,7 @@ void h_destroy_vertex()
  * Search the hash table for vertex with given xyz.
  *	Return vertex number.
  */
-int
-h_find_vertex(xyz)
-float *xyz;
+int h_find_vertex(float *xyz)
 {
 	float d;
 	int hpos;
@@ -138,15 +142,21 @@ void
 h_init_edge(n)
 int n;
 {
-	int i;
-	esize = n * 2;
-	//eh = (h_edge *) malloc(sizeof(h_edge) * esize);
-	for (i = 0; i < esize; i++) eh[i].num = (-1);
+    int i;
+    esize = n * 2;
+    printf("h_init_edge: n=%d esize=%d\n", n, esize);
+    eh = (h_edge *)malloc(sizeof(h_edge) * esize);
+    if (!eh) {
+        fprintf(stderr, "h_init_edge: malloc FAILED (esize=%d)\n", esize);
+        exit(1);
+    }
+    for (i = 0; i < esize; i++)
+        eh[i].num = -1;
 }
 void
 h_destroy_edge()
 {
-	//free(eh);
+	free(eh);
 	laste = esize = 0;
 }
 
