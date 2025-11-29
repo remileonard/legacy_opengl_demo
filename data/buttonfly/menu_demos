@@ -53,6 +53,8 @@ Cycles
 	.highcolor. 1.0 .7 1.0
 Smooth
 	.menu. m_bounce
+Flip
+	.menu. m_flip
 Ideas
 	..\..\ideas\Debug\ideas.exe
 	.color. .9 .5 .9
