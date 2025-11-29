@@ -82,6 +82,12 @@ Various 2D retro demos effects using glDrawPixels for rendering.
 - metaballs
 - unlimited bobs
 
+### Flip 
+
+A conversion of Silicon Graphics IRIS GL "flip", using porting/iris2ogl.c for OpenGL rendering and GLUT for windowing. It can read and display 3D models in the binary flipobj format.
+
+
+
 
 
 ## Prerequisites
