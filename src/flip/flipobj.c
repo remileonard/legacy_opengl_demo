@@ -100,7 +100,6 @@ flipobj *readflipobj(char *name) {
 
     fclose(inf);
     long bytes_needed = (nlongs / 4) * 3 * sizeof(int32_t); // = 6 * npoints * 4
-    printf("available=%ld needed=%ld\n", bytes_available, bytes_needed);
     /* Conversion vers float* exploitable par le reste du code */
     obj->data = (float *)malloc(nlongs * sizeof(float));
     if (!obj->data) {
@@ -120,11 +119,7 @@ flipobj *readflipobj(char *name) {
 
     free(raw);
 
-    printf("readflipobj: npoints=%d\n", obj->npoints);
-    printf("readflipobj: data[0]=%g data[last]=%g\n", obj->data[0], obj->data[8 * obj->npoints - 1]);
-    /* Ensuite tu peux réactiver */
     swirl_randomize(obj);
-    fflush(stdout);
     find_edges(obj);
 
     return obj;
@@ -137,9 +132,6 @@ void drawflipobj(flipobj *obj) {
     p = obj->data;
     end = p + 8 * obj->npoints;
     lflag = obj->type;
-glEnable(GL_LIGHTING);        // force l’éclairage
-glDisable(GL_COLOR_MATERIAL); // pas de couleur de sommet
-glColor3f(1.0f, 1.0f, 1.0f);  // couleur neutre si jamais lighting est off
     if (obj->type == POLYGONS) {
         while (p < end) {
             bgnpolygon();
@@ -205,8 +197,6 @@ float objmaxpoint(flipobj *obj) {
 int find_edges(flipobj *obj) {
     int i, j, v0, v1, n;
     float *p, *end;
-    printf("about to call find_edges: npoints=%d\n", obj->npoints);
-    fflush(stdout);
     h_init_vertex(obj->npoints * 2);
     h_init_edge(obj->npoints * 4);
 

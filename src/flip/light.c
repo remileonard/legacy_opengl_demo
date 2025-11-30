@@ -127,12 +127,6 @@ void rebind_lights(void) {
     for (i = 0; (i < MAX_LIGHTS) && (i < NUM_LIGHTS); i++) {
         lmbind(LIGHT0 + i, onoff[i]);
     }
-    printf("lights: ");
-    for (int i = 0; i < NUM_LIGHTS; ++i) printf("%d", onoff[i]);
-    printf("\n");
-    GLfloat color[4];
-    glGetFloatv(GL_CURRENT_COLOR, color);
-    printf("current color = %f %f %f %f\n", color[0], color[1], color[2], color[3]);
 }
 
 void setmodel(int m) {

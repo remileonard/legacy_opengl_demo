@@ -191,7 +191,6 @@ void draw_objects() {
     Matrix m;
     int i;
     int polysdrawn = 0;
-    printf("draw_objects called\n");
 #ifdef HDWBUG
     /* Speedy clear */
     if (clover1)
@@ -337,7 +336,6 @@ void draw_rate(int n)
     loadmatrix(tm);
     mmode(MVIEWING);
     popmatrix();
-    printf("%s\n", s);
 }
 
 /*
@@ -499,7 +497,6 @@ void parse_args(int argc, char **argv)
              */
             if ((fp = fopen(argv[i], "r")) != NULL) {
                 fclose(fp);
-                printf("Reading %s\n", argv[i]);
                 fobj[whichobj] = readflipobj(argv[i]);
             } else {
                 strcpy(temp, MODELDIR);

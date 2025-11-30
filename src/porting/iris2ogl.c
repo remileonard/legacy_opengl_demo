@@ -1238,7 +1238,6 @@ void iris_special_up_func(int key, int x, int y) {
 void iris_mouse_func(int button, int state, int x, int y) {
     Device dev = 0;
     Boolean pressed = (state == GLUT_DOWN);
-    printf("iris_mouse_func: button=%d state=%d\n", button, state); 
     switch (button) {
         case GLUT_LEFT_BUTTON:
             dev = LEFTMOUSE;
