@@ -101,7 +101,6 @@ void main(int argc, char **argv) {
     add_event(ANY, ANY, ANY, anything_moving, (unsigned char *)&update_view);
 
     anything_moving(&update_view);
-
     qenter(REDRAW, 1);
     update_objeulers();
 
@@ -192,7 +191,7 @@ void draw_objects() {
     Matrix m;
     int i;
     int polysdrawn = 0;
-
+    printf("draw_objects called\n");
 #ifdef HDWBUG
     /* Speedy clear */
     if (clover1)
@@ -207,15 +206,15 @@ void draw_objects() {
     build_rotmatrix(m, lobj.er);
     multmatrix(m);
     rebind_lights();
-    if (lobj.display) /* And maybe display them */
-        polysdrawn += draw_lights();
+
+    //if (lobj.display) /* And maybe display them */
+        //polysdrawn += draw_lights();
     popmatrix();
 
     for (i = 0; i < nobjs; i++) {
         if (fobj[i]->display && !fobj[i]->ablend) {
             pushmatrix();
             setmaterial(fobj[i]->material);
-
             /* Translate */
             translate(fobj[i]->trans[0], fobj[i]->trans[1], fobj[i]->trans[2]);
 
@@ -330,7 +329,7 @@ void draw_rate(int n)
     loadmatrix(idmat);
 
     cmov2i(3, 3);
-    cpack(0xffffff00);
+    cpack(0xffffffff);
     if (getgdesc(GD_BITS_NORM_SNG_RED) != 3)
         charstr(s);
 
@@ -338,6 +337,7 @@ void draw_rate(int n)
     loadmatrix(tm);
     mmode(MVIEWING);
     popmatrix();
+    printf("%s\n", s);
 }
 
 /*

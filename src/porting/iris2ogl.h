@@ -116,6 +116,7 @@ typedef struct {
 
 typedef struct {
     GLfloat ambient[4];
+    GLfloat attenuation[2]; 
     Boolean local_viewer;
     Boolean defined;
 } LightModelDef;
@@ -196,12 +197,12 @@ void swapbuffers(void);
 // Matrix functions
 #define pushmatrix() glPushMatrix()
 #define popmatrix() glPopMatrix()
-#define loadmatrix(m) glLoadMatrixf((float*)m)
-#define getmatrix(m) glGetFloatv(GL_MODELVIEW_MATRIX, (float*)m)
+
 #define multmatrix(m) glMultMatrixf((float*)m)
 #define translate(x, y, z) glTranslatef(x, y, z)
 #define scale(x, y, z) glScalef(x, y, z)
-
+void getmatrix(Matrix m);
+void loadmatrix(Matrix m);
 // rot() - IRIS GL rotation with character axis
 void rot(float angle, char axis);
 void rotate(Angle angle, char axis);

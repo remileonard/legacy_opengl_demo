@@ -137,7 +137,9 @@ void drawflipobj(flipobj *obj) {
     p = obj->data;
     end = p + 8 * obj->npoints;
     lflag = obj->type;
-
+glEnable(GL_LIGHTING);        // force l’éclairage
+glDisable(GL_COLOR_MATERIAL); // pas de couleur de sommet
+glColor3f(1.0f, 1.0f, 1.0f);  // couleur neutre si jamais lighting est off
     if (obj->type == POLYGONS) {
         while (p < end) {
             bgnpolygon();

@@ -172,7 +172,6 @@ ui_mouseupdate()
 	nmy = getvaluator(CURSORY);
 	if (omy == (-1)) omy = nmy;
 
-	printf("ui_mouseupdate: omx=%d omy=%d nmx=%d nmy=%d\n", omx, omy, nmx, nmy);
 	if (panflag)
 		ui_pan();
 	else if (zoomflag)
@@ -186,9 +185,7 @@ ui_mouseupdate()
 		
 		ui_to_worldspace(omx-origx, omy-origy, &p1x, &p1y);
 		ui_to_worldspace(nmx-origx, nmy-origy, &p2x, &p2y);
-		printf("trackball: p1=(%f,%f) p2=(%f,%f)\n", p1x, p1y, p2x, p2y);
 		trackball(r, p1x, p1y, p2x, p2y);
-		printf("trackball: r=(%f,%f,%f,%f)\n", r[0], r[1], r[2], r[3]);
 		(*user_fn)(r, t);
 	}
 	omx = nmx; omy = nmy;
@@ -200,7 +197,6 @@ static void
 ui_schedulemouse()
 {
     mouse_noisy = TRUE;
-	printf("ui_schedulemouse\n");
 }
 
 /*

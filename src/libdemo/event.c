@@ -158,7 +158,6 @@ do_updates()
 {
     update_p	scan;
     int		updated = 0;
-	printf("do_updates called\n");
     for (scan = update_list; scan; scan = scan->next)
 	{
 		if (*scan->flag)
@@ -189,7 +188,6 @@ find_event()
 
     device = qread(&s);
     state = s;
-	printf("find_event: dev=%d state=%d\n", device, state);
     for (scan = event_list, flag=0; scan; scan = scan->next)
 	{
 		if ( ((scan->window == ANY) || (context == scan->window))

@@ -176,7 +176,25 @@ void polf2i(int32_t n, Icoord parray[][2]) {
 }
 
 // === Matrix and Transformations ===
+void getmatrix(Matrix m)
+{
+    if (current_matrix_mode == GL_PROJECTION) {
+        glGetFloatv(GL_PROJECTION_MATRIX, (GLfloat*)m);
+    } else {
+        glGetFloatv(GL_MODELVIEW_MATRIX, (GLfloat*)m);
+    }
+}
 
+void loadmatrix(Matrix m)
+{
+    if (current_matrix_mode == GL_PROJECTION) {
+        glMatrixMode(GL_PROJECTION);
+        glLoadMatrixf((GLfloat*)m);
+    } else {
+        glMatrixMode(GL_MODELVIEW);
+        glLoadMatrixf((GLfloat*)m);
+    }
+}
 void rot(float angle, char axis) {
     switch (axis) {
         case 'x':
@@ -448,6 +466,7 @@ void lmdef(int deftype, int index, int np, float props[]) {
                 mat->emission[0] = 0.0f; mat->emission[1] = 0.0f;
                 mat->emission[2] = 0.0f; mat->emission[3] = 1.0f;
                 mat->shininess = 0.0f;
+                mat->alpha = 1.0f;
                 mat->defined = TRUE;
             }
             
@@ -533,6 +552,10 @@ void lmdef(int deftype, int index, int np, float props[]) {
                 case LOCALVIEWER:
                     lm->local_viewer = (props[i++] != 0.0f);
                     break;
+                case ATTENUATION:
+                    lm->attenuation[0] = props[i++];   // constant
+                    lm->attenuation[1] = props[i++];   // linear
+                    break;
                 case LMNULL:
                     i = np;
                     break;
@@ -552,6 +575,7 @@ void lmdef(int deftype, int index, int np, float props[]) {
 }
 
 void lmbind(int target, int index) {
+    
     switch (target) {
         case LIGHT0:
         case LIGHT1:
@@ -561,7 +585,7 @@ void lmbind(int target, int index) {
         case LIGHT5:
         case LIGHT6:
         case LIGHT7: {
-            GLenum light_id = GL_LIGHT0 + target;
+            GLenum light_id = GL_LIGHT0 + (target - LIGHT0);
             
             if (index == 0) {
                 // Unbind/disable light
@@ -585,9 +609,22 @@ void lmbind(int target, int index) {
                     glLightf(light_id, GL_SPOT_CUTOFF, light->spot_cutoff);
                 }
                 
-                glLightf(light_id, GL_CONSTANT_ATTENUATION, light->attenuation[0]);
-                glLightf(light_id, GL_LINEAR_ATTENUATION, light->attenuation[1]);
-                glLightf(light_id, GL_QUADRATIC_ATTENUATION, light->attenuation[2]);
+                float c = light->attenuation[0];
+                float l = light->attenuation[1];
+                float q = light->attenuation[2];
+
+                if (current_light_model > 0 && current_light_model < MAX_MATERIALS &&
+                    light_models[current_light_model].defined) {
+                    if (c == 1.0f && l == 0.0f && q == 0.0f) {
+                        c = light_models[current_light_model].attenuation[0];
+                        l = light_models[current_light_model].attenuation[1];
+                        q = 0.0f; // IRIS n'en définit pas
+                    }
+                }
+
+                glLightf(light_id, GL_CONSTANT_ATTENUATION,  c);
+                glLightf(light_id, GL_LINEAR_ATTENUATION,    l);
+                glLightf(light_id, GL_QUADRATIC_ATTENUATION, q);
                 
                 if (target >= num_active_lights) {
                     num_active_lights = target + 1;
@@ -597,6 +634,8 @@ void lmbind(int target, int index) {
         }
         
         case MATERIAL: {
+            glDisable(GL_COLOR_MATERIAL);
+            glColor3f(1.0f, 1.0f, 1.0f);  // couleur courante blanche
             if (index == 0) {
                 glEnable(GL_COLOR_MATERIAL);
 
@@ -643,6 +682,15 @@ void lmbind(int target, int index) {
 
                 glLightModelfv(GL_LIGHT_MODEL_AMBIENT, lm->ambient);
                 glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER, lm->local_viewer ? GL_TRUE : GL_FALSE);
+
+                for (int li = 0; li < MAX_LIGHTS; ++li) {
+                    GLenum lid = GL_LIGHT0 + li;
+                    if (glIsEnabled(lid)) {
+                        glLightf(lid, GL_CONSTANT_ATTENUATION, lm->attenuation[0]);
+                        glLightf(lid, GL_LINEAR_ATTENUATION,   lm->attenuation[1]);
+                        glLightf(lid, GL_QUADRATIC_ATTENUATION, 0.0f);
+                    }
+                }
             }
             break;
         }

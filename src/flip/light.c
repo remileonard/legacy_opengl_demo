@@ -127,6 +127,12 @@ void rebind_lights(void) {
     for (i = 0; (i < MAX_LIGHTS) && (i < NUM_LIGHTS); i++) {
         lmbind(LIGHT0 + i, onoff[i]);
     }
+    printf("lights: ");
+    for (int i = 0; i < NUM_LIGHTS; ++i) printf("%d", onoff[i]);
+    printf("\n");
+    GLfloat color[4];
+    glGetFloatv(GL_CURRENT_COLOR, color);
+    printf("current color = %f %f %f %f\n", color[0], color[1], color[2], color[3]);
 }
 
 void setmodel(int m) {
@@ -279,7 +285,7 @@ char *lightnames[NUM_LIGHTS] = {"White Infinite", "Red Local",        "Blue Infi
 
 float ldef_light[][14] = {
     {/* WHITE INFINITE */
-     LCOLOR, .8, .0, .0, AMBIENT, 0., 0., 0., POSITION, -0.2, 0.2, 0.2, 0., LMNULL},
+     LCOLOR, .8, .8, .8, AMBIENT, 0., 0., 0., POSITION, -0.2, 0.2, 0.2, 0., LMNULL},
     {/* RED LOCAL */
      LCOLOR, .9, 0., 0., AMBIENT, .1, 0., 0., POSITION, 0.2, 0.2, 0.2, 1., LMNULL},
     {/* BLUE INFINITE */

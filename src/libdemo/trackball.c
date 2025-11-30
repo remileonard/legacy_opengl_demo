@@ -66,7 +66,6 @@ trackball(float q[4], float p1x, float p1y, float p2x, float p2y)
 		vzero(q); q[3] = 1.0; /* Zero rotation */
 		return;
 	}
-	printf("trackball inputs: p1=(%f,%f) p2=(%f,%f)\n", p1x, p1y, p2x, p2y);
 /*
  * First, figure out z-coordinates for projection of P1 and P2 to
  * deformed sphere
@@ -74,8 +73,6 @@ trackball(float q[4], float p1x, float p1y, float p2x, float p2y)
 	vset(p1,p1x,p1y,tb_project_to_sphere(TRACKBALLSIZE,p1x,p1y));
 	vset(p2,p2x,p2y,tb_project_to_sphere(TRACKBALLSIZE,p2x,p2y));
 
-	printf("trackball p1 3D=(%f,%f,%f) p2 3D=(%f,%f,%f)\n",
-       p1[0], p1[1], p1[2], p2[0], p2[1], p2[2]);
 /*
  *	Now, we want the cross product of P1 and P2
  */
@@ -92,8 +89,6 @@ trackball(float q[4], float p1x, float p1y, float p2x, float p2y)
 	if (t > 1.0) t = 1.0;
 	if (t < -1.0) t = -1.0;
 	phi = 2.0 * asin(t);
-	printf("trackball axis=(%f,%f,%f) d=%f t=%f phi=%f\n",
-       a[0], a[1], a[2], vlength(d), t, phi);
 	axis_to_quat(a,phi,q);
 }
 
