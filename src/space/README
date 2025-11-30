@@ -1,0 +1,71 @@
+
+ 
+                             README for space
+
+         a simulation of the Solar System and the Milky Way galaxy 
+
+         When approaching the vicinity of planets or moons actual 
+         texture-map surfaces or polygons of the spheres can be 
+         made visible.
+
+
+         This demo will run on all current SGI architectures.
+         On non-realtime texturing architectures, entering into
+         single-buffer mode will enable non-real time options 
+         with texturing.    
+
+         questions or comments, please contact Erik Lindholm:
+	 erilk@sgi.com or 415/390-1513.
+
+         
+	 yes, there needs to be a complete man page written for this 
+	 demo.  for now the following provides some documentation of
+	 the UI:
+
+
+
+          MOUSE CONTROLS
+             left   : accelerates
+             middle : brakes
+             right  : pan/rotate toggle
+         
+             left+right   : face nearest moon
+             middle+right : face nearest planet
+             left+middle  : face nearest star
+         
+          KEY CONTROLS
+          Esc   : quit
+          Shift : defeat mouse controls (for menu)
+          Ctrl  : disconnect view vector from velocity vector
+              a : autopilot
+              b : single buffer mode (< 24bits) (left mouse is trigger)
+              h : on screen help toggle
+              i : moons/orbits toggle
+              l : reshade polyplanet every frame
+              n : star name toggle
+              o : planets/orbits toggle
+              q : control panel toggle
+              r : decelerates time by 10
+              s : stellar system statistics
+              t : accelerates time by 10
+              u : user entry mode (use with system statistics)
+              v : reverse velocity
+              x : text display toggle
+              y : time reset
+              z : display constellation boundaries
+              - : time direction toggle
+              up   arrow : increase tesselation level (max: 5)
+              down arrow : decrease tesselation level (min: 0)
+              PrintScrn  : snap rgb image and quit
+         
+          TEXT COLOR CODES
+             red   : in interplanetary space
+             blue  : in interstellar space
+             yellow: in intergalactic space
+             green : currently being eclipsed
+         
+          TOURIST SPOTS
+             Sol:          0
+             Sirius:     728
+             Altair(C): 2255
+
