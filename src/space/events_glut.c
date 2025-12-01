@@ -31,6 +31,10 @@ static int g_input_complete = 0;
 static flot32 g_float_result = 0.0f;
 static sint32 g_star_result[3] = {0, 0, 0};
 
+/* Modifier key states - must be tracked manually in GLUT */
+static int g_shift_pressed = 0;
+static int g_ctrl_pressed = 0;
+
 /**********************************************************************
  *  spOpenWindow()
  **********************************************************************/
@@ -183,15 +187,24 @@ static void keyboard_callback(unsigned char key, int x, int y) {
     if (!g_flaggs)
         return;
 
-    /* Handle modifier keys */
+    /* Update flags based on tracked modifier states and glutGetModifiers */
     int modifiers = glutGetModifiers();
-    if (modifiers & GLUT_ACTIVE_SHIFT) {
+    g_shift_pressed = (modifiers & GLUT_ACTIVE_SHIFT) ? 1 : 0;
+    g_ctrl_pressed = (modifiers & GLUT_ACTIVE_CTRL) ? 1 : 0;
+
+    if (g_shift_pressed) {
         Counter.flags |= SHIFT_FLAG;
+        /* Show cursor when Shift is pressed */
+        glutSetCursor(GLUT_CURSOR_INHERIT);
     } else {
         Counter.flags &= ~SHIFT_FLAG;
+        /* Hide cursor when Shift is released (if in fullscreen) */
+        if (Counter.flags & FLSCR_FLAG) {
+            glutSetCursor(GLUT_CURSOR_NONE);
+        }
     }
 
-    if (modifiers & GLUT_ACTIVE_CTRL) {
+    if (g_ctrl_pressed) {
         Counter.flags |= CNTRL_FLAG;
     } else {
         Counter.flags &= ~CNTRL_FLAG;
@@ -199,6 +212,32 @@ static void keyboard_callback(unsigned char key, int x, int y) {
 
     /* Process key */
     key_press(g_flaggs, key);
+}/**********************************************************************
+ *  GLUT Keyboard Up Callback
+ **********************************************************************/
+static void keyboard_up_callback(unsigned char key, int x, int y) {
+    /* Update modifier states when keys are released */
+    int modifiers = glutGetModifiers();
+    g_shift_pressed = (modifiers & GLUT_ACTIVE_SHIFT) ? 1 : 0;
+    g_ctrl_pressed = (modifiers & GLUT_ACTIVE_CTRL) ? 1 : 0;
+
+    if (g_shift_pressed) {
+        Counter.flags |= SHIFT_FLAG;
+        /* Show cursor when Shift is pressed */
+        glutSetCursor(GLUT_CURSOR_INHERIT);
+    } else {
+        Counter.flags &= ~SHIFT_FLAG;
+        /* Hide cursor when Shift is released (if in fullscreen) */
+        if (Counter.flags & FLSCR_FLAG) {
+            glutSetCursor(GLUT_CURSOR_NONE);
+        }
+    }
+
+    if (g_ctrl_pressed) {
+        Counter.flags |= CNTRL_FLAG;
+    } else {
+        Counter.flags &= ~CNTRL_FLAG;
+    }
 }
 
 /**********************************************************************
@@ -207,6 +246,29 @@ static void keyboard_callback(unsigned char key, int x, int y) {
 static void special_callback(int key, int x, int y) {
     if (!g_flaggs)
         return;
+
+    /* Track modifier keys */
+    int modifiers = glutGetModifiers();
+    g_shift_pressed = (modifiers & GLUT_ACTIVE_SHIFT) ? 1 : 0;
+    g_ctrl_pressed = (modifiers & GLUT_ACTIVE_CTRL) ? 1 : 0;
+
+    if (g_shift_pressed) {
+        Counter.flags |= SHIFT_FLAG;
+        /* Show cursor when Shift is pressed */
+        glutSetCursor(GLUT_CURSOR_INHERIT);
+    } else {
+        Counter.flags &= ~SHIFT_FLAG;
+        /* Hide cursor when Shift is released (if in fullscreen) */
+        if (Counter.flags & FLSCR_FLAG) {
+            glutSetCursor(GLUT_CURSOR_NONE);
+        }
+    }
+
+    if (g_ctrl_pressed) {
+        Counter.flags |= CNTRL_FLAG;
+    } else {
+        Counter.flags &= ~CNTRL_FLAG;
+    }
 
     switch (key) {
     case GLUT_KEY_UP:
@@ -222,6 +284,32 @@ static void special_callback(int key, int x, int y) {
 }
 
 /**********************************************************************
+ *  GLUT Special Key Up Callback
+ **********************************************************************/
+static void special_up_callback(int key, int x, int y) {
+    /* Update modifier states when special keys are released */
+    int modifiers = glutGetModifiers();
+    g_shift_pressed = (modifiers & GLUT_ACTIVE_SHIFT) ? 1 : 0;
+    g_ctrl_pressed = (modifiers & GLUT_ACTIVE_CTRL) ? 1 : 0;
+
+    if (g_shift_pressed) {
+        Counter.flags |= SHIFT_FLAG;
+        /* Show cursor when Shift is pressed */
+        glutSetCursor(GLUT_CURSOR_INHERIT);
+    } else {
+        Counter.flags &= ~SHIFT_FLAG;
+        /* Hide cursor when Shift is released (if in fullscreen) */
+        if (Counter.flags & FLSCR_FLAG) {
+            glutSetCursor(GLUT_CURSOR_NONE);
+        }
+    }
+
+    if (g_ctrl_pressed) {
+        Counter.flags |= CNTRL_FLAG;
+    } else {
+        Counter.flags &= ~CNTRL_FLAG;
+    }
+}/**********************************************************************
  *  GLUT Mouse Button Callback
  **********************************************************************/
 static void mouse_callback(int button, int state, int x, int y) {
@@ -306,7 +394,9 @@ static void visibility_callback(int state) {
 void spInitKeyboard(void) {
     /* Register GLUT callbacks */
     glutKeyboardFunc(keyboard_callback);
+    glutKeyboardUpFunc(keyboard_up_callback);
     glutSpecialFunc(special_callback);
+    glutSpecialUpFunc(special_up_callback);
     glutMouseFunc(mouse_callback);
     glutMotionFunc(motion_callback);
     glutPassiveMotionFunc(passive_motion_callback);
@@ -381,7 +471,8 @@ void spWaitForLeftButton(void) {
     /* Wait for left button press */
     while (!(Counter.mouse_b & SP_LMOUSE)) {
 #ifdef FREEGLUT
-        /* FreeGLUT: Process events manually */
+        /* FreeGLUT: Process events manually and force redraw */
+        glutPostRedisplay();
         glutMainLoopEvent();
 #endif
 
@@ -421,7 +512,8 @@ flot32 spReadFloat(void) {
     /* Wait for input to complete */
     while (!g_input_complete) {
 #ifdef FREEGLUT
-        /* FreeGLUT: Process events manually */
+        /* FreeGLUT: Process events manually and force redraw */
+        glutPostRedisplay();
         glutMainLoopEvent();
 #endif
 
@@ -451,7 +543,8 @@ sint32 spReadStar(sint32 n[3]) {
     /* Wait for input to complete */
     while (!g_input_complete) {
 #ifdef FREEGLUT
-        /* FreeGLUT: Process events manually */
+        /* FreeGLUT: Process events manually and force redraw */
+        glutPostRedisplay();
         glutMainLoopEvent();
 #endif
 
