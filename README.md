@@ -82,12 +82,19 @@ Various 2D retro demos effects using glDrawPixels for rendering.
 - metaballs
 - unlimited bobs
 
-### Flip 
+### 🌪️ Flip 
 
 A conversion of Silicon Graphics IRIS GL "flip", using porting/iris2ogl.c for OpenGL rendering and GLUT for windowing. It can read and display 3D models in the binary flipobj format.
 
 
-
+### . 🪐˖ Space
+A simulation of the Solar System and the Milky Way galaxy. Features:
+- Realistic planetary and lunar orbits
+- Texture-mapped surfaces for planets and moons
+- Interactive camera controls for navigation
+- On-screen information display
+- Autopilot mode for automatic navigation
+- Time control for accelerating or decelerating simulation time
 
 
 ## Prerequisites
