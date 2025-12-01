@@ -27,22 +27,34 @@ typedef unsigned long    uint32 ;
 typedef float            flot32 ;
 typedef double           flot64 ;
 
+#define _USE_MATH_DEFINES
 #include <stdio.h>
 #include <math.h>
 #include <string.h>
 
+#define fsqrt(x)        ((flot32)sqrt((double)(x)))
+#define fcos(x)         ((flot32)cos((double)(x)))
+#define fsin(x)         ((flot32)sin((double)(x)))
+#define fasin(x)        ((flot32)asin((double)(x)))
+#define ftan(x)         ((flot32)tan((double)(x)))
+#define flog10(x)       ((flot32)log10((double)(x)))
+#define flog(x)        ((flot32)log((double)(x)))
+#define fatan2(y,x)    ((flot32)atan2((double)(y),(double)(x)))
+#define fatan(x)        ((flot32)atan((double)(x)))
+#define ftanh(x)       ((flot32)tanh((double)(x)))
+#define fsinh(x)       ((flot32)sinh((double)(x)))
+#define fexp(x)        ((flot32)exp((double)(x)))
+#define fpow(x,y)      ((flot32)pow((double)(x),(double)(y)))
 #ifdef SP_OPEN_GL
-#include <GL/glx.h>
+#include <windows.h>
 #include <GL/gl.h>
+#include <GL/glu.h>
+#include <GL/glut.h>
 
 typedef float Matrix[4][4];
 
 typedef struct  {
-        Display     *dpy;
-        sint32      snu;
-        XVisualInfo *vis;
-        GLXContext  ctx;
-        Window      rwi,win;
+        sint32      win;          /* GLUT window ID */
         uint32      hwid;
 } t_wndw;
 
@@ -552,6 +564,7 @@ static void     world_mid(sint32,sint32,sint32,sint32) ;
        void     spWaitForLeftButton(void);
        void     spSwapBuffers(void);
        void     spIdentifyMachine(void);
+       void     spQuantifyMachine(void);
        flot32   spReadFloat(void);
        sint32   spReadStar(sint32 [3]);
 
@@ -559,6 +572,7 @@ static void     world_mid(sint32,sint32,sint32,sint32) ;
        void     initialize_time(void) ;
        void     initialize_shmem(t_boss *) ;
        void     read_time(void) ;
+       void     evaluate_mouse(t_boss *) ;
        void     matrix_mouse(t_boss *) ;
        void     read_spaceball(t_boss *) ;
        void     key_press(t_boss *,sint32) ;

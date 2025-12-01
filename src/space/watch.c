@@ -14,195 +14,231 @@
  * successor clauses in the FAR, DOD or NASA FAR Supplement. Unpublished -
  * rights reserved under the Copyright Laws of the United States.
  */
+#ifdef _WIN32
+#include <windows.h>
+
+struct timezone {
+    int tz_minuteswest;
+    int tz_dsttime;
+};
+
+static int gettimeofday(struct timeval *tp, struct timezone *tzp) {
+    FILETIME ft;
+    ULARGE_INTEGER ui;
+    static const ULONGLONG EPOCH = ((ULONGLONG)116444736000000000ULL);
+
+    GetSystemTimeAsFileTime(&ft);
+    ui.LowPart = ft.dwLowDateTime;
+    ui.HighPart = ft.dwHighDateTime;
+
+    tp->tv_sec = (long)((ui.QuadPart - EPOCH) / 10000000L);
+    tp->tv_usec = (long)((ui.QuadPart - EPOCH) % 10000000L / 10);
+
+    if (tzp != NULL) {
+        tzp->tz_minuteswest = 0;
+        tzp->tz_dsttime = 0;
+    }
+
+    return 0;
+}
+
+#else
 #include <sys/time.h>
+#endif
+#include "space.h"
 #include <GL/gl.h>
-#include "space.h" 
 
-typedef struct  {
-        sint32 year ;
-        sint32 month ;
-        sint32 day ;
-        sint32 hour ;
-        sint32 min ;
-        flot64 sec ;
-        flot64 jd ;
-} t_time ;
+typedef struct {
+    sint32 year;
+    sint32 month;
+    sint32 day;
+    sint32 hour;
+    sint32 min;
+    flot64 sec;
+    flot64 jd;
+} t_time;
 
-       int            timer_flag = 0 ;
-static struct timeval bsdtime,lastime ;
-static flot64         epochdate = 2447891.5 ;
-static flot64         savet = 0 ;
-extern t_stopwatch Counter ;
+int timer_flag = 0;
+static struct timeval bsdtime, lastime;
+static flot64 epochdate = 2447891.5;
+static flot64 savet = 0;
+extern t_stopwatch Counter;
 
-static void   julian_date(t_time *) ;
+static void julian_date(t_time *);
 
 /****************************************************************************
-*  check_timer()  - 
-****************************************************************************/
+ *  check_timer()  -
+ ****************************************************************************/
 flot64 check_timer(void)
 
-{  struct timezone tzp;
-   struct timeval  tp;
-   int             sec,usec;
-   t_time          tt ;
-   flot64          q ;
-   
-   if (!timer_flag)  {
-     timer_flag = 1 ;
+{
+    struct timezone tzp;
+    struct timeval tp;
+    int sec, usec;
+    t_time tt;
+    flot64 q;
 
-     gettimeofday(&bsdtime, &tzp);
-     lastime = bsdtime ;
+    if (!timer_flag) {
+        timer_flag = 1;
 
-     tt.year  = 1970 ;
-     tt.month = 1 ;
-     tt.day   = 1 ;
-     tt.hour  = 0 ;
-     tt.min   = 0 ;
-     tt.sec   = 1.0e-6 * bsdtime.tv_usec;
-     tt.sec   += bsdtime.tv_sec ;
-     julian_date(&tt) ;
+        gettimeofday(&bsdtime, &tzp);
+        lastime = bsdtime;
 
-     Counter.D = tt.jd ;
-     printf("Julian Date: %f\n",Counter.D + epochdate) ;
-     }
+        tt.year = 1970;
+        tt.month = 1;
+        tt.day = 1;
+        tt.hour = 0;
+        tt.min = 0;
+        tt.sec = 1.0e-6 * bsdtime.tv_usec;
+        tt.sec += bsdtime.tv_sec;
+        julian_date(&tt);
 
-   gettimeofday(&tp, &tzp);
+        Counter.D = tt.jd;
+        printf("Julian Date: %f\n", Counter.D + epochdate);
+    }
 
-   sec  = tp.tv_sec  - lastime.tv_sec;
-   usec = tp.tv_usec - lastime.tv_usec;
-   if (usec < 0) {
-      sec--;
-      usec += 1000000;
-      }
-   q  = 1.0e-6*usec ;
-   q += sec ;
-   
-   if (Counter.flags & TMREV_FLAG)
-     q = -q ;
+    gettimeofday(&tp, &tzp);
 
-   Counter.D += (Counter.timacc*q) / (24.0*3600.0) ;
+    sec = tp.tv_sec - lastime.tv_sec;
+    usec = tp.tv_usec - lastime.tv_usec;
+    if (usec < 0) {
+        sec--;
+        usec += 1000000;
+    }
+    q = 1.0e-6 * usec;
+    q += sec;
 
-   sec  = tp.tv_sec  - bsdtime.tv_sec;
-   usec = tp.tv_usec - bsdtime.tv_usec;
-   if (usec < 0) {
-      sec--;
-      usec += 1000000;
-      }
-   q  = 1.0e-6*usec ;
-   q += sec ;
+    if (Counter.flags & TMREV_FLAG)
+        q = -q;
 
-   lastime = tp ;
-   return(q) ;
+    Counter.D += (Counter.timacc * q) / (24.0 * 3600.0);
+
+    sec = tp.tv_sec - bsdtime.tv_sec;
+    usec = tp.tv_usec - bsdtime.tv_usec;
+    if (usec < 0) {
+        sec--;
+        usec += 1000000;
+    }
+    q = 1.0e-6 * usec;
+    q += sec;
+
+    lastime = tp;
+    return (q);
 }
 
 /****************************************************************************
-*  delta_timer()  - 
-****************************************************************************/
+ *  delta_timer()  -
+ ****************************************************************************/
 flot64 delta_timer(void)
 
-{  struct timezone tzp;
-   struct timeval  tp;
-   int             sec,usec;
-   flot64          q ;
-   
-   gettimeofday(&tp, &tzp);
+{
+    struct timezone tzp;
+    struct timeval tp;
+    int sec, usec;
+    flot64 q;
 
-   sec  = tp.tv_sec  - lastime.tv_sec;
-   usec = tp.tv_usec - lastime.tv_usec;
-   if (usec < 0) {
-      sec--;
-      usec += 1000000;
-      }
-   q  = 1.0e-6*usec ;
-   q += sec ;
-   
-   if (Counter.flags & TMREV_FLAG)
-     q = -q ;
+    gettimeofday(&tp, &tzp);
 
-   return((Counter.timacc*q) / (24.0*3600.0)) ;
+    sec = tp.tv_sec - lastime.tv_sec;
+    usec = tp.tv_usec - lastime.tv_usec;
+    if (usec < 0) {
+        sec--;
+        usec += 1000000;
+    }
+    q = 1.0e-6 * usec;
+    q += sec;
+
+    if (Counter.flags & TMREV_FLAG)
+        q = -q;
+
+    return ((Counter.timacc * q) / (24.0 * 3600.0));
 }
 
 /****************************************************************************
-*  julian_date()  - 
-****************************************************************************/
+ *  julian_date()  -
+ ****************************************************************************/
 static void julian_date(t_time *tt)
 
-{  register sint32 B,C,D,julian,year,month ;
+{
+    register sint32 B, C, D, julian, year, month;
 
-   year  = tt->year ;
-   month = tt->month ;
+    year = tt->year;
+    month = tt->month;
 
-   if (year < 1582)
-     julian = 0 ;
-   else if (year > 1582)
-     julian = 1 ;
-   else if (month < 10)
-     julian = 0 ;
-   else if (month > 10)
-     julian = 1 ;
-   else if (tt->day < 15)
-     julian = 0 ;
-   else julian = 1 ;
+    if (year < 1582)
+        julian = 0;
+    else if (year > 1582)
+        julian = 1;
+    else if (month < 10)
+        julian = 0;
+    else if (month > 10)
+        julian = 1;
+    else if (tt->day < 15)
+        julian = 0;
+    else
+        julian = 1;
 
-   if (month == 1 || month == 2)  {
-     year-- ;
-     month+=12 ;
-     }
+    if (month == 1 || month == 2) {
+        year--;
+        month += 12;
+    }
 
-   if (julian)
-     B = 2 - (year/100) + (year/400) ;
-   else B = 0 ;
+    if (julian)
+        B = 2 - (year / 100) + (year / 400);
+    else
+        B = 0;
 
-   if (year < 0)
-     C = (flot64) 365.25 * year - 0.75 ;
-   else C = (flot64) 365.25 * year ;
+    if (year < 0)
+        C = (flot64)365.25 * year - 0.75;
+    else
+        C = (flot64)365.25 * year;
 
-   D = (flot64) 30.6001*(month+1) ;
+    D = (flot64)30.6001 * (month + 1);
 
-   tt->jd  = (flot64) B + C + D + tt->day + (1720994.5 - epochdate) +
-                        (tt->hour + tt->min/60.0 + tt->sec/3600.0)/24.0 ;
+    tt->jd =
+        (flot64)B + C + D + tt->day + (1720994.5 - epochdate) + (tt->hour + tt->min / 60.0 + tt->sec / 3600.0) / 24.0;
 }
 
 /****************************************************************************
-*  reverse_julian_date()  - 
-****************************************************************************/
-void reverse_julian_date(flot64 jd,char *date)
+ *  reverse_julian_date()  -
+ ****************************************************************************/
+void reverse_julian_date(flot64 jd, char *date)
 
-{  register flot64 q,f,dd ;
-   register sint32 i,b,a,c,d,e,g,mm,yy,day,hour,min ;
+{
+    register flot64 q, f, dd;
+    register sint32 i, b, a, c, d, e, g, mm, yy, day, hour, min;
 
-   q = jd + 0.5 + epochdate ;
- 
-   i = (int) q ;
-   f = q - i ;
+    q = jd + 0.5 + epochdate;
 
-   if (i > 2299160)  {
-     a = ((flot64)i - 1867216.25) / 36524.25 ;
-     b = i + 1 + a - (a>>2) ;
-     }
-   else b = i ;
+    i = (int)q;
+    f = q - i;
 
-   c = b + 1524 ;
+    if (i > 2299160) {
+        a = ((flot64)i - 1867216.25) / 36524.25;
+        b = i + 1 + a - (a >> 2);
+    } else
+        b = i;
 
-   d = ((flot64)c - 122.1) / 365.25 ;
+    c = b + 1524;
 
-   e = 365.25 * (flot64)d ;
+    d = ((flot64)c - 122.1) / 365.25;
 
-   g = ((flot64)c - (flot64)e) / 30.6001 ;
+    e = 365.25 * (flot64)d;
 
-   dd = c - e + f - (sint32)(30.6001*(flot64)g) ;
-   dd -= 8.0/24.0 ;
+    g = ((flot64)c - (flot64)e) / 30.6001;
 
-   mm = ((g < 13.5) ? g-1 : g-13) ;
+    dd = c - e + f - (sint32)(30.6001 * (flot64)g);
+    dd -= 8.0 / 24.0;
 
-   yy = ((mm > 2.5) ? d-4716 : d-4715) ;
+    mm = ((g < 13.5) ? g - 1 : g - 13);
 
-   day  = (sint32)dd ;
-   q    = 24.0*(dd-day) ;
-   hour = (sint32)q ;
-   q    = 60.0 * (q-hour) ;
-   min  = (sint32)q ;
-   
-   sprintf(date,"Date : %02d:%02d %02d/%02d %04d",hour,min,day,mm,yy) ;
+    yy = ((mm > 2.5) ? d - 4716 : d - 4715);
+
+    day = (sint32)dd;
+    q = 24.0 * (dd - day);
+    hour = (sint32)q;
+    q = 60.0 * (q - hour);
+    min = (sint32)q;
+
+    sprintf(date, "Date : %02d:%02d %02d/%02d %04d", hour, min, day, mm, yy);
 }
-
