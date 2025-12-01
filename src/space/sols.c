@@ -47,7 +47,6 @@ void actually_do_graphics(t_boss *flaggs)
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
     glLoadMatrixf((float *)Counter.mat);
-
     switch (Counter.status) {
     case STELL_STAT:
         special_perspective(0.02, 1.0e6);
@@ -80,6 +79,9 @@ void actually_do_graphics(t_boss *flaggs)
         exit(0);
         break;
     }
+    
+    /* Draw popup menu if active (for autopilot, stats, etc.) */
+    draw_popup_menu();
 }
 
 /**********************************************************************

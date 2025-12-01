@@ -42,9 +42,13 @@ static t_menu menu[MENUCOUNT] = {
 extern long control_height;
 extern t_stopwatch Counter;
 
+/* Global state for popup menu */
+static t_menu *g_popup_menu = NULL;
+static sint32 g_popup_count = 0;
+
 /**********************************************************************
  *  draw_menu()  -
- ***********************************************************************/
+ **********************************************************************/
 void draw_menu()
 
 {
@@ -256,13 +260,21 @@ void draw2_menu(sint32 count, t_menu *mn)
     sint32 i;
     uchar8 cl[4];
 
-    glDrawBuffer(GL_FRONT);
+    /* Save menu for rendering in display callback */
+    g_popup_menu = mn;
+    g_popup_count = count;
 
+    /* Save current matrices and setup 2D overlay projection */
     glMatrixMode(GL_PROJECTION);
+    glPushMatrix();
     glLoadIdentity();
     glOrtho(0.0, 1280.0, 0.0, 832.0, -1.0, 1.0);
     glMatrixMode(GL_MODELVIEW);
+    glPushMatrix();
     glLoadIdentity();
+
+    /* Disable depth test for 2D overlay */
+    glDisable(GL_DEPTH_TEST);
 
     for (i = 0; i < count; mn++, i++) {
         cl[0] = (mn->col >> 0) & 0xff;
@@ -283,7 +295,31 @@ void draw2_menu(sint32 count, t_menu *mn)
         spDrawString(mn->x1 + 4, mn->y1 + 4, 0.0, mn->mes0);
     }
 
-    glDrawBuffer(GL_BACK);
+    /* Restore matrices */
+    glMatrixMode(GL_PROJECTION);
+    glPopMatrix();
+    glMatrixMode(GL_MODELVIEW);
+    glPopMatrix();
+    glEnable(GL_DEPTH_TEST);
+}
+
+/**********************************************************************
+ *  draw_popup_menu()  - Called from actually_do_graphics()
+ **********************************************************************/
+void draw_popup_menu(void)
+{
+    if (g_popup_menu != NULL && g_popup_count > 0) {
+        draw2_menu(g_popup_count, g_popup_menu);
+    }
+}
+
+/**********************************************************************
+ *  clear_popup_menu()  - Clear popup menu state
+ **********************************************************************/
+void clear_popup_menu(void)
+{
+    g_popup_menu = NULL;
+    g_popup_count = 0;
 }
 
 /**********************************************************************
@@ -306,9 +342,13 @@ sint32 check2_menu(sint32 count, t_menu *mn)
             y = (Counter.mouse_y - Counter.winorigy) * 832 / Counter.winsizey;
         }
 
-        for (m = mn, i = 0; i < count; m++, i++)
-            if (x >= m->x1 && x <= m->x2 && y >= m->y1 && y <= m->y2)
+        for (m = mn, i = 0; i < count; m++, i++) {
+            if (x >= m->x1 && x <= m->x2 && y >= m->y1 && y <= m->y2) {
+                /* Clear popup menu before returning */
+                clear_popup_menu();
                 return (i);
+            }
+        }
     }
 }
 

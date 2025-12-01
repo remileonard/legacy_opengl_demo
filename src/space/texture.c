@@ -104,6 +104,8 @@ uint32 spTexDef(uint32 comp,uint32 dx,uint32 dy,void *arr,uint32 flag)
 void spFlipTex(uint32 flag,uint32 obj)
 
 {
+   glEnable(GL_TEXTURE_2D);
+   glCallList(obj) ;
    if (!(Counter.flags & TEXTR_FLAG))
      return;
 

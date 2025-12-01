@@ -22,8 +22,8 @@ set(SPACE_SOURCE
 file (GLOB SPACE_HEADER "*.h")
 
 if(WIN32)
-    add_executable(space WIN32 ${SPACE_SOURCE} ${SPACE_HEADER})
-    set_target_properties( space PROPERTIES LINK_FLAGS "/ENTRY:\"mainCRTStartup\"" )
+    add_executable(space ${SPACE_SOURCE} ${SPACE_HEADER})
+    # set_target_properties( space PROPERTIES LINK_FLAGS "/ENTRY:\"mainCRTStartup\"" )
 else()
     add_executable(space ${SPACE_SOURCE} ${SPACE_HEADER})
 endif()

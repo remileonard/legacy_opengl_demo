@@ -87,17 +87,34 @@ void initialize_time(void)
  *  spQuantifyMachine()
  **********************************************************************/
 void spQuantifyMachine(void) {
+    printf("DEBUG: spQuantifyMachine() START - Counter.flags = 0x%08X, Counter.stars_per_square = %d\n", 
+           Counter.flags, Counter.stars_per_square);
+    printf("DEBUG: Address of Counter = %p\n", (void*)&Counter);
+    printf("DEBUG: Address of Counter.flags = %p\n", (void*)&Counter.flags);
+    printf("DEBUG: Address of Counter.stars_per_square = %p\n", (void*)&Counter.stars_per_square);
+    
     Counter.alpha = 0;
-
+    Counter.flags = 0;
+    uint32_t flags = 0;
+    flags = TEXTR_FLAG;
+    flags = 0;
+    flags |= TEXTR_FLAG;
+    Counter.flags = TEXTR_FLAG;
+    
+    printf("DEBUG: After direct assignment - Counter.flags = 0x%08X (should be 0x%08X)\n", 
+           Counter.flags, TEXTR_FLAG);
+    
     switch (Counter.winst.hwid) {
     case SP_HW_RE:
         Counter.alpha |= HW_AAPNT;
         Counter.alpha |= HW_AALIN;
         Counter.alpha |= HW_FATPT;
-        Counter.flags |= TEXTR_FLAG;
+        Counter.flags = Counter.flags | TEXTR_FLAG;
         Counter.hw_graphics = 0;
         Counter.stars_per_square = 256;
         Counter.cutoff = 0.05;
+        printf("DEBUG: SP_HW_RE - Counter.flags = 0x%08X, Counter.stars_per_square = %d\n", 
+               Counter.flags, Counter.stars_per_square);
         break;
 
     case SP_HW_VGX:
@@ -108,12 +125,16 @@ void spQuantifyMachine(void) {
         Counter.hw_graphics = 0;
         Counter.stars_per_square = 192;
         Counter.cutoff = 0.05;
+        printf("DEBUG: SP_HW_VGX - Counter.flags = 0x%08X, Counter.stars_per_square = %d\n", 
+               Counter.flags, Counter.stars_per_square);
         break;
 
     case SP_HW_GT:
         Counter.hw_graphics = -1;
         Counter.stars_per_square = 160;
         Counter.cutoff = 0.05;
+        printf("DEBUG: SP_HW_GT - Counter.flags = 0x%08X, Counter.stars_per_square = %d\n", 
+               Counter.flags, Counter.stars_per_square);
         break;
 
     case SP_HW_LG:
@@ -123,6 +144,8 @@ void spQuantifyMachine(void) {
         Counter.hw_graphics = -2;
         Counter.stars_per_square = 128;
         Counter.cutoff = 0.10;
+        printf("DEBUG: SP_HW_LG - Counter.flags = 0x%08X, Counter.stars_per_square = %d\n", 
+               Counter.flags, Counter.stars_per_square);
         break;
 
     case SP_HW_XG:
@@ -133,6 +156,8 @@ void spQuantifyMachine(void) {
         Counter.hw_graphics = -1;
         Counter.stars_per_square = 160;
         Counter.cutoff = 0.05;
+        printf("DEBUG: SP_HW_XG - Counter.flags = 0x%08X, Counter.stars_per_square = %d\n", 
+               Counter.flags, Counter.stars_per_square);
         break;
 
     default:
@@ -141,8 +166,14 @@ void spQuantifyMachine(void) {
         Counter.hw_graphics = -2;
         Counter.stars_per_square = 128;
         Counter.cutoff = 0.05;
+        printf("DEBUG: SP_HW_UNKNOWN - Counter.flags = 0x%08X, Counter.stars_per_square = %d\n", 
+               Counter.flags, Counter.stars_per_square);
         break;
     }
+    
+    printf("DEBUG: spQuantifyMachine() END - Counter.flags = 0x%08X, Counter.stars_per_square = %d\n", 
+           Counter.flags, Counter.stars_per_square);
+    fflush(stdout);
 }
 
 /**********************************************************************
@@ -155,6 +186,9 @@ void initialize_shmem(t_boss *flaggs)
     t_body *tb;
     sint32 i, j, m[3];
     flot32 *d;
+
+    printf("DEBUG: initialize_shmem() START - Counter.flags = 0x%08X, Counter.stars_per_square = %d\n", 
+           Counter.flags, Counter.stars_per_square);
 
     mem_col_nme[0] = '\0';
     mem_ele_nme[0] = '\0';
@@ -250,6 +284,9 @@ void initialize_shmem(t_boss *flaggs)
     glEndList();
 
     spRingBell();
+    
+    printf("DEBUG: initialize_shmem() END - Counter.flags = 0x%08X, Counter.stars_per_square = %d\n", 
+           Counter.flags, Counter.stars_per_square);
 }
 
 /**********************************************************************
@@ -1697,6 +1734,9 @@ static void stats_menu_stuff(t_boss *flaggs)
             return;
         }
     }
+    
+    /* Clear popup menu when exiting stats */
+    clear_popup_menu();
 }
 
 /**********************************************************************
