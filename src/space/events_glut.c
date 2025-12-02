@@ -192,18 +192,6 @@ static void keyboard_callback(unsigned char key, int x, int y) {
     g_shift_pressed = (modifiers & GLUT_ACTIVE_SHIFT) ? 1 : 0;
     g_ctrl_pressed = (modifiers & GLUT_ACTIVE_CTRL) ? 1 : 0;
 
-    if (g_shift_pressed) {
-        Counter.flags |= SHIFT_FLAG;
-        /* Show cursor when Shift is pressed */
-        glutSetCursor(GLUT_CURSOR_INHERIT);
-    } else {
-        Counter.flags &= ~SHIFT_FLAG;
-        /* Hide cursor when Shift is released (if in fullscreen) */
-        if (Counter.flags & FLSCR_FLAG) {
-            glutSetCursor(GLUT_CURSOR_NONE);
-        }
-    }
-
     if (g_ctrl_pressed) {
         Counter.flags |= CNTRL_FLAG;
     } else {
@@ -221,17 +209,6 @@ static void keyboard_up_callback(unsigned char key, int x, int y) {
     g_shift_pressed = (modifiers & GLUT_ACTIVE_SHIFT) ? 1 : 0;
     g_ctrl_pressed = (modifiers & GLUT_ACTIVE_CTRL) ? 1 : 0;
 
-    if (g_shift_pressed) {
-        Counter.flags |= SHIFT_FLAG;
-        /* Show cursor when Shift is pressed */
-        glutSetCursor(GLUT_CURSOR_INHERIT);
-    } else {
-        Counter.flags &= ~SHIFT_FLAG;
-        /* Hide cursor when Shift is released (if in fullscreen) */
-        if (Counter.flags & FLSCR_FLAG) {
-            glutSetCursor(GLUT_CURSOR_NONE);
-        }
-    }
 
     if (g_ctrl_pressed) {
         Counter.flags |= CNTRL_FLAG;
@@ -253,21 +230,21 @@ static void special_callback(int key, int x, int y) {
     g_ctrl_pressed = (modifiers & GLUT_ACTIVE_CTRL) ? 1 : 0;
 
     if (g_shift_pressed) {
-        Counter.flags |= SHIFT_FLAG;
-        /* Show cursor when Shift is pressed */
-        glutSetCursor(GLUT_CURSOR_INHERIT);
-    } else {
-        Counter.flags &= ~SHIFT_FLAG;
-        /* Hide cursor when Shift is released (if in fullscreen) */
-        if (Counter.flags & FLSCR_FLAG) {
+        if (! (Counter.flags & SHIFT_FLAG)) {
+            Counter.flags |= SHIFT_FLAG;
+            glutSetCursor(GLUT_CURSOR_INHERIT);
+        } else {
+            Counter.flags &= ~SHIFT_FLAG;
             glutSetCursor(GLUT_CURSOR_NONE);
-        }
+        }   
     }
 
     if (g_ctrl_pressed) {
-        Counter.flags |= CNTRL_FLAG;
-    } else {
-        Counter.flags &= ~CNTRL_FLAG;
+        if (! (Counter.flags & CNTRL_FLAG)) {
+            Counter.flags |= CNTRL_FLAG;
+        } else {
+            Counter.flags &= ~CNTRL_FLAG;
+        }   
     }
 
     switch (key) {
@@ -292,23 +269,6 @@ static void special_up_callback(int key, int x, int y) {
     g_shift_pressed = (modifiers & GLUT_ACTIVE_SHIFT) ? 1 : 0;
     g_ctrl_pressed = (modifiers & GLUT_ACTIVE_CTRL) ? 1 : 0;
 
-    if (g_shift_pressed) {
-        Counter.flags |= SHIFT_FLAG;
-        /* Show cursor when Shift is pressed */
-        glutSetCursor(GLUT_CURSOR_INHERIT);
-    } else {
-        Counter.flags &= ~SHIFT_FLAG;
-        /* Hide cursor when Shift is released (if in fullscreen) */
-        if (Counter.flags & FLSCR_FLAG) {
-            glutSetCursor(GLUT_CURSOR_NONE);
-        }
-    }
-
-    if (g_ctrl_pressed) {
-        Counter.flags |= CNTRL_FLAG;
-    } else {
-        Counter.flags &= ~CNTRL_FLAG;
-    }
 }/**********************************************************************
  *  GLUT Mouse Button Callback
  **********************************************************************/
@@ -368,10 +328,11 @@ static void passive_motion_callback(int x, int y) {
 static void reshape_callback(int width, int height) {
     g_window_width = width;
     g_window_height = height;
-
+    
     /* Update window geometry in Counter */
     spGetWindowGeometry();
-
+    Counter.winsizex = width;
+    Counter.winsizey = height;
     /* Update viewport */
     glViewport(0, 0, width, height);
 }

@@ -81,6 +81,7 @@ void actually_do_graphics(t_boss *flaggs)
     }
     
     /* Draw popup menu if active (for autopilot, stats, etc.) */
+    draw_menu();
     draw_popup_menu();
 }
 
@@ -293,7 +294,7 @@ static void display_foreground(t_boss *flaggs)
         return;
     }
 
-    if (!(Counter.flags & PRBIT_FLAG)) {
+    if (1 /*!(Counter.flags & PRBIT_FLAG)*/) {
         draw_st = 0;
         draw_pl = 0;
 

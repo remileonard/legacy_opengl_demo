@@ -1,11 +1,11 @@
 X29
-	..\..\flip\Debug\flip.exe ../../../../../../data/x29.bin
+	flip.exe data/x29.bin
 
 Martini
-	..\..\flip\Debug\flip.exe ../../../../../../data/martini.bin
+	flip.exe data/martini.bin
 
 Logo
-	..\..\flip\Debug\flip.exe ../../../../../../data/logo.bin
+	flip.exe data/logo.bin
 
 VW
-	..\..\flip\Debug\flip.exe ../../../../../../data/vw.bin
+	flip.exe data/vw.bin

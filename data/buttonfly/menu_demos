@@ -1,54 +1,54 @@
 Atlantis
-	..\..\atlantis\Debug\atlantis.exe
+	atlantis.exe
 	.color. .9 .5 .9
 	.highcolor. 1.0 .7 1.0
 Bounce
-	..\..\demos\Debug\bounce.exe
+	bounce.exe
 	.color. .9 .5 .9
 	.highcolor. 1.0 .7 1.0
 
 Glut Planes
-	..\..\demos\Debug\glutplane.exe
+	glutplane.exe
 	.color. .9 .5 .9
 	.highcolor. 1.0 .7 1.0
 SCube
-	..\..\demos\Debug\scube.exe
+	scube.exe
 	.color. .9 .5 .9
 	.highcolor. 1.0 .7 1.0
 Stars
-	..\..\demos\Debug\stars.exe
+	stars.exe
 	.color. .9 .5 .9
 	.highcolor. 1.0 .7 1.0
 Maze
-	..\..\demos\Debug\maze.exe
+	maze.exe
 	.color. .9 .5 .9
 	.highcolor. 1.0 .7 1.0
 Enterprise
-	..\..\demos\Debug\enterprise.exe
+	enterprise.exe
 	.color. .9 .5 .9
 	.highcolor. 1.0 .7 1.0
 Road
-	..\..\demos\Debug\road.exe
+	road.exe
 	.color. .9 .5 .9
 	.highcolor. 1.0 .7 1.0
 Plasma
-	..\..\demos\Debug\plasma.exe
+	plasma.exe
 	.color. .9 .5 .9
 	.highcolor. 1.0 .7 1.0
 Distort
-	..\..\distort\Debug\distort.exe ../../../../../../data/dog.rgb
+	distort.exe data/dog.rgb
 	.color. .9 .5 .9
 	.highcolor. 1.0 .7 1.0
 GL Puzzle
-	..\..\gl_puzzle\Debug\gl_puzzle.exe
+	gl_puzzle.exe
 	.color. .9 .5 .9
 	.highcolor. 1.0 .7 1.0
 Roller Coaster
-	..\..\roller_coaster\Debug\rc.exe
+	rc.exe
 	.color. .9 .5 .9
 	.highcolor. 1.0 .7 1.0
 Cycles
-	..\..\cycles\Debug\cycles.exe
+	cycles.exe
 	.color. .9 .5 .9
 	.highcolor. 1.0 .7 1.0
 Smooth
@@ -56,6 +56,6 @@ Smooth
 Flip
 	.menu. m_flip
 Ideas
-	..\..\ideas\Debug\ideas.exe
+	ideas.exe
 	.color. .9 .5 .9
 	.highcolor. 1.0 .7 1.0
