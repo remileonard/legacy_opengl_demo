@@ -190,7 +190,7 @@ void sound_effect(schar8 *soundfile)
 static void play_file(void)
 
 {
-    register sint32 i;
+      sint32 i;
 
 #ifdef SOUND
     /* move the fileptr to the beginning of the sample data */
@@ -237,8 +237,8 @@ static void play_sample(uint32 index)
 static void reverse_buffer(uchar8 *buf)
 
 {
-    register uint16 *s1, *s2, tmp;
-    register uint32 i, count;
+      uint16 *s1, *s2, tmp;
+      uint32 i, count;
 
     s1 = (uint16 *)buf;
     s2 = (uint16 *)(uchar8 *)(buf + play.bytes_per_buf - 4);

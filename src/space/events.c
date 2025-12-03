@@ -736,7 +736,7 @@ sint32 spReadStar(sint32 n[3])
 
 {
 #ifdef SP_IRIS_GL
-   register sint32 v,i=0,r ;
+     sint32 v,i=0,r ;
    sint16 val ;
 
    qreset() ;

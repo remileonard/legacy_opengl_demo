@@ -26,6 +26,7 @@ add_subdirectory(src/cycles)
 add_subdirectory(src/objviewer)
 add_subdirectory(src/flip)
 add_subdirectory(src/space)
+add_subdirectory(src/flight)
 
 # Noms EXACTS des cibles exécutables (d'après ton log MSBuild)
 set(LEGACY_DEMOS
@@ -35,6 +36,7 @@ set(LEGACY_DEMOS
     cycles
     distort
     enterprise
+    flight
     flip
     gl_puzzle
     glutplane

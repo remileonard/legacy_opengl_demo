@@ -353,7 +353,7 @@ static void visibility_callback(int state) {
  *  spInitKeyboard()
  **********************************************************************/
 void spInitKeyboard(void) {
-    /* Register GLUT callbacks */
+    /*   GLUT callbacks */
     glutKeyboardFunc(keyboard_callback);
     glutKeyboardUpFunc(keyboard_up_callback);
     glutSpecialFunc(special_callback);

@@ -15,7 +15,7 @@
  * rights reserved under the Copyright Laws of the United States.
  */
 
-#include "gobj.h"
+#include "libgobj/gobj.h"
 
 #include "porting/iris2ogl.h"
 #include <stdio.h>

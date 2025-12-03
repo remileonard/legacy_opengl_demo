@@ -16,7 +16,7 @@
  */
 
 
-#include "gobj.h"
+#include "libgobj/gobj.h"
 
 #include "porting/iris2ogl.h"
 #include <math.h>

@@ -1324,7 +1324,7 @@ void draw_coloured_grid(int level) {
  */
 void draw_wheel(int lo_res) {
 	float v[3];
-	register int i, j;
+	  int i, j;
 
 	if (2*CIRC_PTS > 255) {
 	    printf("too many tyre pts %d\n", 2*CIRC_PTS);

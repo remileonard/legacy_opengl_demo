@@ -280,9 +280,9 @@ static void initialize_graphics(void)
 **********************************************************************/
 static void fly(void)
 
-{  register flot32 timer,timer_old;
-   register sint32 i,clocker ;
-   register t_body *tb;
+{    flot32 timer,timer_old;
+     sint32 i,clocker ;
+     t_body *tb;
 
    timer_old   = Counter.timer_old ;
    timer       = Counter.timer ;
@@ -361,7 +361,7 @@ static void fly(void)
 /********************************************************************** 
 *  print_screen_text()  -  
 **********************************************************************/
-static void print_screen_text(register flot32 fps)
+static void print_screen_text(  flot32 fps)
 
 {  flot32 vel ;
    sint32 i ;
@@ -429,10 +429,10 @@ static void print_screen_text(register flot32 fps)
 **********************************************************************/
 static void blur_galaxy(uint32 qwe[256][256])
 
-{  register flot32   *a,sum,ar[STARSQ][STARSQ],br[STARSQ][STARSQ],biggest ;
-   register sint32   i,j,k,m,delta ;
-   register uint32   psum,col ;
-   register t_galaga *gg ;
+{    flot32   *a,sum,ar[STARSQ][STARSQ],br[STARSQ][STARSQ],biggest ;
+     sint32   i,j,k,m,delta ;
+     uint32   psum,col ;
+     t_galaga *gg ;
 
    delta = 256/STARSQ ;
 
@@ -479,10 +479,10 @@ static void blur_galaxy(uint32 qwe[256][256])
 **********************************************************************/
 sint32 make_galaxy_object(sint32 flag)
 
-{  register sint32 obj,i,j,col,step ;
-   register T2     t[2] ;
-   register P3     p[2] ;
-   register flot32 delt,edge,q ;
+{    sint32 obj,i,j,col,step ;
+     T2     t[2] ;
+     P3     p[2] ;
+     flot32 delt,edge,q ;
 
    obj = glGenLists(1);
    glNewList(obj,GL_COMPILE) ;
@@ -560,7 +560,7 @@ sint32 make_galaxy_object(sint32 flag)
 /**********************************************************************/
 void set_window_view(flot32 vian)
 
-{  register flot32 s,c,h_view_angle,v_view_angle ;
+{    flot32 s,c,h_view_angle,v_view_angle ;
 
    spGetWindowGeometry();
 

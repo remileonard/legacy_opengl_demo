@@ -215,7 +215,7 @@ void text(GLuint x, GLuint y, GLfloat scale, char *format, ...)
 
 void resetballs()
 {
-    register short i;
+      short i;
 
     balls[0].color[R] = 255;
     balls[0].color[G] = 64;
@@ -239,7 +239,7 @@ void resetballs()
 
 void drawface()
 {
-    register int32_t i, j;
+      int32_t i, j;
 
     glNormal3fv(wallnorm);
     for (i = 0; i < wallgrid; i++)
@@ -256,7 +256,7 @@ void drawface()
 
 void drawnorms()
 {
-    register int32_t i, j;
+      int32_t i, j;
 
     glDisable(GL_LIGHTING);
     glColor3ub(255, 255, 0);
@@ -301,8 +301,8 @@ void
     drawfastobj(obj)
         fastobj *obj;
 {
-    register int32_t *p, *end;
-    register int32_t npolys;
+      int32_t *p, *end;
+      int32_t npolys;
 
     p = obj->data;
     end = p + 8 * obj->npoints;
@@ -347,7 +347,7 @@ void
 
 void drawball()
 {
-    register int32_t i, j;
+      int32_t i, j;
 
     for (i = 0; i < UDIV; i++)
     {
@@ -365,7 +365,7 @@ void drawball()
 
 void drawimage(void)
 {
-    register short i;
+      short i;
     static int32_t start, end, last;
 
     glutSetWindow(window);
@@ -441,8 +441,8 @@ void drawimage(void)
 
 void initobjects()
 {
-    register float u, v, du, dv;
-    register short i, j;
+      float u, v, du, dv;
+      short i, j;
 
     du = 2.0 * 3.1416 / UDIV;
     dv = 3.1416 / VDIV;
@@ -549,7 +549,7 @@ void
 
 void calcball()
 {
-    register short i, j;
+      short i, j;
 
     for (j = 0; j < TOTALBALLS; j++)
     {
@@ -756,10 +756,10 @@ char *name;
 float objmaxpoint(obj)
 fastobj *obj;
 {
-    register float *p, *end;
-    register int32_t npolys;
-    register float len;
-    register float max = 0.0;
+      float *p, *end;
+      int32_t npolys;
+      float len;
+      float max = 0.0;
 
     p = (float *)(obj->data);
 

@@ -22,7 +22,7 @@
  *
  *	
  * Copyright (C) 1989 Spatial Systems Inc. All Rights Reserved.
- * Spaceball is a registered trademark of Spatial Systems Inc.
+ * Spaceball is a  ed trademark of Spatial Systems Inc.
  *
  * RESTRICTIONS
  *
@@ -680,7 +680,7 @@ void
 m3x3mult( m1, m2, prod )
 mattype		*m1, *m2, *prod;
 {
-        register int 	row, col;
+          int 	row, col;
         mattype 	temp[1];
 
 	* temp = * prod;
@@ -703,7 +703,7 @@ void
 m4x3mult( m1, m2, prod )
 mattype		*m1, *m2, *prod;
 {
-        register int 	row, col;
+          int 	row, col;
         mattype 	temp[1];
 
 	* temp = * prod;

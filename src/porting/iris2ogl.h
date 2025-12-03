@@ -40,6 +40,7 @@ typedef struct ScaledFont_s {
 typedef int32_t Tag;
 typedef int16_t Angle;
 typedef int16_t Screencoord;
+typedef int16_t Scoord;  // Short coordinate (alias for Screencoord)
 typedef int32_t Icoord;
 typedef float Coord;
 typedef float Matrix[4][4];
@@ -88,6 +89,12 @@ typedef int16_t Device;
 #define GD_BITS_NORM_DBL_RED   5
 #define GD_BITS_NORM_DBL_GREEN 6
 #define GD_BITS_NORM_DBL_BLUE  7
+#define GD_FOGVERTEX    10  // Vertex fog support
+#define GD_XPMAX        11  // Maximum X screen coordinate
+#define GD_YPMAX        12  // Maximum Y screen coordinate
+#define GD_BITS_NORM_DBL_CMODE 13  // Color mode bits double buffer
+#define GD_MULTISAMPLE  14  // Multisampling support
+#define GD_BITS_UNDR_SNG_CMODE 15  // Underlay single buffer color mode bits
 
 #define MAX_LIGHTS 8
 #define MAX_MATERIALS 256
@@ -118,6 +125,7 @@ typedef struct {
     GLfloat ambient[4];
     GLfloat attenuation[2]; 
     Boolean local_viewer;
+    Boolean two_side;
     Boolean defined;
 } LightModelDef;
 
@@ -142,6 +150,7 @@ typedef struct {
 #define ATTENUATION  13
 #define LMODEL      14
 #define LOCALVIEWER 15
+#define TWO_SIDE    16
 
 #define LIGHT0      0
 #define LIGHT1      1
@@ -209,6 +218,7 @@ void rotate(Angle angle, char axis);
 
 // Geometric primitives
 void rectf(Coord x1, Coord y1, Coord x2, Coord y2);
+void rectfs(Scoord x1, Scoord y1, Scoord x2, Scoord y2);  // Short coordinate version
 void rect(Icoord x1, Icoord y1, Icoord x2, Icoord y2);
 void circf(Coord x, Coord y, Coord radius);
 void circ(Coord x, Coord y, Coord radius);
@@ -218,6 +228,7 @@ void sboxfi(Icoord x1, Icoord y1, Icoord x2, Icoord y2);
 // 2D polygon functions
 void polf2(int32_t n, Coord parray[][2]);
 void polf2i(int32_t n, Icoord parray[][2]);
+void polf2s(int32_t n, Scoord parray[][2]);  // Short coordinate version
 
 // Mesh functions
 void swaptmesh(void);
@@ -323,6 +334,31 @@ void set_win_coords(void);
 #define SBRZ            11     // Spaceball rotate Z
 #define SBPERIOD        12     // Spaceball polling period (ms)
 
+// Dial devices
+#define DIAL0           13
+#define DIAL1           14
+#define DIAL2           15
+#define DIAL3           16
+#define DIAL4           17
+#define DIAL5           18
+#define DIAL6           19
+#define DIAL7           20
+
+// Additional mouse buttons
+#define MOUSE1          21
+#define MOUSE2          22
+#define MOUSE3          23
+
+// Spaceball buttons
+#define SBPICK          24
+#define SBBUT1          25
+#define SBBUT2          26
+#define SBBUT3          27
+#define SBBUT4          28
+#define SBBUT5          29
+#define SBBUT6          30
+#define SBBUT7          31
+#define SBBUT8          32
 
 #define LEFTMOUSE       100
 #define MIDDLEMOUSE     101
@@ -339,6 +375,36 @@ void set_win_coords(void);
 #define REDRAW          112
 #define INPUTCHANGE     113
 #define WINQUIT         114
+#define F1KEY           115
+#define F2KEY           116
+#define F3KEY           117
+#define F4KEY           118
+#define F5KEY           119
+#define F6KEY           120
+#define F7KEY           121
+#define F8KEY           122
+#define F9KEY           123
+#define F10KEY          124
+#define F11KEY          125
+#define F12KEY          126
+#define PAUSEKEY        127
+#define HOMEKEY         128
+
+// Pad buttons (game controller or dials)
+#define PAD0            129
+#define PAD1            130
+#define PAD2            131
+#define PAD3            132
+#define PAD4            133
+#define PAD5            134
+#define PAD6            135
+#define PAD7            136
+#define PAD8            137
+#define PAD9            138
+
+// Screen dimension queries (returned by getgdesc)
+#define XMAXSCREEN      139
+#define YMAXSCREEN      140
 
 void qdevice(Device dev);
 void unqdevice(Device dev);
@@ -367,6 +433,49 @@ void popname(void);
 int getgdesc(int descriptor);
 #define finish() glFinish()
 
+// === Drawing modes (IRIS GL layer modes) ===
+#define NORMALDRAW      0
+#define PUPDRAW         1
+#define OVERDRAW        2
+#define UNDERDRAW       3
+#define CURSORDRAW      4
+
+// === Fog constants ===
+#define FG_OFF          0
+#define FG_ON           1
+#define FG_DEFINE       2
+#define FG_VTX_LIN      3
+#define FG_VTX_EXP      4
+#define FG_VTX_EXP2     5
+#define FG_PIX_LIN      6
+#define FG_PIX_EXP      7
+#define FG_PIX_EXP2     8
+
+// === Graphics config constants ===
+#define GLC_SLOWMAPCOLORS 100
+#define GLC_OLDPOLYGON    101
+#define GC_MS_SAMPLES     102  // Multisampling samples config
+
+// === Smoothing constants ===
+#define SML_OFF     0
+#define SML_ON      1
+
+// === Pattern constants ===
+#define PATTERN_16  16
+
+// === Material/Texture binding ===
+#define MTEXTURE    1
+
+// === Texture constants (IRIS GL texture mapping) ===
+#define TX_MAGFILTER        0
+#define TX_MINFILTER        1
+#define TX_BILINEAR         2
+#define TX_POINT            3
+#define TX_MIPMAP_LINEAR    4
+#define TX_MIPMAP_POINT     5
+#define TX_WRAP             6
+#define TX_CLAMP            7
+
 // UNIX compatibility
 char* iris_cuserid(char *buf);
 #define cuserid(x) iris_cuserid(x)
@@ -376,15 +485,15 @@ char* iris_cuserid(char *buf);
 
 #ifdef _WIN32
 // Windows doesn't have bcopy/bzero in standard headers
-static inline void bcopy(const void *src, void *dst, size_t len) {
+inline void bcopy(const void *src, void *dst, size_t len) {
     memmove(dst, src, len);
 }
 
-static inline void bzero(void *ptr, size_t len) {
+inline void bzero(void *ptr, size_t len) {
     memset(ptr, 0, len);
 }
 
-static inline int bcmp(const void *s1, const void *s2, size_t n) {
+inline int bcmp(const void *s1, const void *s2, size_t n) {
     return memcmp(s1, s2, n);
 }
 #else
@@ -504,4 +613,93 @@ void lsetdepth(unsigned long znear, unsigned long zfar);
 
 void qenter(Device dev, int16_t val);
 void gexit(void);
+
+// === Additional IRIS GL functions ===
+
+// 2D drawing functions
+void move(Coord x, Coord y, Coord z);
+void draw(Coord x, Coord y, Coord z);
+void move2(Coord x, Coord y);
+void draw2(Coord x, Coord y);
+void move2i(Icoord x, Icoord y);
+void draw2i(Icoord x, Icoord y);
+void move2s(Scoord x, Scoord y);
+void draw2s(Scoord x, Scoord y);
+void cmov2s(Scoord x, Scoord y);
+void pnt2(Coord x, Coord y);
+void pnt2s(Scoord x, Scoord y);
+void poly2(int32_t n, Coord parray[][2]);
+void recti(Icoord x1, Icoord y1, Icoord x2, Icoord y2);
+void rectfi(Icoord x1, Icoord y1, Icoord x2, Icoord y2);
+void rects(Scoord x1, Scoord y1, Scoord x2, Scoord y2);
+void circfs(Scoord x, Scoord y, Scoord radius);
+
+// Text functions
+int strwidth(const char* str);
+int getheight(void);
+int getdescender(void);
+void getcpos(Scoord* x, Scoord* y);
+
+// Viewport functions
+void pushviewport(void);
+void popviewport(void);
+void getviewport(Screencoord* left, Screencoord* right, Screencoord* bottom, Screencoord* top);
+void scrmask(Screencoord left, Screencoord right, Screencoord bottom, Screencoord top);
+
+// Line style functions
+void setlinestyle(int style);
+void deflinestyle(int style, unsigned short pattern);
+void linesmooth(unsigned long mode);
+
+// Cursor functions
+void cursoff(void);
+void curson(void);
+void defcursor(int index, unsigned short cursor[16]);
+void curorigin(int index, Scoord x, Scoord y);
+void setcursor(int index, Colorindex color, Colorindex writemask);
+
+// Window management functions
+void noborder(void);
+void icontitle(const char* title);
+void mssize(int samples, int coverage, int z);
+void underlay(int planes);
+void overlay(int planes);
+void swapinterval(int interval);
+long getgconfig(int what);
+void greset(void);
+
+// Drawing mode
+void drawmode(int mode);
+
+// Viewport function (IRIS GL version - sets viewport parameters)
+void viewport(Screencoord left, Screencoord right, Screencoord bottom, Screencoord top);
+
+// Event queue functions
+void qreset(void);
+void setvaluator(Device dev, int16_t init, int16_t vmin, int16_t vmax);
+void setbell(int volume);
+void ringbell(void);
+
+// Math functions
+void gl_sincos(int angle_decidegrees, float* sinval, float* cosval);
+float fasin(float x);
+float fcos(float x);
+float fsqrt(float x);
+float fexp(float x);
+#define _ABS(x) ((x) < 0 ? -(x) : (x))
+
+// Fog functions
+void fogvertex(int mode, float density[]);
+
+// Texture functions
+void texdef2d(int texid, int nc, int width, int height, void* image, int np, float props[]);
+void tevdef(int texid, int nc, float props[]);
+void texbind(int target, int texid);
+void tevbind(int target, int texid);
+
+// Color map functions
+void gflush(void);
+void getmcolor(Colorindex index, RGBvalue* r, RGBvalue* g, RGBvalue* b);
+void glcompat(int mode, int value);
+
 #endif // IRIS2OGL_H

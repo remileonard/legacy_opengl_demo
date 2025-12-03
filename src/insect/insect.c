@@ -630,8 +630,8 @@ dolegs (void) {
 
 void
 move_insect (void) {
-    register int    i;
-    register float  mx,
+      int    i;
+      float  mx,
                     my,
                     vx,
                     vy,

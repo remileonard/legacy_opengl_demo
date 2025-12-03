@@ -764,7 +764,7 @@ static void motion(int x, int y) {
 
 static const float maxHalo[] = {0.2, 0.35, 0.3, 0.5};
 
-/* Advance time varying state when idle callback registered. */
+/* Advance time varying state when idle callback  ed. */
 static void idle(void) {
     static float time = 0.0;
 
@@ -942,7 +942,7 @@ int main(int argc, char **argv) {
         exit(1);
     }
 
-    /* Register GLUT callbacks. */
+    /*   GLUT callbacks. */
     glutDisplayFunc(redraw);
     glutMouseFunc(mouse);
     glutMotionFunc(motion);

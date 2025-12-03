@@ -160,7 +160,7 @@ flot64 delta_timer(void)
 static void julian_date(t_time *tt)
 
 {
-    register sint32 B, C, D, julian, year, month;
+      sint32 B, C, D, julian, year, month;
 
     year = tt->year;
     month = tt->month;
@@ -205,8 +205,8 @@ static void julian_date(t_time *tt)
 void reverse_julian_date(flot64 jd, char *date)
 
 {
-    register flot64 q, f, dd;
-    register sint32 i, b, a, c, d, e, g, mm, yy, day, hour, min;
+      flot64 q, f, dd;
+      sint32 i, b, a, c, d, e, g, mm, yy, day, hour, min;
 
     q = jd + 0.5 + epochdate;
 

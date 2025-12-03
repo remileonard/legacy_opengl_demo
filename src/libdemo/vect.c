@@ -31,7 +31,7 @@
 float *
 vnew()
 {
-	register float *v;
+	  float *v;
 
 	v = (float *) malloc(sizeof(float)*3);
 	return v;
@@ -40,7 +40,7 @@ vnew()
 float *
 vclone(const float *v)
 {
-	register float *c;
+	  float *c;
 
 	c = vnew();
 	vcopy(v, c);
@@ -50,7 +50,7 @@ vclone(const float *v)
 void
 vcopy(const float *v1, float *v2)
 {
-	register int i;
+	  int i;
 	for (i = 0 ; i < 3 ; i++)
 		v2[i] = v1[i];
 }
@@ -172,7 +172,7 @@ vreflect(const float *in, const float *mirror, float *out)
 void
 vmultmatrix(const Matrix m1, const Matrix m2, Matrix prod)
 {
-	register int row, col;
+	  int row, col;
 	Matrix temp;
 
 	for(row=0 ; row<4 ; row++) 

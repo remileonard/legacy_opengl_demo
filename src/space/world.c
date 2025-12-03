@@ -35,8 +35,8 @@ static sint32 already[64][2] ;
 **********************************************************************/
 static void world_mid(sint32 x1,sint32 y1,sint32 x2,sint32 y2)
 
-{  register sint32 xi,yi ;
-   register flot32 a,b,x,y,z,w ;
+{    sint32 xi,yi ;
+     flot32 a,b,x,y,z,w ;
 
    xi = (x1 + x2) >> 1 ;
    yi = (y1 + y2) >> 1 ;
@@ -67,8 +67,8 @@ static void world_mid(sint32 x1,sint32 y1,sint32 x2,sint32 y2)
 **********************************************************************/
 sint32 generate_sphere(sint32 level,sint32 flag,sint32 tex_size) 
 
-{  register flot32 x,y,z,w ;
-   register sint32 i,j,stage,step,dstep ;
+{    flot32 x,y,z,w ;
+     sint32 i,j,stage,step,dstep ;
 
    if (level < 0) level = 0 ;
    if (level > 6) level = 6 ;

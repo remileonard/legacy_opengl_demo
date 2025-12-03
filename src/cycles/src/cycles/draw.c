@@ -41,7 +41,7 @@ void drawgrid(int level, int look_offset) {
 
 /* draws the trail of Cycle C,  will also handle a falling wall of a dead cycle */
 void drawtrail(CYCLE *C, int draw_level) {
-    register int i;
+      int i;
     int segment;
     float v[3];
     float height;

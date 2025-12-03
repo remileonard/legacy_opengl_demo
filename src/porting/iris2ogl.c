@@ -21,6 +21,7 @@
 // === Global state ===
 float iris_colormap[256][3];
 static int current_matrix_mode = GL_MODELVIEW;
+static int iris_active_light_count = 0;
 static Object next_object_id = 1;
 static Object current_object = 0;
 static Boolean in_object_definition = FALSE;
@@ -50,7 +51,19 @@ static Device queued_devices[256] = {0};
 static Boolean mouse_state[3] = {FALSE, FALSE, FALSE};
 static Boolean key_state[256] = {FALSE};
 
+static int current_drawmode = NORMALDRAW;
+static Screencoord current_viewport[4] = {0, 0, 640, 480};
+
+static GLboolean dm_depth_test   = GL_TRUE;
+static GLboolean dm_blend        = GL_FALSE;
+static GLboolean dm_color_mask[4] = {GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE};
+static int overlay_planes = 0;  // >0 si overlay actif
+static int underlay_planes = 0; // >0 si underlay actif
+
+static float iris_clear_color[4] = {0.0f, 0.0f, 0.0f, 1.0f};
+
 // === Color Management ===
+static void queue_event(Device dev, int16_t val);
 
 void set_iris_colormap(int index, float r, float g, float b) {
     if (index >= 0 && index < 256) {
@@ -81,7 +94,18 @@ void iris_init_colormap(void) {
 
 void iris_set_color_index(int index) {
     if (index >= 0 && index < 256) {
-        glColor3f(iris_colormap[index][0], iris_colormap[index][1], iris_colormap[index][2]);
+        float r = iris_colormap[index][0];
+        float g = iris_colormap[index][1];
+        float b = iris_colormap[index][2];
+
+        // couleur de dessin
+        glColor3f(r, g, b);
+
+        // couleur de fond IRIS pour clear()
+        iris_clear_color[0] = r;
+        iris_clear_color[1] = g;
+        iris_clear_color[2] = b;
+        iris_clear_color[3] = 1.0f;
     }
 }
 
@@ -91,7 +115,10 @@ void cpack(uint32_t color) {
     float g = ((color >> 8) & 0xFF) / 255.0f;
     float r = (color & 0xFF) / 255.0f;
     glColor3f(r, g, b);
-    //glClearColor(r, g, b, 1.0f);
+    iris_clear_color[0] = r;
+    iris_clear_color[1] = g;
+    iris_clear_color[2] = b;
+    iris_clear_color[3] = 1.0f;
 }
 
 void mapcolor(Colorindex index, RGBvalue r, RGBvalue g, RGBvalue b) {
@@ -102,28 +129,73 @@ void mapcolor(Colorindex index, RGBvalue r, RGBvalue g, RGBvalue b) {
     }
 }
 void clear() {
-    // lire la couleur courante
-    GLfloat color[4];
-    glGetFloatv(GL_CURRENT_COLOR, color);
+    // En NORMALDRAW / UNDERDRAW : clear classique du backbuffer
+    /*if (current_drawmode == NORMALDRAW || current_drawmode == UNDERDRAW) {
+        glClearColor(iris_clear_color[0],
+                     iris_clear_color[1],
+                     iris_clear_color[2],
+                     iris_clear_color[3]);
+        glClear(GL_COLOR_BUFFER_BIT);
+        return;
+    }*/
+    // En OVERDRAW / PUPDRAW : on simule le "clear des pup planes"
+    // en dessinant un rectangle plein écran dans le viewport courant,
+    // sans toucher au contenu déjà rendu dans le backbuffer.
 
-    // configurer la couleur d’effacement à partir de la couleur courante
-    glClearColor(color[0], color[1], color[2], 1.0f);
+    // Sauvegarder un peu d'état
+    GLboolean depthTest = glIsEnabled(GL_DEPTH_TEST);
+    GLboolean lighting  = glIsEnabled(GL_LIGHTING);
+    GLint    matrixMode;
+    glGetIntegerv(GL_MATRIX_MODE, &matrixMode);
 
-    // effacer le color buffer
-    glClear(GL_COLOR_BUFFER_BIT);
+    glDisable(GL_DEPTH_TEST);
+    glDisable(GL_LIGHTING);
+
+    // Matrice 2D identitaire sur NDC
+    glMatrixMode(GL_PROJECTION);
+    glPushMatrix();
+    glLoadIdentity();
+    glMatrixMode(GL_MODELVIEW);
+    glPushMatrix();
+    glLoadIdentity();
+
+    // Utiliser la couleur de fond courante (iris_clear_color)
+    glColor3f(iris_clear_color[0],
+              iris_clear_color[1],
+              iris_clear_color[2]);
+
+    // Quad couvrant tout le viewport courant
+    glBegin(GL_TRIANGLE_FAN);
+        glVertex2f(-1.0f, -1.0f);
+        glVertex2f( 1.0f, -1.0f);
+        glVertex2f( 1.0f,  1.0f);
+        glVertex2f(-1.0f,  1.0f);
+    glEnd();
+
+    // Restaure matrices
+    glPopMatrix(); // MODELVIEW
+    glMatrixMode(GL_PROJECTION);
+    glPopMatrix();
+    glMatrixMode(matrixMode);
+
+    // Restaure états
+    if (depthTest) glEnable(GL_DEPTH_TEST); else glDisable(GL_DEPTH_TEST);
+    if (lighting)  glEnable(GL_LIGHTING);   else glDisable(GL_LIGHTING);
 }
 // === Buffer Swapping ===
 
 void swapbuffers(void) {
     glutSwapBuffers();
-    // Request a new display update so GLUT keeps generating REDRAW events
-    //glutPostRedisplay();
 }
 
 // === Geometric Primitives ===
 
 void rectf(Coord x1, Coord y1, Coord x2, Coord y2) {
     glRectf(x1, y1, x2, y2);
+}
+
+void rectfs(Scoord x1, Scoord y1, Scoord x2, Scoord y2) {
+    glRects(x1, y1, x2, y2);
 }
 
 void rect(Icoord x1, Icoord y1, Icoord x2, Icoord y2) {
@@ -171,6 +243,14 @@ void polf2i(int32_t n, Icoord parray[][2]) {
     glBegin(GL_POLYGON);
     for (int i = 0; i < n; i++) {
         glVertex2i(parray[i][0], parray[i][1]);
+    }
+    glEnd();
+}
+
+void polf2s(int32_t n, Scoord parray[][2]) {
+    glBegin(GL_POLYGON);
+    for (int i = 0; i < n; i++) {
+        glVertex2s(parray[i][0], parray[i][1]);
     }
     glEnd();
 }
@@ -586,66 +666,53 @@ void lmbind(int target, int index) {
         case LIGHT6:
         case LIGHT7: {
             GLenum light_id = GL_LIGHT0 + (target - LIGHT0);
-            
-            if (index == 0) {
-                // Unbind/disable light
-                glDisable(light_id);
-            } else if (index > 0 && index < MAX_LIGHTS && lights[index].defined) {
-                // Bind and enable light
-                
-                LightDef *light = &lights[index];
-                
-                glEnable(GL_LIGHTING);
-                glEnable(light_id);
-                
-                glLightfv(light_id, GL_AMBIENT, light->ambient);
-                glLightfv(light_id, GL_DIFFUSE, light->diffuse);
-                glLightfv(light_id, GL_SPECULAR, light->specular);
-                glLightfv(light_id, GL_POSITION, light->position);
-                
-                if (light->spot_cutoff < 180.0f) {
-                    glLightfv(light_id, GL_SPOT_DIRECTION, light->spot_direction);
-                    glLightf(light_id, GL_SPOT_EXPONENT, light->spot_exponent);
-                    glLightf(light_id, GL_SPOT_CUTOFF, light->spot_cutoff);
-                }
-                
-                float c = light->attenuation[0];
-                float l = light->attenuation[1];
-                float q = light->attenuation[2];
 
-                if (current_light_model > 0 && current_light_model < MAX_MATERIALS &&
-                    light_models[current_light_model].defined) {
-                    if (c == 1.0f && l == 0.0f && q == 0.0f) {
-                        c = light_models[current_light_model].attenuation[0];
-                        l = light_models[current_light_model].attenuation[1];
-                        q = 0.0f; // IRIS n'en définit pas
+            // On regarde si cette light était déjà activée côté GL
+            GLboolean was_enabled = glIsEnabled(light_id);
+
+            if (index == 0) {
+                // Unbind/disable this light
+                if (was_enabled) {
+                    glDisable(light_id);
+                    if (iris_active_light_count > 0) {
+                        iris_active_light_count--;
                     }
                 }
 
-                glLightf(light_id, GL_CONSTANT_ATTENUATION,  c);
-                glLightf(light_id, GL_LINEAR_ATTENUATION,    l);
-                glLightf(light_id, GL_QUADRATIC_ATTENUATION, q);
-                
-                if (target >= num_active_lights) {
-                    num_active_lights = target + 1;
+                // Si plus aucune light active, couper l'éclairage global
+                if (iris_active_light_count == 0) {
+                    glDisable(GL_LIGHTING);
                 }
+            } else if (index > 0 && index < MAX_LIGHTS && lights[index].defined) {
+                LightDef *light = &lights[index];
+
+                // Si elle n'était pas encore active, on incrémente le compteur
+                if (!was_enabled) {
+                    iris_active_light_count++;
+                }
+
+                // Si au moins une light active, s'assurer que GL_LIGHTING est ON
+                if (iris_active_light_count > 0) {
+                    glEnable(GL_LIGHTING);
+                }
+                glEnable(light_id);
+
+                glLightfv(light_id, GL_POSITION, light->position);
+                glLightfv(light_id, GL_AMBIENT,  light->ambient);
+                glLightfv(light_id, GL_DIFFUSE,  light->diffuse);
+                glLightfv(light_id, GL_SPECULAR, light->specular);
+                glLightf (light_id, GL_SPOT_CUTOFF, 180.0f);
             }
             break;
         }
         
         case MATERIAL: {
-            glDisable(GL_COLOR_MATERIAL);
-            glColor3f(1.0f, 1.0f, 1.0f);  // couleur courante blanche
             if (index == 0) {
                 glEnable(GL_COLOR_MATERIAL);
+                glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
 
-                // Optionnel: remettre un matériau neutre
-                GLfloat default_ambient[]  = {0.2f, 0.2f, 0.2f, 1.0f};
-                GLfloat default_diffuse[]  = {0.8f, 0.8f, 0.8f, 1.0f};
                 GLfloat default_specular[] = {0.0f, 0.0f, 0.0f, 1.0f};
                 GLfloat default_emission[] = {0.0f, 0.0f, 0.0f, 1.0f};
-                glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT,  default_ambient);
-                glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE,  default_diffuse);
                 glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, default_specular);
                 glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, default_emission);
                 glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, 0.0f);
@@ -656,15 +723,13 @@ void lmbind(int target, int index) {
                 glDisable(GL_COLOR_MATERIAL);
                 MaterialDef *mat = &materials[index];
                 current_material = index;
-                if (index == 50) {
-                    int debug_break = 1;
-                }
+
                 glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, mat->ambient);
                 glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, mat->diffuse);
                 glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, mat->specular);
                 glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, mat->emission);
                 glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, mat->shininess);
-                // Si alpha < 1.0, activer le blending
+
                 if (mat->alpha < 1.0f) {
                     glEnable(GL_BLEND);
                     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -914,7 +979,7 @@ void winopen(const char *title) {
     glutInitWindowPosition(window_x, window_y);
     main_window = glutCreateWindow(title);
     
-    // Register GLUT callbacks
+    //   GLUT callbacks
     glutDisplayFunc(iris_display_func);
     glutIdleFunc(iris_idle_func);  // Keep processing events
     glutKeyboardFunc(iris_keyboard_func);
@@ -928,6 +993,9 @@ void winopen(const char *title) {
     // Initialize OpenGL state
     glEnable(GL_DEPTH_TEST);
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    if (queued_devices[REDRAW]) {
+        queue_event(REDRAW, 1);
+    }
 }
 
 void winclose(int win) {
@@ -1071,16 +1139,23 @@ void qenter(Device dev, int16_t val) {
     // mais on respecte la même file pour cohérence.
     queue_event(dev, val);
 }
+static unsigned long last_redraw_time = 0;
 
+#ifdef _WIN32
+static unsigned long get_time_ms(void) {
+    return GetTickCount();
+}
+#else
+#include <sys/time.h>
+static unsigned long get_time_ms(void) {
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    return (tv.tv_sec * 1000) + (tv.tv_usec / 1000);
+}
+#endif
 void qdevice(Device dev) {
     if (dev >= 0 && dev < 256) {
         queued_devices[dev] = 1;
-        
-        // Generate an initial event for REDRAW to trigger display
-        if (dev == REDRAW) {
-            queue_event(REDRAW, 1);
-            glutPostRedisplay();  // Force GLUT to call display callback
-        }
     }
 }
 
@@ -1096,10 +1171,10 @@ Boolean qtest(void) {
         return TRUE;
     }
 
-    /* 2) Sinon, on laisse GLUT traiter au plus une vague d'événements */
+    /* 3) Sinon, on laisse GLUT traiter au plus une vague d'événements */
     glutMainLoopEvent();
 
-    /* 3) Re-tester la file IRIS */
+    /* 4) Re-tester la file IRIS */
     if (event_queue_head != event_queue_tail) {
         return TRUE;
     } else {
@@ -1109,7 +1184,7 @@ Boolean qtest(void) {
 
 
 int32_t qread(int16_t *val) {
-    // qread doit BLOQUER jusqu'à ce qu'il y ait un event
+
     for (;;) {
         // Si on a quelque chose dans la file, on le renvoie tout de suite
         if (event_queue_head != event_queue_tail) {
@@ -1128,8 +1203,12 @@ int32_t qread(int16_t *val) {
             return 0;
         }
 
-        // Et on reboucle. On pourrait ajouter un petit Sleep(1) ici si jamais
-        // glutMainLoopEvent ne bloque pas suffisamment.
+        // Petit délai pour éviter 100% CPU si pas d'événements
+        #ifdef _WIN32
+        Sleep(1);
+        #else
+        usleep(1000);
+        #endif
     }
 }
 
@@ -1335,14 +1414,11 @@ static void iris_display_func(void) {
 static void iris_idle_func(void) {
     // Idle callback - keeps GLUT processing events
     // This allows qread() to receive events even when blocked
-    
-    // Small sleep to avoid consuming 100% CPU
     #ifdef _WIN32
     Sleep(1);
     #else
     usleep(1000);
     #endif
-    //queue_event(REDRAW, 1);
 }
 
 void iris_reshape_func(int width, int height) {
@@ -1426,11 +1502,16 @@ void zfunction(int func)
 
 void czclear(unsigned long cval, unsigned long zval)
 {
-    // Couleur : dans ton code tu passes toujours 0, donc on met noir.
-    // Si tu veux décoder un cpack 0xRRGGBB00 plus tard, tu pourras étendre.
-    (void)cval; // éviter un warning, si non utilisé
 
-    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+    uint32_t color = (uint32_t)cval;
+    float b = ((color >> 16) & 0xFF) / 255.0f;
+    float g = ((color >> 8) & 0xFF) / 255.0f;
+    float r = (color & 0xFF) / 255.0f;
+    
+    iris_clear_color[0] = r;
+    iris_clear_color[1] = g;
+    iris_clear_color[2] = b;
+    iris_clear_color[3] = 1.0f;
 
     // Profondeur : en IRIS GL zval est une valeur entière entre GD_ZMIN et GD_ZMAX.
     // Dans ton port, tu as fixé la plage logique à [0.0, 1.0], on mappe donc :
@@ -1447,8 +1528,8 @@ void czclear(unsigned long cval, unsigned long zval)
         if (norm > 1.0) norm = 1.0;
         glClearDepth(norm);
     }
-
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glClear(GL_DEPTH_BUFFER_BIT);
+    clear();
 }
 
 void smoothline(Boolean on)
@@ -1766,4 +1847,448 @@ void gexit(void)
     // une terminaison du programme.
     // On laisse un exit explicite côté portage.
     exit(0);
+}
+
+// === Additional IRIS GL implementations ===
+
+// Internal state variables
+
+
+// 2D drawing functions - 3D versions
+void move(Coord x, Coord y, Coord z) {
+    glBegin(GL_LINES);
+    glVertex3f(x, y, z);
+}
+
+void draw(Coord x, Coord y, Coord z) {
+    glVertex3f(x, y, z);
+    glEnd();
+}
+
+// 2D drawing functions - float versions
+void move2(Coord x, Coord y) {
+    glBegin(GL_LINES);
+    glVertex2f(x, y);
+}
+
+void draw2(Coord x, Coord y) {
+    glVertex2f(x, y);
+    glEnd();
+}
+
+// 2D drawing functions - integer versions
+void move2i(Icoord x, Icoord y) {
+    glBegin(GL_LINES);
+    glVertex2i(x, y);
+}
+
+void draw2i(Icoord x, Icoord y) {
+    glVertex2i(x, y);
+    glEnd();
+}
+
+// 2D drawing functions - short versions
+void move2s(Scoord x, Scoord y) {
+    glBegin(GL_LINES);
+    glVertex2s(x, y);
+}
+
+void draw2s(Scoord x, Scoord y) {
+    glVertex2s(x, y);
+    glEnd();
+}
+
+// Character move (raster position) - short version
+void cmov2s(Scoord x, Scoord y) {
+    glRasterPos2s(x, y);
+    current_raster_x = (float)x;
+    current_raster_y = (float)y;
+}
+
+// Point drawing
+void pnt2(Coord x, Coord y) {
+    glBegin(GL_POINTS);
+    glVertex2f(x, y);
+    glEnd();
+}
+
+void pnt2s(Scoord x, Scoord y) {
+    glBegin(GL_POINTS);
+    glVertex2s(x, y);
+    glEnd();
+}
+
+// 2D polygon
+void poly2(int32_t n, Coord parray[][2]) {
+    glBegin(GL_POLYGON);
+    for (int32_t i = 0; i < n; i++) {
+        glVertex2f(parray[i][0], parray[i][1]);
+    }
+    glEnd();
+}
+
+// Rectangle functions
+void recti(Icoord x1, Icoord y1, Icoord x2, Icoord y2) {
+    glBegin(GL_LINE_LOOP);
+    glVertex2i(x1, y1);
+    glVertex2i(x2, y1);
+    glVertex2i(x2, y2);
+    glVertex2i(x1, y2);
+    glEnd();
+}
+
+void rectfi(Icoord x1, Icoord y1, Icoord x2, Icoord y2) {
+    glRecti(x1, y1, x2, y2);
+}
+
+void rects(Scoord x1, Scoord y1, Scoord x2, Scoord y2) {
+    glBegin(GL_LINE_LOOP);
+    glVertex2s(x1, y1);
+    glVertex2s(x2, y1);
+    glVertex2s(x2, y2);
+    glVertex2s(x1, y2);
+    glEnd();
+}
+
+// Filled circle - short coordinates
+void circfs(Scoord x, Scoord y, Scoord radius) {
+    int segments = 32;
+    glBegin(GL_TRIANGLE_FAN);
+    glVertex2s(x, y);
+    for (int i = 0; i <= segments; i++) {
+        float angle = 2.0f * M_PI * i / segments;
+        glVertex2f(x + radius * cos(angle), y + radius * sin(angle));
+    }
+    glEnd();
+}
+
+// Text functions
+int strwidth(const char* str) {
+    if (!str) return 0;
+    int width = 0;
+    void* font = GLUT_BITMAP_9_BY_15;
+    for (const char* p = str; *p; p++) {
+        width += glutBitmapWidth(font, *p);
+    }
+    return width;
+}
+
+int getheight(void) {
+    return 15; // Height of GLUT_BITMAP_9_BY_15
+}
+
+int getdescender(void) {
+    return 3; // Approximate descender height
+}
+
+void getcpos(Scoord* x, Scoord* y) {
+    if (x) *x = (Scoord)current_raster_x;
+    if (y) *y = (Scoord)current_raster_y;
+}
+
+// Viewport stack
+#define MAX_VIEWPORT_STACK 32
+static Screencoord viewport_stack[MAX_VIEWPORT_STACK][4];
+static int viewport_stack_depth = 0;
+
+void pushviewport(void) {
+    if (viewport_stack_depth < MAX_VIEWPORT_STACK) {
+        for (int i = 0; i < 4; i++) {
+            viewport_stack[viewport_stack_depth][i] = current_viewport[i];
+        }
+        viewport_stack_depth++;
+    }
+}
+
+void popviewport(void) {
+    if (viewport_stack_depth > 0) {
+        viewport_stack_depth--;
+        for (int i = 0; i < 4; i++) {
+            current_viewport[i] = viewport_stack[viewport_stack_depth][i];
+        }
+        glViewport(current_viewport[0], current_viewport[2], 
+                   current_viewport[1] - current_viewport[0], 
+                   current_viewport[3] - current_viewport[2]);
+    }
+}
+
+void getviewport(Screencoord* left, Screencoord* right, Screencoord* bottom, Screencoord* top) {
+    if (left) *left = current_viewport[0];
+    if (right) *right = current_viewport[1];
+    if (bottom) *bottom = current_viewport[2];
+    if (top) *top = current_viewport[3];
+}
+
+void scrmask(Screencoord left, Screencoord right, Screencoord bottom, Screencoord top) {
+    current_viewport[0] = left;
+    current_viewport[1] = right;
+    current_viewport[2] = bottom;
+    current_viewport[3] = top;
+    glViewport(left, bottom, right - left, top - bottom);
+}
+
+
+// Drawing mode function
+void drawmode(int mode) {
+    current_drawmode = mode;
+
+    switch (mode) {
+    case NORMALDRAW:
+    case UNDERDRAW:
+        // Rendu "normal" : Z actif
+        glEnable(GL_DEPTH_TEST);
+        glDepthMask(GL_TRUE);
+        glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+        break;
+
+    case OVERDRAW:
+    case PUPDRAW:
+        // Overlays / PUP : par-dessus, sans interaction Z
+        glDisable(GL_DEPTH_TEST);
+        glDepthMask(GL_FALSE);
+        glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+        break;
+
+    default:
+        glEnable(GL_DEPTH_TEST);
+        glDepthMask(GL_TRUE);
+        glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+        break;
+    }
+}
+// Viewport function
+void viewport(Screencoord left, Screencoord right, Screencoord bottom, Screencoord top) {
+    current_viewport[0] = left;
+    current_viewport[1] = right;
+    current_viewport[2] = bottom;
+    current_viewport[3] = top;
+    glViewport(left, bottom, right - left, top - bottom);
+}
+
+// Line style functions
+#define MAX_LINE_STYLES 16
+static unsigned short line_styles[MAX_LINE_STYLES];
+static int line_styles_defined[MAX_LINE_STYLES] = {0};
+
+void setlinestyle(int style) {
+    if (style == 0) {
+        glDisable(GL_LINE_STIPPLE);
+    } else if (style > 0 && style < MAX_LINE_STYLES && line_styles_defined[style]) {
+        glEnable(GL_LINE_STIPPLE);
+        glLineStipple(1, line_styles[style]);
+    }
+}
+
+void deflinestyle(int style, unsigned short pattern) {
+    if (style > 0 && style < MAX_LINE_STYLES) {
+        line_styles[style] = pattern;
+        line_styles_defined[style] = 1;
+    }
+}
+
+void linesmooth(unsigned long mode) {
+    if (mode) {
+        glEnable(GL_LINE_SMOOTH);
+        glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
+    } else {
+        glDisable(GL_LINE_SMOOTH);
+    }
+}
+
+// Cursor functions (stubs - GLUT doesn't support custom cursors easily)
+void cursoff(void) {
+    glutSetCursor(GLUT_CURSOR_NONE);
+}
+
+void curson(void) {
+    glutSetCursor(GLUT_CURSOR_INHERIT);
+}
+
+void defcursor(int index, unsigned short cursor[16]) {
+    // Stub - GLUT doesn't support defining custom cursors
+    (void)index;
+    (void)cursor;
+}
+
+void curorigin(int index, Scoord x, Scoord y) {
+    // Stub - cursor origin not supported in GLUT
+    (void)index;
+    (void)x;
+    (void)y;
+}
+
+void setcursor(int index, Colorindex color, Colorindex writemask) {
+    // Stub - limited cursor support in GLUT
+    (void)index;
+    (void)color;
+    (void)writemask;
+}
+
+// Window management functions (most are stubs)
+void noborder(void) {
+    // Stub - GLUT doesn't support borderless windows easily
+}
+
+void icontitle(const char* title) {
+    glutSetIconTitle(title);
+}
+
+void mssize(int samples, int coverage, int z) {
+    // Stub - multisampling configuration, not directly supported
+    (void)samples;
+    (void)coverage;
+    (void)z;
+}
+
+void underlay(int planes) {
+    // IRIS GL : demande des plans underlay.
+    // Ici on mémorise juste l'intention : >0 => on considère
+    // qu'on veut un plan "sous" la 3D/HUD.
+    underlay_planes = planes;
+}
+
+void overlay(int planes) {
+    // IRIS GL : demande des plans overlay.
+    // On mémorise : >0 => on utilisera un mode "par-dessus tout".
+    overlay_planes = planes;
+}
+
+void swapinterval(int interval) {
+    // Stub - VSync control not in GLUT API
+    (void)interval;
+}
+
+long getgconfig(int what) {
+    // Return graphics configuration
+    switch (what) {
+        case GD_XPMAX: return 1024;
+        case GD_YPMAX: return 768;
+        case GD_BITS_NORM_DBL_CMODE: return 8;
+        case GD_MULTISAMPLE: return 0;
+        default: return 0;
+    }
+}
+
+void greset(void) {
+    // Reset graphics state - reinitialize
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+}
+
+// Event queue functions
+void qreset(void) {
+    event_queue_head = 0;
+    event_queue_tail = 0;
+}
+
+void setvaluator(Device dev, int16_t init, int16_t vmin, int16_t vmax) {
+    // Stub - valuator initialization
+    (void)dev;
+    (void)init;
+    (void)vmin;
+    (void)vmax;
+}
+
+void setbell(int volume) {
+    // Stub - bell volume control
+    (void)volume;
+}
+
+void ringbell(void) {
+    // Ring the terminal bell
+#ifdef _WIN32
+    Beep(750, 300);
+#else
+    printf("\a");
+    fflush(stdout);
+#endif
+}
+
+// Math functions
+void gl_sincos(int angle_decidegrees, float* sinval, float* cosval) {
+    // IRIS GL uses decidegrees (tenths of degrees)
+    float radians = (angle_decidegrees / 10.0f) * (M_PI / 180.0f);
+    if (sinval) *sinval = sinf(radians);
+    if (cosval) *cosval = cosf(radians);
+}
+
+float fasin(float x) {
+    return asinf(x);
+}
+
+float fcos(float x) {
+    return cosf(x);
+}
+
+float fsqrt(float x) {
+    return sqrtf(x);
+}
+
+float fexp(float x) {
+    return expf(x);
+}
+
+// Fog functions
+void fogvertex(int mode, float density[]) {
+    // IRIS GL fog vertex mode
+    glFogi(GL_FOG_MODE, mode == 0 ? GL_LINEAR : GL_EXP);
+    if (density && mode != 0) {
+        glFogf(GL_FOG_DENSITY, density[0]);
+    }
+}
+
+// Texture functions (stubs - texturing needs more complete implementation)
+void texdef2d(int texid, int nc, int width, int height, void* image, int np, float props[]) {
+    // Stub - texture definition
+    (void)texid;
+    (void)nc;
+    (void)width;
+    (void)height;
+    (void)image;
+    (void)np;
+    (void)props;
+}
+
+void tevdef(int texid, int nc, float props[]) {
+    // Stub - texture environment definition
+    (void)texid;
+    (void)nc;
+    (void)props;
+}
+
+void texbind(int target, int texid) {
+    // Stub - texture binding
+    if (texid > 0) {
+        glEnable(GL_TEXTURE_2D);
+        glBindTexture(GL_TEXTURE_2D, texid);
+    } else {
+        glDisable(GL_TEXTURE_2D);
+    }
+}
+
+void tevbind(int target, int texid) {
+    // Stub - texture environment binding
+    (void)target;
+    (void)texid;
+}
+
+// Color map functions
+void gflush(void) {
+    glFlush();
+}
+
+void getmcolor(Colorindex index, RGBvalue* r, RGBvalue* g, RGBvalue* b) {
+    if (index < 256) {
+        if (r) *r = (RGBvalue)(iris_colormap[index][0] * 255);
+        if (g) *g = (RGBvalue)(iris_colormap[index][1] * 255);
+        if (b) *b = (RGBvalue)(iris_colormap[index][2] * 255);
+    }
+}
+
+void glcompat(int mode, int value) {
+    // Stub - GL compatibility mode setting
+    (void)mode;
+    (void)value;
 }

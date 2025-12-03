@@ -161,7 +161,7 @@ glIndexf_compat(float index) {
 
 void
 polf2i (long n, Icoord parray[][2]) {
-    register long i;
+      long i;
 
     glBegin (GL_POLYGON);
     for (i = 0; i < n; i++)
@@ -172,7 +172,7 @@ polf2i (long n, Icoord parray[][2]) {
 
 void
 polf2 (long n, Coord parray[][2]) {
-    register long i;
+      long i;
 
     glBegin (GL_POLYGON);
     for (i = 0; i < n; i++)
@@ -183,7 +183,7 @@ polf2 (long n, Coord parray[][2]) {
 
 void
 polfi (long n, Icoord parray[][3]) {
-    register long i;
+      long i;
 
     glBegin (GL_POLYGON);
     for (i = 0; i < n; i++)
@@ -194,7 +194,7 @@ polfi (long n, Icoord parray[][3]) {
 
 void
 polf (long n, Coord parray[][3]) {
-    register long i;
+      long i;
 
     glBegin (GL_POLYGON);
     for (i = 0; i < n; i++)
@@ -205,7 +205,7 @@ polf (long n, Coord parray[][3]) {
 
 void
 poly2i (long n, Icoord parray[][2]) {
-    register long i;
+      long i;
 
     glBegin (GL_LINE_LOOP);
     for (i = 0; i < n; i++)
@@ -216,7 +216,7 @@ poly2i (long n, Icoord parray[][2]) {
 
 void
 poly2 (long n, Coord parray[][2]) {
-    register long i;
+      long i;
 
     glBegin (GL_LINE_LOOP);
     for (i = 0; i < n; i++)
@@ -227,7 +227,7 @@ poly2 (long n, Coord parray[][2]) {
 
 void
 polyi (long n, Icoord parray[][3]) {
-    register long i;
+      long i;
 
     glBegin (GL_LINE_LOOP);
     for (i = 0; i < n; i++)
@@ -238,7 +238,7 @@ polyi (long n, Icoord parray[][3]) {
 
 void
 poly (long n, Coord parray[][3]) {
-    register long i;
+      long i;
 
     glBegin (GL_LINE_LOOP);
     for (i = 0; i < n; i++)

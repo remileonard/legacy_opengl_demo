@@ -6,7 +6,7 @@ file (GLOB SC_HEADER "*.h")
 add_library(porting ${SC_SOURCE} ${SC_HEADER})
 
 if (WIN32)
-    target_link_libraries(porting OpenGL::GL OpenGL::GLU GLUT::GLUT)
+    target_link_libraries(porting OpenGL::GL OpenGL::GLU GLUT::GLUT ws2_32)
 else()
     target_link_libraries(porting OpenGL::GL OpenGL::GLU GLUT::GLUT m)
 endif()

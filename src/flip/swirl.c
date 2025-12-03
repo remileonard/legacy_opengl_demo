@@ -42,8 +42,8 @@
 draw_swirl(obj)
 flipobj *obj;
 {
-	register int i;
-	register float *p, *end;
+	  int i;
+	  float *p, *end;
 	int ixr, iyr;
 
 	if (obj->swirl > 0)

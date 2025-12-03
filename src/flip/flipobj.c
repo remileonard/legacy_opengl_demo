@@ -126,7 +126,7 @@ flipobj *readflipobj(char *name) {
 }
 
 void drawflipobj(flipobj *obj) {
-    register float *p, *end;
+      float *p, *end;
     enum DrawType lflag;
 
     p = obj->data;
@@ -172,10 +172,10 @@ void drawflipobj(flipobj *obj) {
         max = len;
 
 float objmaxpoint(flipobj *obj) {
-    register float *p, *end;
-    register int npolys;
-    register float len;
-    register float max = 0.0;
+      float *p, *end;
+      int npolys;
+      float len;
+      float max = 0.0;
 
     p = obj->data;
 
