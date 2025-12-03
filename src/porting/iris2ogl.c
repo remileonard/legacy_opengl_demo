@@ -741,10 +741,28 @@ void lmbind(int target, int index) {
         }
         
         case LMODEL: {
-            if (index >= 0 && index < MAX_MATERIALS && light_models[index].defined) {
+            if (index == 0) {
+                // Reset to default light model
+                GLfloat default_ambient[] = {0.2f, 0.2f, 0.2f, 1.0f};
+                glLightModelfv(GL_LIGHT_MODEL_AMBIENT, default_ambient);
+                glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER, GL_FALSE);
+
+                // Reset light attenuation to defaults
+                for (int li = 0; li < MAX_LIGHTS; ++li) {
+                    GLenum lid = GL_LIGHT0 + li;
+                    if (glIsEnabled(lid)) {
+                        glLightf(lid, GL_CONSTANT_ATTENUATION, 1.0f);
+                        glLightf(lid, GL_LINEAR_ATTENUATION,   0.0f);
+                        glLightf(lid, GL_QUADRATIC_ATTENUATION, 0.0f);
+                    }
+                }
+                current_light_model = 0;
+                glDisable(GL_LIGHTING);
+            } 
+            if (index > 0 && index < MAX_MATERIALS && light_models[index].defined) {
                 LightModelDef *lm = &light_models[index];
                 current_light_model = index;
-
+                glEnable(GL_LIGHTING);
                 glLightModelfv(GL_LIGHT_MODEL_AMBIENT, lm->ambient);
                 glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER, lm->local_viewer ? GL_TRUE : GL_FALSE);
 

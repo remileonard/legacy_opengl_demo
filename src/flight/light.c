@@ -161,7 +161,7 @@ init_lighting() {
     lmdef(DEFLMODEL, LIGHT_INFINITE, 0, light_infinite);
 }
 
-lighting(b) int b;
+void lighting(int b)
 {
     if (in_cmode)
         return;
@@ -216,16 +216,3 @@ float r, g, b;
     me[3] = b;
     lmdef(DEFMATERIAL, name, 0, me);
 }
-
-/*
-setmaterial(name)
-{
-    static curmaterial = 0;
-
-    if (name != curmaterial)
-    {
-    curmaterial = name;
-    lmbind(MATERIAL, name);
-    }
-}
-*/
