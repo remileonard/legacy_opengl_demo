@@ -114,7 +114,7 @@ set_skycolor() {
         float delta;
         float l = ((SUNRISE - abs(ftime - NOON)) / (float)SUNRISE);
         float al = l + 0.1;
-
+        init_normal_colormap(1);
         l = (l > 0.7) ? 0.7 : l;
 
         if (l > 0.1)

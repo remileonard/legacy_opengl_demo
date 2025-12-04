@@ -284,6 +284,14 @@ int getgdesc(int descriptor) {
         case GD_LINESMOOTH_RGB:
             // On considère que le lissage de lignes RGB est disponible
             return 1;
+        case GD_XPMAX:
+            return 1024;  // Valeur arbitraire pour max X
+        case GD_YPMAX:
+            return 768;   // Valeur arbitraire pour max Y
+        case GD_ZMIN:
+            return 0.0f;  // Valeur minimale de profondeur
+        case GD_ZMAX:
+            return 1.0f;  // Valeur maximale de profondeur
         default:
             return 0;
     }

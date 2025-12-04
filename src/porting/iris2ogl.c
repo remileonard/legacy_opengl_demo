@@ -129,56 +129,54 @@ void mapcolor(Colorindex index, RGBvalue r, RGBvalue g, RGBvalue b) {
     }
 }
 void clear() {
-    // En NORMALDRAW / UNDERDRAW : clear classique du backbuffer
-    /*if (current_drawmode == NORMALDRAW || current_drawmode == UNDERDRAW) {
-        glClearColor(iris_clear_color[0],
-                     iris_clear_color[1],
-                     iris_clear_color[2],
-                     iris_clear_color[3]);
-        glClear(GL_COLOR_BUFFER_BIT);
-        return;
-    }*/
-    // En OVERDRAW / PUPDRAW : on simule le "clear des pup planes"
-    // en dessinant un rectangle plein écran dans le viewport courant,
-    // sans toucher au contenu déjà rendu dans le backbuffer.
-
-    // Sauvegarder un peu d'état
+    // Sauvegarde d'un minimum d'état
     GLboolean depthTest = glIsEnabled(GL_DEPTH_TEST);
     GLboolean lighting  = glIsEnabled(GL_LIGHTING);
-    GLint    matrixMode;
+    GLint matrixMode;
     glGetIntegerv(GL_MATRIX_MODE, &matrixMode);
 
+    // Récupérer le viewport courant
+    GLint vp[4];
+    glGetIntegerv(GL_VIEWPORT, vp);
+    GLint x = vp[0];
+    GLint y = vp[1];
+    GLint w = vp[2];
+    GLint h = vp[3];
+
+    // Désactiver ce qui pourrait gêner
     glDisable(GL_DEPTH_TEST);
     glDisable(GL_LIGHTING);
 
-    // Matrice 2D identitaire sur NDC
+    // Passer en projection 2D avec les coordonnées du viewport
     glMatrixMode(GL_PROJECTION);
     glPushMatrix();
     glLoadIdentity();
+    gluOrtho2D(0.0, (GLdouble)w, 0.0, (GLdouble)h);
+
     glMatrixMode(GL_MODELVIEW);
     glPushMatrix();
     glLoadIdentity();
 
-    // Utiliser la couleur de fond courante (iris_clear_color)
+    // Définir la couleur de fond
     glColor3f(iris_clear_color[0],
               iris_clear_color[1],
               iris_clear_color[2]);
 
-    // Quad couvrant tout le viewport courant
+    // Dessiner un quad couvrant tout le viewport courant
     glBegin(GL_TRIANGLE_FAN);
-        glVertex2f(-1.0f, -1.0f);
-        glVertex2f( 1.0f, -1.0f);
-        glVertex2f( 1.0f,  1.0f);
-        glVertex2f(-1.0f,  1.0f);
+        glVertex2f(0.0f,      0.0f     );
+        glVertex2f((float)w,  0.0f     );
+        glVertex2f((float)w,  (float)h );
+        glVertex2f(0.0f,      (float)h );
     glEnd();
 
-    // Restaure matrices
+    // Restauration des matrices
     glPopMatrix(); // MODELVIEW
     glMatrixMode(GL_PROJECTION);
     glPopMatrix();
     glMatrixMode(matrixMode);
 
-    // Restaure états
+    // Restauration des états
     if (depthTest) glEnable(GL_DEPTH_TEST); else glDisable(GL_DEPTH_TEST);
     if (lighting)  glEnable(GL_LIGHTING);   else glDisable(GL_LIGHTING);
 }
@@ -807,7 +805,7 @@ static void* glut_fonts[] = {
 };
 
 #define NUM_GLUT_FONTS 7
-#define DEFAULT_FONT 3  // TIMES_ROMAN_24
+#define DEFAULT_FONT 1
 
 void fminit(void) {
     // Initialize font system - nothing needed for GLUT fonts
@@ -1080,7 +1078,7 @@ void keepaspect(int x, int y) {
     // This is a no-op in this implementation
 }
 
-void prefposition(int x1, int y1, int x2, int y2) {
+void prefposition(int x1, int x2, int y1, int y2) {
     window_x = x1;
     window_y = y1;
     window_width = x2 - x1;
@@ -1131,15 +1129,17 @@ void doublebuffer(void) {
 // Note: set_win_coords() is defined in draw.c (game-specific implementation)
 
 void frontbuffer(Boolean enable) {
-    if (enable) {
+    /*if (enable) {
         glDrawBuffer(GL_FRONT);
-    }
+    }*/
+    glDrawBuffer(GL_BACK);
 }
 
 void backbuffer(Boolean enable) {
-    if (enable) {
+    /*if (enable) {
         glDrawBuffer(GL_BACK);
-    }
+    }*/
+    glDrawBuffer(GL_BACK);
 }
 
 // === Device/Event Management ===

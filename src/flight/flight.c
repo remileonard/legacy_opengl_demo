@@ -2538,7 +2538,7 @@ draw_scene() {
     Plane pp = planes[0];
     float mk_x, mk_y, mk_z, mk_len; /* mk = missile kludge */
     Matrix tmpmat;
-
+    redraw_screen();
     /*
      *  set up windshield, and load perspective
      */
@@ -2824,8 +2824,10 @@ draw_meters() {
     if (hud)
         draw_hud(planes[0], tick_counter, vx, vy, vz, climbspeed, mach, lift / GRAVITY, wheels, flaps, spoilers,
                  autopilot_on, fuel >> 7, thrust, throttle);
-    else if (new_inst)
+    else if (new_inst) {
+        draw_instruments();
         update_instruments(0);
+    }
     else
         old_meters();
 }

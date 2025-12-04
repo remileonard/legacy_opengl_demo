@@ -115,6 +115,7 @@ void kill_inst_list() {
  *  Draw a four-sided polygon
  */
 void drawneedlebox(float (*verts)[3]) {
+    glColor3f(1.0f, 0.0f, 1.0f);
     bgnpolygon();
     v3f(verts[0]);
     v3f(verts[1]);
@@ -374,46 +375,50 @@ void update_instruments(int forceupdate) {
 
 clear_inst1() {
     static float verts[4][3] = {{-9.0, -9.0}, {-9.0, 9.0}, {9.0, 9.0}, {9.0, -9.0}};
-
+    zbuffer(FALSE);
     bgnpolygon();
     v2f(verts[0]);
     v2f(verts[1]);
     v2f(verts[2]);
     v2f(verts[3]);
     endpolygon();
+    zbuffer(TRUE);
 }
 
 clear_inst2() {
     static float verts[4][3] = {{-2.1, -15.1}, {2.1, -15.1}, {2.1, 15.1}, {-2.1, 15.1}};
-
+    zbuffer(FALSE);
     bgnpolygon();
     v2f(verts[0]);
     v2f(verts[1]);
     v2f(verts[2]);
     v2f(verts[3]);
     endpolygon();
+    zbuffer(TRUE);
 }
 
 clear_inst4() {
     static float verts[4][3] = {{-13.1, -3.1}, {-13.1, 3.1}, {13.1, 3.1}, {13.1, -3.1}};
-
+    zbuffer(FALSE);
     bgnpolygon();
     v2f(verts[0]);
     v2f(verts[1]);
     v2f(verts[2]);
     v2f(verts[3]);
     endpolygon();
+    zbuffer(TRUE);
 }
 
 clear_inst5() {
     static float verts[4][3] = {{-13.1, -2.6}, {-13.1, 2.6}, {13.1, 2.6}, {13.1, -2.6}};
-
+    zbuffer(FALSE);
     bgnpolygon();
     v2f(verts[0]);
     v2f(verts[1]);
     v2f(verts[2]);
     v2f(verts[3]);
     endpolygon();
+    zbuffer(TRUE);
 }
 
 /************************************************************************
@@ -1107,10 +1112,10 @@ draw_altimeter(altimeter_t *inst) {
     pushmatrix();
     translate(inst->px, inst->py, inst->pz);
     scale(inst->size, inst->size, inst->size);
-    drawmode(UNDERDRAW);
-
+    drawmode(NORMALDRAW);
     color(U_INST);
     clear_inst1();
+
 
     color(MARKINGS);
     for (x = 0; x < 3600; x += 360) {
@@ -1149,9 +1154,8 @@ draw_altimeter(altimeter_t *inst) {
     popviewport();
     drawmode(NORMALDRAW);
     frontbuffer(TRUE);
-
     COLOR(C_BLACK);
-    clear_inst1();
+    //clear_inst1();
 
     draw_plate(inst->plateobject, 0x3);
 
@@ -1259,7 +1263,7 @@ update_altimeter(altimeter_t *inst, int forceupdate) {
     current = instrument_data.current;
 
     pushmatrix();
-    translate(inst->px, inst->py, inst->pz);
+    translate(inst->px, inst->py-10, inst->pz);
     scale(inst->size, inst->size, inst->size);
     if ((altitude != inst->last_alt[current]) || forceupdate || (inst->framec + inst->displayagain)) {
         if (inst->displayagain)
@@ -1739,7 +1743,7 @@ draw_airspeedmach(airspeedmach_t *inst) {
     frontbuffer(TRUE);
 
     COLOR(C_BLACK);
-    clear_inst1();
+    //clear_inst1();
 
     draw_plate(inst->plateobject, 0x3);
 
@@ -1930,7 +1934,7 @@ draw_airspeed_meter(airspeed_meter_t *inst) {
     frontbuffer(TRUE);
 
     COLOR(C_BLACK);
-    clear_inst1();
+    //clear_inst1();
 
     draw_plate(inst->plateobject, 0x3);
 
@@ -2085,7 +2089,7 @@ draw_mach_meter(mach_meter_t *inst) {
     frontbuffer(TRUE);
 
     COLOR(C_BLACK);
-    clear_inst1();
+    //clear_inst1();
 
     draw_plate(inst->plateobject, 0x3);
 
@@ -2271,7 +2275,7 @@ draw_vertvel_meter(vertvel_meter_t *inst) {
     frontbuffer(TRUE);
 
     COLOR(C_BLACK);
-    clear_inst1();
+    //clear_inst1();
 
     draw_plate(inst->plateobject, 0x3);
 
@@ -2288,7 +2292,7 @@ update_vertvel_meter(vertvel_meter_t *inst, int forceupdate) {
     current = instrument_data.current;
 
     pushmatrix();
-    translate(inst->px, inst->py, inst->pz);
+    translate(inst->px, inst->py-2, inst->pz);
     scale(inst->size, inst->size, inst->size);
 
     vertvelocity = climbspeed * 60;
@@ -2407,7 +2411,7 @@ draw_radar(radar_t *inst) {
     frontbuffer(TRUE);
 
     COLOR(C_BLACK);
-    clear_inst1();
+    //clear_inst1();
 
     draw_plate(inst->plateobject, 0x3);
 
@@ -2601,7 +2605,7 @@ draw_compass(compass_t *inst) {
     frontbuffer(TRUE);
 
     COLOR(C_BLACK);
-    clear_inst1();
+    //clear_inst1();
 
     draw_plate(inst->plateobject, 0x3);
 
@@ -2888,7 +2892,7 @@ draw_thrustthrottle(thrustthrottle_t *inst) {
     frontbuffer(TRUE);
 
     COLOR(C_BLACK);
-    clear_inst1();
+    //clear_inst1();
 
     draw_plate(inst->plateobject, 0x3);
 
@@ -3124,7 +3128,7 @@ draw_fuelgauge(fuelgauge_t *inst) {
     frontbuffer(TRUE);
 
     COLOR(C_BLACK);
-    clear_inst1();
+    //clear_inst1();
 
     draw_plate(inst->plateobject, 0x3);
 
@@ -3382,7 +3386,7 @@ draw_flapspoiler(flapspoiler_t *inst) {
     frontbuffer(TRUE);
 
     COLOR(C_BLACK);
-    clear_inst1();
+    //clear_inst1();
 
     draw_plate(inst->plateobject, 0x3);
 
@@ -3556,7 +3560,7 @@ draw_gear(gear_t *inst) {
     frontbuffer(TRUE);
 
     COLOR(C_BLACK);
-    clear_inst1();
+    //clear_inst1();
 
     draw_plate(inst->plateobject, 0x3);
 
@@ -3934,7 +3938,7 @@ draw_gmeter(gmeter_t *inst) {
     frontbuffer(TRUE);
 
     COLOR(C_BLACK);
-    clear_inst2();
+    //clear_inst2();
 
     draw_plate(inst->plateobject, 0x3);
 

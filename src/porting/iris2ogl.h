@@ -78,8 +78,6 @@ typedef int16_t Device;
 #define GD_TEXTURE      1
 #define GD_ZBUFFER      2
 #define GD_STEREO       3
-#define GD_ZMIN         0.0f
-#define GD_ZMAX         1.0f
 #define GD_BLEND        4
 #define GD_BITS_NORM_SNG_RED 5
 #define GD_BITS_NORM_SNG_GREEN 6
@@ -95,6 +93,8 @@ typedef int16_t Device;
 #define GD_BITS_NORM_DBL_CMODE 13  // Color mode bits double buffer
 #define GD_MULTISAMPLE  14  // Multisampling support
 #define GD_BITS_UNDR_SNG_CMODE 15  // Underlay single buffer color mode bits
+#define GD_ZMAX         16
+#define GD_ZMIN         17
 
 #define MAX_LIGHTS 8
 #define MAX_MATERIALS 256
