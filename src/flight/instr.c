@@ -343,11 +343,8 @@ void draw_instruments() {
  */
 void update_instruments(int forceupdate) {
     inst_list_t *p;
-
     viewport(inst_x1, inst_x2, inst_y1, inst_y2);
-
     perspective(100, INST_AR, 2.0, 1000.0);
-
     pushmatrix();
     translate(0.0, 0.0, -155.0);
 
@@ -448,22 +445,22 @@ draw_horizon(horizon_t *inst) {
     /*
      *  get instrument screen mask
      */
-    cmov2i(-9.0, -9.0);
+    /*cmov2i(-9.0, -9.0);
     getcpos(&inst->sm_l, &inst->sm_b);
     cmov2i(9.0, 9.0);
-    getcpos(&inst->sm_r, &inst->sm_t);
-    getorigin(&ox, &oy);
-    inst->sm_l -= ox;
-    inst->sm_r -= ox;
-    inst->sm_b -= oy;
-    inst->sm_t -= oy;
+    getcpos(&inst->sm_r, &inst->sm_t);*/
+
+    inst->sm_l = inst_x1;
+    inst->sm_r = inst_x2;
+    inst->sm_b = inst_y1;
+    inst->sm_t = inst_y2;
 
     if (!in_cmode) {
         /*
          *  draw overlays
          */
-        drawmode(PUPDRAW);
-
+        //drawmode(PUPDRAW);
+        lighting(FALSE);
         color(P_ORANGE);
         linewidth(3);
         bgnline();
@@ -483,6 +480,7 @@ draw_horizon(horizon_t *inst) {
         v2f(w[4]);
         endline();
         linewidth(1);
+        lighting(TRUE);
     }
 
     /*
@@ -493,7 +491,7 @@ draw_horizon(horizon_t *inst) {
     frontbuffer(TRUE);
 
     COLOR(C_BLACK);
-    clear_inst1();
+    //clear_inst1();
 
     draw_plate(inst->plateobject, 0x3);
 
@@ -561,7 +559,7 @@ update_horizon(horizon_t *inst, int forceupdate) {
     translate(inst->px, inst->py, inst->pz);
     scale(inst->size, inst->size, inst->size);
     if (!in_cmode) {
-        zbuffer(TRUE);
+        zbuffer(FALSE);
         lsetdepth(zmaxscreen, zmaxscreen);
     }
     scrmask(inst->sm_l, inst->sm_r, inst->sm_b, inst->sm_t);
@@ -651,7 +649,6 @@ update_horizon(horizon_t *inst, int forceupdate) {
         endline();
         linewidth(1);
     }
-
     popmatrix();
 }
 
@@ -1259,11 +1256,10 @@ update_altimeter(altimeter_t *inst, int forceupdate) {
     Plane pp = planes[0];
 
     altitude = pp->y - plane_height;
-
+    
     current = instrument_data.current;
-
     pushmatrix();
-    translate(inst->px, inst->py-10, inst->pz);
+    translate(inst->px, inst->py, inst->pz);
     scale(inst->size, inst->size, inst->size);
     if ((altitude != inst->last_alt[current]) || forceupdate || (inst->framec + inst->displayagain)) {
         if (inst->displayagain)
@@ -2292,7 +2288,7 @@ update_vertvel_meter(vertvel_meter_t *inst, int forceupdate) {
     current = instrument_data.current;
 
     pushmatrix();
-    translate(inst->px, inst->py-2, inst->pz);
+    translate(inst->px, inst->py, inst->pz);
     scale(inst->size, inst->size, inst->size);
 
     vertvelocity = climbspeed * 60;

@@ -289,9 +289,9 @@ int getgdesc(int descriptor) {
         case GD_YPMAX:
             return 768;   // Valeur arbitraire pour max Y
         case GD_ZMIN:
-            return 0.0f;  // Valeur minimale de profondeur
+            return 0;  // Valeur minimale de profondeur
         case GD_ZMAX:
-            return 1.0f;  // Valeur maximale de profondeur
+            return 1;  // Valeur maximale de profondeur
         default:
             return 0;
     }

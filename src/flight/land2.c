@@ -285,9 +285,9 @@ draw_infinite_world(elv) float elv;
      *  sun
      */
 
-    /*
-    draw_cloud_layer();
-    */
+    
+    /*draw_cloud_layer();*/
+    
 }
 
 #define CLOUD_ELEV 4000.0
@@ -345,7 +345,7 @@ draw_cloud_layer() {
         cpack(0xffaaaaaa);
     else
         cpack(0xffeeeeee);
-
+    j=0;
     for (i = 0; i < CLOUD_S; i++) {
         bgnpolygon();
         t2f(ct[i][j]);

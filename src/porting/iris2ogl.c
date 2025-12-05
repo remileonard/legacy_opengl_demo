@@ -805,7 +805,7 @@ static void* glut_fonts[] = {
 };
 
 #define NUM_GLUT_FONTS 7
-#define DEFAULT_FONT 1
+#define DEFAULT_FONT 0
 
 void fminit(void) {
     // Initialize font system - nothing needed for GLUT fonts
@@ -2005,9 +2005,11 @@ void getcpos(Scoord* x, Scoord* y) {
 }
 
 // Viewport stack
-#define MAX_VIEWPORT_STACK 32
+#define MAX_VIEWPORT_STACK 256
 static Screencoord viewport_stack[MAX_VIEWPORT_STACK][4];
 static int viewport_stack_depth = 0;
+static Screencoord current_scrmask[4] = {0, 0, 0, 0};
+static int scrmask_enabled = 0;
 
 void pushviewport(void) {
     if (viewport_stack_depth < MAX_VIEWPORT_STACK) {
@@ -2037,12 +2039,82 @@ void getviewport(Screencoord* left, Screencoord* right, Screencoord* bottom, Scr
     if (top) *top = current_viewport[3];
 }
 
-void scrmask(Screencoord left, Screencoord right, Screencoord bottom, Screencoord top) {
-    current_viewport[0] = left;
-    current_viewport[1] = right;
-    current_viewport[2] = bottom;
-    current_viewport[3] = top;
-    glViewport(left, bottom, right - left, top - bottom);
+void scrmask(Screencoord left, Screencoord right,
+             Screencoord bottom, Screencoord top)
+{
+    current_scrmask[0] = left;
+    current_scrmask[1] = right;
+    current_scrmask[2] = bottom;
+    current_scrmask[3] = top;
+
+    // Largeur / hauteur en coord. fenêtre
+    Screencoord w = right  - left;
+    Screencoord h = top    - bottom;
+    if (w <= 0 || h <= 0) {
+        glDisable(GL_SCISSOR_TEST);
+        scrmask_enabled = 0;
+        return;
+    }
+
+    int win_w, win_h;
+    getsize(&win_w, &win_h);
+
+    // Cas "plein écran" (comme IRIS) → désactive le masque
+    if (left == 0 && bottom == 0 &&
+        right == win_w && top == win_h) {
+        glDisable(GL_SCISSOR_TEST);
+        scrmask_enabled = 0;
+        return;
+    }
+
+    // Ici on considère left/right/bottom/top déjà en coords fenêtre
+    GLint sc_x = left;
+    GLint sc_y = bottom;
+    GLsizei sc_w = w;
+    GLsizei sc_h = h;
+
+    // Clamp au cas où ça dépasse la fenêtre (valeurs négatives etc.)
+    if (sc_x < 0) {
+        sc_w += sc_x;      // réduit la largeur
+        sc_x  = 0;
+    }
+    if (sc_y < 0) {
+        sc_h += sc_y;
+        sc_y  = 0;
+    }
+    if (sc_x + sc_w > win_w) sc_w = win_w - sc_x;
+    if (sc_y + sc_h > win_h) sc_h = win_h - sc_y;
+
+    if (sc_w <= 0 || sc_h <= 0) {
+        glDisable(GL_SCISSOR_TEST);
+        scrmask_enabled = 0;
+        return;
+    }
+
+    glEnable(GL_SCISSOR_TEST);
+    glScissor(sc_x, sc_y, sc_w, sc_h);
+    glDisable(GL_DEPTH_TEST);
+    glMatrixMode(GL_PROJECTION);
+    glPushMatrix();
+    glLoadIdentity();
+    gluOrtho2D(0, win_w, 0, win_h);
+    glMatrixMode(GL_MODELVIEW);
+    glPushMatrix();
+    glLoadIdentity();
+
+    glColor3f(1, 1, 0); // jaune
+    glBegin(GL_LINE_LOOP);
+        glVertex2i(sc_x,         sc_y);
+        glVertex2i(sc_x+sc_w,    sc_y);
+        glVertex2i(sc_x+sc_w,    sc_y+sc_h);
+        glVertex2i(sc_x,         sc_y+sc_h);
+    glEnd();
+
+    glPopMatrix();
+    glMatrixMode(GL_PROJECTION);
+    glPopMatrix();
+    glMatrixMode(GL_MODELVIEW);
+    scrmask_enabled = 1;
 }
 
 
