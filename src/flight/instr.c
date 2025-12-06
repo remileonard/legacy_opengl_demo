@@ -441,7 +441,8 @@ draw_horizon(horizon_t *inst) {
     pushmatrix();
     translate(inst->px, inst->py, inst->pz);
     scale(inst->size, inst->size, inst->size);
-
+    COLOR(C_BLACK);
+    //clear_inst1();
     /*
      *  get instrument screen mask
      */
@@ -485,9 +486,8 @@ draw_horizon(horizon_t *inst) {
 
     frontbuffer(TRUE);
 
-    COLOR(C_BLACK);
-    //clear_inst1();
     
+    zbuffer(FALSE);
     draw_plate(inst->plateobject, 0x3); 
     frontbuffer(FALSE);
 
@@ -616,7 +616,7 @@ update_horizon(horizon_t *inst, int forceupdate) {
     v2f(bars[17]);
     endline();
 
-    scrmask(0, xmaxwindow, 0, ymaxwindow);
+    scrmask(0, xmaxwindow+2, 0, ymaxwindow+2);
     popmatrix();
 
     if (!in_cmode) {
@@ -2356,6 +2356,8 @@ draw_radar(radar_t *inst) {
     pushmatrix();
     translate(inst->px, inst->py, inst->pz);
     scale(inst->size, inst->size, inst->size);
+    COLOR(C_BLACK);
+    //clear_inst1();
 
     /*
      *  get instoment screen mask
@@ -2364,18 +2366,12 @@ draw_radar(radar_t *inst) {
     getcpos(&inst->sm_l, &inst->sm_b);
     cmov2i(9.0, 9.0);
     getcpos(&inst->sm_r, &inst->sm_t);
-    getorigin(&ox, &oy);
-    inst->sm_l -= ox;
-    inst->sm_r -= ox;
-    inst->sm_b -= oy;
-    inst->sm_t -= oy;
 
     drawmode(PUPDRAW);
 
     pushmatrix();
     scale(0.9, 0.9, 0.9);
-
-    color(P_ORANGE);
+    COLOR(C_WHITE);
     if (!dogfight) {
         bgnclosedline();
         v2f(plane[0]);
@@ -2394,16 +2390,13 @@ draw_radar(radar_t *inst) {
         endclosedline();
     } else
         rectf(-0.1, -0.1, 0.1, 0.1);
-
     popmatrix();
 
     drawmode(NORMALDRAW);
 
     frontbuffer(TRUE);
 
-    COLOR(C_BLACK);
-    //clear_inst1();
-
+    
     draw_plate(inst->plateobject, 0x3);
 
     frontbuffer(FALSE);
@@ -2434,8 +2427,9 @@ update_radar(radar_t *inst, int forceupdate) {
 
     lsetdepth(zmaxscreen, zmaxscreen);
     scrmask(inst->sm_l, inst->sm_r, inst->sm_b, inst->sm_t);
-    if (!in_cmode)
+    if (!in_cmode) {
         zbuffer(TRUE);
+    }
 
     COLOR(C_BLACK);
     clear_inst1();
@@ -2492,14 +2486,15 @@ update_radar(radar_t *inst, int forceupdate) {
     scale(0.0004, -0.0004, 0.0004); /* scale down (y=-z)    */
     draw_radar_objects();
 
-    if (!in_cmode)
+    if (!in_cmode) {
         zbuffer(FALSE);
-    else if (plate_ci_mode == NORMALDRAW)
+    } else if (plate_ci_mode == NORMALDRAW) {
         drawobj(inst->plateobject, 0x3);
-    scrmask(0, xmaxwindow, 0, ymaxwindow);
+    }
+    scrmask(0, xmaxwindow+2, 0, ymaxwindow+2);
     lsetdepth(zminscreen, zmaxscreen);
-
     popmatrix();
+    draw_radar(inst);
 }
 
 void init_radar(float px, float py, float pz, float size) {
@@ -4023,11 +4018,11 @@ void init_gmeter(float px, float py, float pz, float size) {
 
 void draw_plate(object_t *obj, unsigned long mode) {
     if (!in_cmode) {
-        zbuffer(TRUE);
+        //zbuffer(TRUE);
         lighting(TRUE);
         drawobj(obj, 0x3);
         lighting(FALSE);
-        zbuffer(FALSE);
+        //zbuffer(FALSE);
     } else {
         drawmode(plate_ci_mode);
         drawobj(obj, 0x3);
