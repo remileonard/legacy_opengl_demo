@@ -445,21 +445,16 @@ draw_horizon(horizon_t *inst) {
     /*
      *  get instrument screen mask
      */
-    /*cmov2i(-9.0, -9.0);
+    cmov2i(-9.0, -9.0);
     getcpos(&inst->sm_l, &inst->sm_b);
     cmov2i(9.0, 9.0);
-    getcpos(&inst->sm_r, &inst->sm_t);*/
-
-    inst->sm_l = inst_x1;
-    inst->sm_r = inst_x2;
-    inst->sm_b = inst_y1;
-    inst->sm_t = inst_y2;
-
+    getcpos(&inst->sm_r, &inst->sm_t);
+    zbuffer(FALSE);
     if (!in_cmode) {
         /*
          *  draw overlays
          */
-        //drawmode(PUPDRAW);
+        drawmode(PUPDRAW);
         lighting(FALSE);
         color(P_ORANGE);
         linewidth(3);
@@ -482,7 +477,7 @@ draw_horizon(horizon_t *inst) {
         linewidth(1);
         lighting(TRUE);
     }
-
+    zbuffer(TRUE);
     /*
      *  draw normal planes
      */
@@ -492,9 +487,8 @@ draw_horizon(horizon_t *inst) {
 
     COLOR(C_BLACK);
     //clear_inst1();
-
-    draw_plate(inst->plateobject, 0x3);
-
+    
+    draw_plate(inst->plateobject, 0x3); 
     frontbuffer(FALSE);
 
     popmatrix();
@@ -650,6 +644,7 @@ update_horizon(horizon_t *inst, int forceupdate) {
         linewidth(1);
     }
     popmatrix();
+    draw_horizon(inst);
 }
 
 /*

@@ -129,6 +129,44 @@ void mapcolor(Colorindex index, RGBvalue r, RGBvalue g, RGBvalue b) {
     }
 }
 void clear() {
+    // Sauvegarder l'état du scissor test
+    GLboolean scissor_enabled = glIsEnabled(GL_SCISSOR_TEST);
+    GLint previous_scissor[4];
+    if (scissor_enabled) {
+        glGetIntegerv(GL_SCISSOR_BOX, previous_scissor);
+    }
+
+    // Récupérer le viewport courant
+    GLint vp[4];
+    glGetIntegerv(GL_VIEWPORT, vp);
+
+    // Activer le scissor test et le configurer pour le viewport
+    glEnable(GL_SCISSOR_TEST);
+    glScissor(vp[0], vp[1], vp[2], vp[3]);
+
+    // Définir la couleur de clear
+    glClearColor(iris_clear_color[0],
+                 iris_clear_color[1],
+                 iris_clear_color[2],
+                 iris_clear_color[3]);
+
+    // Effectuer le clear
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    // Restaurer l'état précédent du scissor test
+    if (scissor_enabled) {
+        glScissor(previous_scissor[0], previous_scissor[1],
+                  previous_scissor[2], previous_scissor[3]);
+    } else {
+        glDisable(GL_SCISSOR_TEST);
+    }
+}
+#ifdef CLEAR_WITH_QUAD
+/* 
+je le garde ici car pour cycles il permet d'avoir l'effet souhaité. Je regarderais comment
+l'implémenter avec le clear actuel
+*/
+void clear() {
     // Sauvegarde d'un minimum d'état
     GLboolean depthTest = glIsEnabled(GL_DEPTH_TEST);
     GLboolean lighting  = glIsEnabled(GL_LIGHTING);
@@ -180,6 +218,7 @@ void clear() {
     if (depthTest) glEnable(GL_DEPTH_TEST); else glDisable(GL_DEPTH_TEST);
     if (lighting)  glEnable(GL_LIGHTING);   else glDisable(GL_LIGHTING);
 }
+#endif
 // === Buffer Swapping ===
 
 void swapbuffers(void) {
@@ -864,15 +903,24 @@ void cmov2i(Icoord x, Icoord y)
     // Position du texte en coordonnées entières (fenêtre)
     glRasterPos2i(x, y);
 
-    // Si tu tiens un état de position raster (comme pour cmov/cmov2),
-    // mets-le aussi à jour ici pour cohérence.
-    extern float current_raster_x;
-    extern float current_raster_y;
-    extern float current_raster_z;
-
-    current_raster_x = (float)x;
-    current_raster_y = (float)y;
-    current_raster_z = 0.0f;
+    GLdouble model[16], proj[16];
+    GLint viewport[4];
+    GLdouble winX, winY, winZ;
+    
+    // Récupérer les matrices et viewport actuels
+    glGetDoublev(GL_MODELVIEW_MATRIX, model);
+    glGetDoublev(GL_PROJECTION_MATRIX, proj);
+    glGetIntegerv(GL_VIEWPORT, viewport);
+    
+    if (gluProject(x, y, 0, model, proj, viewport, &winX, &winY, &winZ) == GL_TRUE) {
+        current_raster_x = (float)winX;
+        current_raster_y = (float)winY;
+        current_raster_z = (float)winZ;
+    } else {
+        current_raster_x = 0.0f;
+        current_raster_y = 0.0f;
+        current_raster_z = 0.0f;
+    }
 }
 void debug_opengl_state(void) {
     printf("=== DEBUG OPENGL STATE ===\n");
@@ -1838,18 +1886,18 @@ static double iris_depth_to_norm(unsigned long zval)
 void setdepth(unsigned long znear, unsigned long zfar)
 {
     // IRIS GL: définit la plage de profondeur pour le depth test
-    double n = iris_depth_to_norm(znear);
+    /*double n = iris_depth_to_norm(znear);
     double f = iris_depth_to_norm(zfar);
-    glDepthRange(n, f);
+    glDepthRange(n, f);*/
 }
 
 void lsetdepth(unsigned long znear, unsigned long zfar)
 {
     // Beaucoup d’exemples IRIS utilisent lsetdepth pour l’inversion
     // de la plage, combinée à zfunction. Ici on le mappe comme setdepth.
-    double n = iris_depth_to_norm(znear);
+    /*double n = iris_depth_to_norm(znear);
     double f = iris_depth_to_norm(zfar);
-    glDepthRange(n, f);
+    glDepthRange(n, f);*/
 }
 
 void gexit(void)
@@ -2120,7 +2168,7 @@ void scrmask(Screencoord left, Screencoord right,
 
 // Drawing mode function
 void drawmode(int mode) {
-    current_drawmode = mode;
+    /*current_drawmode = mode;
 
     switch (mode) {
     case NORMALDRAW:
@@ -2145,6 +2193,7 @@ void drawmode(int mode) {
         glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
         break;
     }
+    */
 }
 // Viewport function
 void viewport(Screencoord left, Screencoord right, Screencoord bottom, Screencoord top) {
