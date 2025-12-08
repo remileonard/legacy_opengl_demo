@@ -25,16 +25,15 @@
 static int curmaterial = 0;
 
 void setmaterial(int name) {
-    if (name != curmaterial) {
+    //if (name != curmaterial) {
         curmaterial = name;
         lmbind(MATERIAL, name);
-    }
+    //}
 }
 
 void lsuspend(int b) {
     if (b) {
-        if (curmaterial)
-            lmbind(MATERIAL, 0);
+        lmbind(MATERIAL, 0);
     } else {
         if (curmaterial)
             lmbind(MATERIAL, curmaterial);

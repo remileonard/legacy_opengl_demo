@@ -369,19 +369,42 @@ draw_tlpu_geom(sect) geometry_t *sect;
 {
     int i, j;
     polygon_t *p;
-
+    printf("draw_tlpu_geom: material=%d, pcount=%d\n", sect->material, sect->pcount);
+    
     setmaterial(sect->material);
 
     for (i = 0; i < sect->pcount; i++) {
         p = &sect->plist[i];
+        if (i < 2 && p->vcount >= 3) {
+            float *v0 = p->vlist[0];
+            float *v1 = p->vlist[1];
+            float *v2 = p->vlist[2];
+            
+            // Calculer la normale à partir des vertices (produit vectoriel)
+            float e1[3] = {v1[0]-v0[0], v1[1]-v0[1], v1[2]-v0[2]};
+            float e2[3] = {v2[0]-v0[0], v2[1]-v0[1], v2[2]-v0[2]};
+            float calc_n[3];
+            calc_n[0] = e1[1]*e2[2] - e1[2]*e2[1];
+            calc_n[1] = e1[2]*e2[0] - e1[0]*e2[2];
+            calc_n[2] = e1[0]*e2[1] - e1[1]*e2[0];
+            
+            // Dot product entre normale stockée et normale calculée
+            float dot = p->normal[0]*calc_n[0] + p->normal[1]*calc_n[1] + p->normal[2]*calc_n[2];
+            
+            printf("  poly[%d]: stored_normal=(%f,%f,%f) calc_normal=(%f,%f,%f) dot=%f\n",
+                   i, p->normal[0], p->normal[1], p->normal[2],
+                   calc_n[0], calc_n[1], calc_n[2], dot);
+        }
         bgnpolygon();
+        float inverted_normal[3];
         n3f(p->normal);
         for (j = 0; j < p->vcount; j++) {
-            // t2f(p->xlist[j]);
+            t2f(p->xlist[j]);
             v3f(p->vlist[j]);
         }
         endpolygon();
     }
+    fflush(stdout);
 }
 
 drawpsect(sect) geometry_t *sect;
@@ -457,15 +480,23 @@ drawclsgeom(g) geometry_t *g;
     int i, j;
     polygon_t *p;
 
+    printf("drawclsgeom: color=0x%08lx, pcount=%d\n", g->color, g->pcount);
     cpack(g->color);
+    glColor3f(1.0f, 0.0f, 0.0f);  // Rouge pur
+    glDisable(GL_LIGHTING);       // Désactiver éclairage
+    glLineWidth(3.0f);            // Lignes plus épaisses pour visibilité
 
     for (i = 0; i < g->pcount; i++) {
         p = &g->plist[i];
+        printf("  line[%d] vcount=%d\n", i, p->vcount);
         bgnline();
-        for (j = 0; j < p->vcount; j++)
+        for (j = 0; j < p->vcount; j++) {
+            printf("    v[%d]=(%f,%f,%f)\n", j, p->vlist[j][0], p->vlist[j][1], p->vlist[j][2]);
             v3f(p->vlist[j]);
+        }
         endline();
     }
+    fflush(stdout);
 }
 
 drawcdvgeom(sect) geometry_t *sect;
@@ -521,10 +552,12 @@ setmode(mode) long mode;
     int modeson = mode & (~curmode);
     int modesoff = (~mode) & curmode;
 
-    if (modeson & MBACKFACE)
+    if (modeson & MBACKFACE) {
         backface(TRUE);
-    else if (modesoff & MBACKFACE)
+    } else if (modesoff & MBACKFACE) {
         backface(FALSE);
+    }
+        
 
     if (modeson & MTRANSPERENT)
         blendfunction(BF_SA, BF_MSA);

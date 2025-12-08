@@ -2741,7 +2741,8 @@ draw_world() {
 
     if (texit) {
         texturing(TRUE);
-    }   
+    }
+    
     drawobj(hillsobj, 0x1);
     if (texit) {
         texturing(FALSE);

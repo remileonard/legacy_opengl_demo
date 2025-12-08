@@ -798,6 +798,8 @@ void lmbind(int target, int index) {
         
         case MATERIAL: {
             if (index == 0) {
+                printf("  -> Using COLOR_MATERIAL mode\n");
+                
                 glEnable(GL_COLOR_MATERIAL);
                 glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
 
@@ -810,10 +812,15 @@ void lmbind(int target, int index) {
                 current_material = 0;
             } else if (index > 0 && index < MAX_MATERIALS && materials[index].defined) {
                 // Bind material
+                printf("  -> Material %d is DEFINED, applying\n", index);
+                    
                 glDisable(GL_COLOR_MATERIAL);
                 MaterialDef *mat = &materials[index];
                 current_material = index;
-
+                
+                printf("     ambient=(%f, %f, %f)\n", mat->ambient[0], mat->ambient[1], mat->ambient[2]);
+                printf("     diffuse=(%f, %f, %f)\n", mat->diffuse[0], mat->diffuse[1], mat->diffuse[2]);
+                    
                 glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, mat->ambient);
                 glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, mat->diffuse);
                 glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, mat->specular);
@@ -871,6 +878,7 @@ void lmbind(int target, int index) {
             fprintf(stderr, "lmbind: unknown target %d\n", target);
             break;
     }
+    fflush(stdout);
 }
 
 void lmcolor(int mode) {
@@ -1109,6 +1117,7 @@ void winopen(const char *title) {
     
     // Initialize OpenGL state
     glEnable(GL_DEPTH_TEST);
+    glEnable(GL_NORMALIZE);
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     if (queued_devices[REDRAW]) {
         queue_event(REDRAW, 1);

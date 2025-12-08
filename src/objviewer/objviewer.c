@@ -258,11 +258,11 @@ float mat_thruster[] = {AMBIENT,   0.2, 0.2, 0.2,
 			SHININESS, 5.0,
 			LMNULL};
 
-float mat_dirt[] = {AMBIENT,	0.44, 0.37, 0.19,
-		     DIFFUSE,	0.44, 0.37, 0.19,
-		     SPECULAR,	0.0, 0.0, 0.0,
-		     SHININESS, 0.0,
-		     LMNULL};
+float mat_dirt[] = {AMBIENT, 0.2f, 0.15f, 0.08f,
+        DIFFUSE, 0.5f, 0.4f, 0.2f,
+        SPECULAR, 0.1f, 0.1f, 0.1f,
+        SHININESS, 10.0f,
+        LMNULL};
 
 float mat_gray0[] = {AMBIENT,	0.88, 0.88, 0.88,
 		     DIFFUSE,	0.88, 0.88, 0.88,
@@ -720,25 +720,41 @@ static void display(void) {
         glEnable(GL_LIGHTING);
         glEnable(GL_DEPTH_TEST);
         
-        GLfloat light_position[] = {5.0f, 10.0f, 5.0f, 1.0f};
-        glLightfv(GL_LIGHT0, GL_POSITION, light_position);
-        glEnable(GL_COLOR_MATERIAL);
-        glEnable(GL_LIGHT0);
+        GLfloat light_position[] = {-5.0f, 5.0f, 5.0f, 0.0f};
+        
 
         // Dessiner l'objet
         if (obj) {
-            //glColor3f(0.8f, 0.8f, 0.8f);
+            GLfloat light_position[] = {1.0f, 1.0f, 1.0f, 0.0f};
+            glLightfv(GL_LIGHT0, GL_POSITION, light_position);
+            glEnable(GL_LIGHT0);
             
-            drawobj(obj, 0x0001);
-            drawobj(obj, 0x0001 | EV_RIGHT);
-            drawobj(obj, 0x0001 | EV_ABOVE);
-            drawobj(obj, 0x0001 | EV_BEHIND); // Dessiner avec normales et textures
+            // Ambient global FAIBLE pour voir les variations d'éclairage
+            GLfloat global_ambient[] = {0.1f, 0.1f, 0.1f, 1.0f};
+            glLightModelfv(GL_LIGHT_MODEL_AMBIENT, global_ambient);
+            
+            // S'assurer que la lumière a une bonne couleur diffuse
+            GLfloat light_diffuse[] = {1.0f, 1.0f, 1.0f, 1.0f};
+            GLfloat light_ambient[] = {0.2f, 0.2f, 0.2f, 1.0f};
+            glLightfv(GL_LIGHT0, GL_DIFFUSE, light_diffuse);
+            glLightfv(GL_LIGHT0, GL_AMBIENT, light_ambient);
+        
+            glEnable(GL_NORMALIZE);
+            
+            drawobj(obj, 0xFFFF);
+
+            GLfloat check_diffuse[4];
+            glGetMaterialfv(GL_FRONT, GL_DIFFUSE, check_diffuse);
+            printf("     OpenGL diffuse check: (%f, %f, %f, %f)\n", 
+                   check_diffuse[0], check_diffuse[1], check_diffuse[2], check_diffuse[3]);
+                
             GLenum error = glGetError();
             if (error != GL_NO_ERROR) {
                 printf("ERROR: OpenGL error during macro test: %d\n", error);
             } else {
                 printf("Macros work correctly!\n");
             }
+            fflush(stdout);
         }
         
         glutSwapBuffers();
@@ -759,14 +775,9 @@ static void initGL(void) {
 }
 int main(int argc, char **argv) {
     glutInit(&argc, argv);
-    //init_lighting();
-    obj = readobj("hills.d");
-    iris_init_colormap();
-    init_lighting();
-    if (!obj) {
-        fprintf(stderr, "Failed to load object file 'f18.d'\n");
-        return EXIT_FAILURE;
-    }
+    
+    
+    
     // Double buffer + RGB + z-buffer
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
     glutInitWindowSize(800, 600);
@@ -779,7 +790,13 @@ int main(int argc, char **argv) {
     glutAttachMenu(GLUT_RIGHT_BUTTON);
 
     initGL();
-
+    iris_init_colormap();
+    init_lighting();
+    obj = readobj("f18.d");
+    if (!obj) {
+        fprintf(stderr, "Failed to load object file 'f18.d'\n");
+        return EXIT_FAILURE;
+    }
     glutDisplayFunc(display);
     glutReshapeFunc(reshape);
     glutIdleFunc(idle);
@@ -789,6 +806,7 @@ int main(int argc, char **argv) {
     glutMouseFunc(mouse);        // Nouvelle callback
     glutMotionFunc(motion);      // Nouvelle callback
 
+    
     glutMainLoop();
     return 0;
 }

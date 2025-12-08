@@ -245,38 +245,42 @@ draw_infinite_world(elv) float elv;
     if (groundz)
         zbuffer(FALSE);
 
-    /* Face ouest (déjà là) */
-    cpack(cp_W_horizon);
+    /* Face sud-ouest (entre horizon1 et horizon2) */
     bgnpolygon();
-    v3i(horizon1[0]);      /* horizon ouest proche   */
-    v3i(horizon2[0]);      /* horizon ouest lointain */
+    cpack(cp_W_horizon);
+    v3i(horizon1[0]);      /* sud-ouest */
+    cpack(cp_W_horizon);
+    v3i(horizon2[0]);      /* nord-ouest */
     cpack(cp_sky);
-    v3i(sky);              /* sommet du ciel         */
+    v3i(sky);              /* sommet */
     endpolygon();
 
-    /* Face est (déjà là) */
-    cpack(cp_E_horizon);
+    /* Face nord (entre horizon2 et horizon3) */
     bgnpolygon();
-    v3i(horizon3[0]);      /* horizon est lointain   */
-    v3i(horizon4[0]);      /* horizon est proche     */
+    cpack(cp_W_horizon);
+    v3i(horizon2[0]);      /* nord-ouest */
+    cpack(cp_E_horizon);
+    v3i(horizon3[0]);      /* nord-est */
     cpack(cp_sky);
     v3i(sky);
     endpolygon();
 
-    /* Face nord (entre horizon2 et horizon3) */
-    cpack(cp_E_horizon);   /* si tu n'as pas de cp_N_horizon, réutilise cp_W_horizon ou cp_E_horizon */
+    /* Face est (entre horizon3 et horizon4) */
     bgnpolygon();
-    v3i(horizon2[0]);      /* nord-ouest lointain    */
-    v3i(horizon3[0]);      /* nord-est lointain      */
+    cpack(cp_E_horizon);
+    v3i(horizon3[0]);      /* nord-est */
+    cpack(cp_E_horizon);
+    v3i(horizon4[0]);      /* sud-est */
     cpack(cp_sky);
     v3i(sky);
     endpolygon();
 
     /* Face sud (entre horizon4 et horizon1) */
-    cpack(cp_W_horizon);   /* idem, sinon reprends une des couleurs existantes */
     bgnpolygon();
-    v3i(horizon4[0]);      /* sud-est proche         */
-    v3i(horizon1[0]);      /* sud-ouest proche       */
+    cpack(cp_E_horizon);
+    v3i(horizon4[0]);      /* sud-est */
+    cpack(cp_W_horizon);
+    v3i(horizon1[0]);      /* sud-ouest */
     cpack(cp_sky);
     v3i(sky);
     endpolygon();
