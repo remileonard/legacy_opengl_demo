@@ -65,11 +65,9 @@ void redraw_screen() {
     /*
      *  draw static stuff
      */
-    fprintf(stderr, "[redraw_screen] ENTER\n");
-    fflush(stderr);
     viewport(0, xmaxwindow, 0, ymaxwindow);
     ortho2(-0.5, xmaxwindow + 0.5, -0.5, ymaxwindow + 0.5);
-    COLOR(C_BLACK);
+    COLOR(C_RED);
     clear(); /* clear the normal planes */
     if (!in_cmode)
         zclear(); /* clear the z planes */
@@ -114,8 +112,6 @@ void redraw_screen() {
         draw_instruments();
     else
         init_meters();
-    fprintf(stderr, "[redraw_screen] EXIT\n");
-    fflush(stderr);
 }
 
 void init_meters() {
@@ -952,7 +948,9 @@ void clear_report_area() {
     clear();
 }
 
-void clear_report() { report_lines = 0; }
+void clear_report() { 
+    report_lines = 0;
+}
 
 void add_report_line(float x, float y, char *line) {
     if (report_lines < MAX_REPORT_LINE - 1) {
@@ -966,8 +964,8 @@ void add_report_line(float x, float y, char *line) {
 void draw_report() {
     int i;
 
-    viewport(report_x1, report_x2, report_y1, report_y2);
-    ortho2(report_x1 - 0.5, report_x2 + 0.5, 0.0, 1.0);
+    //viewport(report_x1, report_x2, report_y1, report_y2);
+    //ortho2(report_x1 - 0.5, report_x2 + 0.5, 0.0, 1.0);
     COLOR(C_WHITE);
 
     for (i = 0; i < report_lines; i++) {

@@ -85,7 +85,20 @@ int32_t swap_int32(int32_t val) {
     uint8_t *bytes = (uint8_t *)&val;
     return ((int32_t)bytes[0] << 24) | ((int32_t)bytes[1] << 16) | ((int32_t)bytes[2] << 8) | ((int32_t)bytes[3]);
 }
+float swap_float(float val) {
+    union {
+        float f;
+        uint8_t b[4];
+    } in, out;
 
+    in.f = val;
+    out.b[0] = in.b[3];
+    out.b[1] = in.b[2];
+    out.b[2] = in.b[1];
+    out.b[3] = in.b[0];
+
+    return out.f;
+}
 /*
  *  Read a grid file
  */
@@ -143,12 +156,18 @@ grid_t *read_grid(char *fname) {
         }
     }
 
-    for (z = 0; z <= g->zsize; z++)
+    for (z = 0; z <= g->zsize; z++) {
         for (x = 0; x <= g->xsize; x++) {
-            fread(&g->elv[x][z], sizeof(float), 1, fp);
-            g->elv[x][z] *= 2000.0;
+            float ftemp;
+            fread(&ftemp, sizeof(float), 1, fp);
+            float debug_val = swap_float(ftemp) * 2000.0;
+            if (temp != 0) {
+                fprintf(stdout, "Read elevation[%d][%d] = %f (%d)\n", x, z, debug_val, swap_int32(temp));
+            }
+            g->elv[x][z] = debug_val;
         }
-
+    }
+    fflush(stdout);
     fclose(fp);
     g->stepsize = 2000.0;
     g->xmin = g->zmin = 0.0;

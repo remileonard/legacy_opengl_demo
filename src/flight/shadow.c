@@ -91,7 +91,6 @@ shadow_loop() {
 
         ortho2(-0.5, xmaxscreen + 0.5, -0.5, ymaxscreen + .5);
         draw_report();
-
         swapbuffers();
 
         if (tick_counter == 0) /* only update them every second */

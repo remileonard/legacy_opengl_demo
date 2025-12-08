@@ -2739,11 +2739,13 @@ draw_world() {
 
     lighting(TRUE);
 
-    if (texit)
+    if (texit) {
         texturing(TRUE);
+    }   
     drawobj(hillsobj, 0x1);
-    if (texit)
+    if (texit) {
         texturing(FALSE);
+    }
 
     if (view_switch == TOWER_VIEW) {
         draw_buildings(eye_x, eye_y, eye_z);

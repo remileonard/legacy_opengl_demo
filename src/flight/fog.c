@@ -70,7 +70,7 @@ set_fog_color(c)
 }
 
 
-fog(b)
+fog(int b)
 {
     if (fogon = b)
 	fogvertex(FG_ON, (float *)0);

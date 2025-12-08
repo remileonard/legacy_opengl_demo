@@ -115,7 +115,7 @@ void kill_inst_list() {
  *  Draw a four-sided polygon
  */
 void drawneedlebox(float (*verts)[3]) {
-    glColor3f(1.0f, 0.0f, 1.0f);
+    COLOR(C_GREY_10);
     bgnpolygon();
     v3f(verts[0]);
     v3f(verts[1]);
@@ -441,7 +441,7 @@ draw_horizon(horizon_t *inst) {
     pushmatrix();
     translate(inst->px, inst->py, inst->pz);
     scale(inst->size, inst->size, inst->size);
-    COLOR(C_BLACK);
+    COLOR(C_INST_BROWN);
     //clear_inst1();
     /*
      *  get instrument screen mask
@@ -457,7 +457,7 @@ draw_horizon(horizon_t *inst) {
          */
         drawmode(PUPDRAW);
         lighting(FALSE);
-        color(P_ORANGE);
+        COLOR(C_ORANGE);
         linewidth(3);
         bgnline();
         v2f(bars[0]);
@@ -897,20 +897,20 @@ draw_stores_meter(stores_meter_t *inst) {
 
     if (in_cmode) {
         drawmode(NORMALDRAW);
-        color(ci_table[C_BLACK]);
+        COLOR(C_GREY_10);
         clear_inst5();
 
         drawmode(plate_ci_mode);
         color(0);
         clear_inst5();
-        color(P_MARKINGS);
+        COLOR(C_WHITE);
     } else {
         drawmode(UNDERDRAW);
 
-        color(U_INST);
+        COLOR(C_GREY_10);
         clear_inst5();
 
-        color(MARKINGS);
+        COLOR(C_WHITE);
     }
 
     cmov2(-12.0, -1.6);
@@ -923,7 +923,7 @@ draw_stores_meter(stores_meter_t *inst) {
     frontbuffer(TRUE);
 
     COLOR(C_BLACK);
-    clear_inst5();
+    //clear_inst5();
 
     draw_plate(inst->plateobject, 0x3);
 
@@ -948,7 +948,7 @@ update_stores_meter(stores_meter_t *inst, int forceupdate) {
             zbuffer(TRUE);
 
         COLOR(C_BLACK);
-        clear_inst5();
+        //clear_inst5();
 
         if (in_cmode)
             zbuffer(FALSE);
@@ -1105,11 +1105,11 @@ draw_altimeter(altimeter_t *inst) {
     translate(inst->px, inst->py, inst->pz);
     scale(inst->size, inst->size, inst->size);
     drawmode(NORMALDRAW);
-    color(U_INST);
+    COLOR(C_GREY_10);
     clear_inst1();
 
 
-    color(MARKINGS);
+    COLOR(C_WHITE);
     for (x = 0; x < 3600; x += 360) {
         bgnline();
         v3f(ticks[0]);
@@ -1173,7 +1173,7 @@ draw_altimeter_ci(altimeter_t *inst) {
     color(U_BLACK);
     clear_inst1();
 
-    color(P_MARKINGS);
+    COLOR(C_WHITE);
     for (x = 0; x < 3600; x += 360) {
         bgnline();
         v3f(ticks[0]);
@@ -1203,7 +1203,7 @@ draw_altimeter_ci(altimeter_t *inst) {
     i = 0;
     for (x = 0; x < 3600; x += 360) {
         sprintf(s, "%d", i++);
-        color(P_MARKINGS);
+        COLOR(C_WHITE);
         cmov(0.0, 7.0, 0.0);
         charstr(s);
         rotate(-360, 'z');
@@ -1604,20 +1604,20 @@ draw_airspeedmach(airspeedmach_t *inst) {
     float mach;
     int x;
     char buf[5];
-
+    zbuffer(FALSE);
     pushmatrix();
     translate(inst->px, inst->py, inst->pz);
     scale(inst->size, inst->size, inst->size);
     if (!in_cmode) {
         drawmode(UNDERDRAW);
-        color(U_INST);
+        COLOR(C_GREY_10);
         clear_inst1();
-        color(MARKINGS);
+        COLOR(C_WHITE);
     } else {
         drawmode(PUPDRAW);
         color(U_BLACK);
         clear_inst1();
-        color(P_MARKINGS);
+        COLOR(C_WHITE);
     }
 
     bigtickstep = -30000.0 / inst->max_speed;
@@ -1735,7 +1735,7 @@ draw_airspeedmach(airspeedmach_t *inst) {
 
     COLOR(C_BLACK);
     //clear_inst1();
-
+    zbuffer(TRUE);
     draw_plate(inst->plateobject, 0x3);
 
     frontbuffer(FALSE);
@@ -1845,17 +1845,17 @@ draw_airspeed_meter(airspeed_meter_t *inst) {
     pushmatrix();
     translate(inst->px, inst->py, inst->pz);
     scale(inst->size, inst->size, inst->size);
-
+    zbuffer(FALSE);
     if (!in_cmode) {
         drawmode(UNDERDRAW);
-        color(U_INST);
+        COLOR(C_GREY_10);
         clear_inst1();
-        color(MARKINGS);
+        COLOR(C_WHITE);
     } else {
         drawmode(PUPDRAW);
         color(U_BLACK);
         clear_inst1();
-        color(P_MARKINGS);
+        COLOR(C_WHITE);
     }
 
     bigtickstep = -30000.0 / inst->max_speed;
@@ -1926,7 +1926,7 @@ draw_airspeed_meter(airspeed_meter_t *inst) {
 
     COLOR(C_BLACK);
     //clear_inst1();
-
+    zbuffer(TRUE);
     draw_plate(inst->plateobject, 0x3);
 
     frontbuffer(FALSE);
@@ -2013,23 +2013,24 @@ draw_mach_meter(mach_meter_t *inst) {
     float mach;
     int x;
     char buf[5];
-
+    zbuffer(FALSE);
     pushmatrix();
     translate(inst->px, inst->py, inst->pz);
     scale(inst->size, inst->size, inst->size);
     if (!in_cmode) {
         drawmode(UNDERDRAW);
-        color(U_INST);
+        COLOR(C_GREY_10);
         clear_inst1();
-        color(MARKINGS);
+        COLOR(C_WHITE);
     } else {
         drawmode(PUPDRAW);
         color(U_BLACK);
         clear_inst1();
-        color(P_MARKINGS);
+        COLOR(C_WHITE);
     }
 
     pushviewport();
+    getviewport(&sl, &sr, &sb, &st);
     viewport(sl - instrument_data.fourwide, sr - instrument_data.fourwide, sb - instrument_data.chartall,
              st - instrument_data.chartall);
     cmov(0.0, -4.0, 0.0);
@@ -2081,7 +2082,7 @@ draw_mach_meter(mach_meter_t *inst) {
 
     COLOR(C_BLACK);
     //clear_inst1();
-
+    zbuffer(TRUE);
     draw_plate(inst->plateobject, 0x3);
 
     frontbuffer(FALSE);
@@ -2178,14 +2179,14 @@ draw_vertvel_meter(vertvel_meter_t *inst) {
 
     if (!in_cmode) {
         drawmode(UNDERDRAW);
-        color(U_INST);
+        COLOR(C_GREY_10);
         clear_inst1();
-        color(MARKINGS);
+        COLOR(C_WHITE);
     } else {
         drawmode(PUPDRAW);
         color(U_BLACK);
         clear_inst1();
-        color(P_MARKINGS);
+        COLOR(C_WHITE);
     }
 
     bigtickstep = -150.0 * inst->divisions / inst->max_vertvel;
@@ -2425,7 +2426,7 @@ update_radar(radar_t *inst, int forceupdate) {
     translate(inst->px, inst->py, inst->pz);
     scale(inst->size, inst->size, inst->size);
 
-    lsetdepth(zmaxscreen, zmaxscreen);
+    //lsetdepth(zmaxscreen, zmaxscreen);
     scrmask(inst->sm_l, inst->sm_r, inst->sm_b, inst->sm_t);
     if (!in_cmode) {
         zbuffer(TRUE);
@@ -2492,7 +2493,7 @@ update_radar(radar_t *inst, int forceupdate) {
         drawobj(inst->plateobject, 0x3);
     }
     scrmask(0, xmaxwindow+2, 0, ymaxwindow+2);
-    lsetdepth(zminscreen, zmaxscreen);
+    //lsetdepth(zminscreen, zmaxscreen);
     popmatrix();
     draw_radar(inst);
 }
@@ -2553,11 +2554,11 @@ draw_compass(compass_t *inst) {
     translate(inst->px, inst->py, inst->pz);
     scale(inst->size, inst->size, inst->size);
     drawmode(UNDERDRAW);
-    color(U_INST);
+    COLOR(C_GREY_10);
     clear_inst1();
 
     drawmode(PUPDRAW);
-    color(P_MARKINGS);
+    COLOR(C_WHITE);
     bgnclosedline();
     v3f(plane[0]);
     v3f(plane[1]);
@@ -2796,14 +2797,14 @@ draw_thrustthrottle(thrustthrottle_t *inst) {
     scale(inst->size, inst->size, inst->size);
     if (!in_cmode) {
         drawmode(UNDERDRAW);
-        color(U_INST);
+        COLOR(C_GREY_10);
         clear_inst1();
-        color(MARKINGS);
+        COLOR(C_WHITE);
     } else {
         drawmode(PUPDRAW);
         color(U_BLACK);
         clear_inst1();
-        color(P_MARKINGS);
+        COLOR(C_WHITE);
     }
 
     for (x = 0; x < 2; x++) {
@@ -3045,15 +3046,15 @@ draw_fuelgauge(fuelgauge_t *inst) {
     if (!in_cmode) {
         drawmode(UNDERDRAW);
 
-        color(U_INST);
+        COLOR(C_GREY_10);
         clear_inst1();
-        color(MARKINGS);
+        COLOR(C_WHITE);
     } else {
         drawmode(PUPDRAW);
 
         color(U_BLACK);
         clear_inst1();
-        color(P_MARKINGS);
+        COLOR(C_WHITE);
     }
 
     mfuel = inst->maxfuel;   /* / inst->scale;*/
@@ -3248,17 +3249,17 @@ draw_flapspoiler(flapspoiler_t *inst) {
     if (!in_cmode) {
         drawmode(UNDERDRAW);
 
-        color(U_INST);
+        COLOR(C_GREY_10);
         clear_inst1();
 
-        color(MARKINGS);
+        COLOR(C_WHITE);
     } else {
         drawmode(PUPDRAW);
 
         color(U_BLACK);
         clear_inst1();
 
-        color(P_MARKINGS);
+        COLOR(C_WHITE);
     }
 
     if (inst->maxflap) {
@@ -3388,7 +3389,7 @@ update_flapspoiler(flapspoiler_t *inst, int forceupdate) {
     int current;
 
     current = instrument_data.current;
-
+    zbuffer(FALSE);
     pushmatrix();
     translate(inst->px, inst->py, inst->pz);
     scale(inst->size, inst->size, inst->size);
@@ -3448,7 +3449,7 @@ update_flapspoiler(flapspoiler_t *inst, int forceupdate) {
         popmatrix();
         inst->last_spoiler[current] = spoilers;
     }
-
+    zbuffer(TRUE);
     popmatrix();
 }
 
@@ -3521,17 +3522,17 @@ draw_gear(gear_t *inst) {
     if (!in_cmode) {
         drawmode(UNDERDRAW);
 
-        color(U_INST);
+        COLOR(C_GREY_10);
         clear_inst1();
 
-        color(MARKINGS);
+        COLOR(C_WHITE);
     } else {
         drawmode(PUPDRAW);
 
         color(U_BLACK);
         clear_inst1();
 
-        color(P_MARKINGS);
+        COLOR(C_WHITE);
     }
 
     pushviewport();
@@ -3867,14 +3868,14 @@ draw_gmeter(gmeter_t *inst) {
 
     if (!in_cmode) {
         drawmode(UNDERDRAW);
-        color(U_INST);
+        COLOR(C_GREY_10);
         clear_inst2();
-        color(MARKINGS);
+        COLOR(C_WHITE);
     } else {
         drawmode(PUPDRAW);
         color(U_BLACK);
         clear_inst2();
-        color(P_MARKINGS);
+        COLOR(C_WHITE);
     }
 
     for (x = -10; x <= 10; x += 2) {

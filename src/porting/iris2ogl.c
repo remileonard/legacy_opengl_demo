@@ -62,6 +62,9 @@ static int underlay_planes = 0; // >0 si underlay actif
 
 static float iris_clear_color[4] = {0.0f, 0.0f, 0.0f, 1.0f};
 
+
+static int current_pattern = 0;
+
 // === Color Management ===
 static void queue_event(Device dev, int16_t val);
 
@@ -151,7 +154,53 @@ void clear() {
                  iris_clear_color[3]);
 
     // Effectuer le clear
-    glClear(GL_COLOR_BUFFER_BIT);
+    if (current_pattern == 0) {
+        glClear(GL_COLOR_BUFFER_BIT);
+    } else {
+        // Si un pattern est actif, dessiner un quad couvrant le viewport
+        GLboolean depthTest = glIsEnabled(GL_DEPTH_TEST);
+        GLboolean lighting  = glIsEnabled(GL_LIGHTING);
+        GLint matrixMode;
+        glGetIntegerv(GL_MATRIX_MODE, &matrixMode);
+        GLint x = vp[0];
+        GLint y = vp[1];
+        GLint w = vp[2];
+        GLint h = vp[3];
+
+        // Désactiver ce qui pourrait gêner
+        glDisable(GL_DEPTH_TEST);
+        glDisable(GL_LIGHTING);
+
+        // Passer en projection 2D avec les coordonnées du viewport
+        glMatrixMode(GL_PROJECTION);
+        glPushMatrix();
+        glLoadIdentity();
+        gluOrtho2D(0.0, (GLdouble)w, 0.0, (GLdouble)h);
+
+        glMatrixMode(GL_MODELVIEW);
+        glPushMatrix();
+        glLoadIdentity();
+
+        // Définir la couleur de fond
+        glColor3f(iris_clear_color[0],
+                iris_clear_color[1],
+                iris_clear_color[2]);
+
+        // Dessiner un quad couvrant tout le viewport courant
+        glBegin(GL_TRIANGLE_FAN);
+            glVertex2f(0.0f,      0.0f     );
+            glVertex2f((float)w,  0.0f     );
+            glVertex2f((float)w,  (float)h );
+            glVertex2f(0.0f,      (float)h );
+        glEnd();
+
+        // Restauration des matrices
+        glPopMatrix(); // MODELVIEW
+        glMatrixMode(GL_PROJECTION);
+        glPopMatrix();
+        glMatrixMode(matrixMode);
+    }
+    
 
     // Restaurer l'état précédent du scissor test
     if (scissor_enabled) {
@@ -424,6 +473,8 @@ void linewidth(int width) {
 
 // === Patterns ===
 
+
+
 void defpattern(int id, int size, Pattern16 pattern) {
     if (id >= 0 && id < MAX_PATTERNS && size == 16) {
         // Convert 16x16 pattern to OpenGL stipple pattern (32x32)
@@ -449,9 +500,11 @@ void defpattern(int id, int size, Pattern16 pattern) {
 void setpattern(int id) {
     if (id == 0) {
         glDisable(GL_POLYGON_STIPPLE);
+        current_pattern = 0;
     } else if (id > 0 && id < MAX_PATTERNS && pattern_defined[id]) {
         glEnable(GL_POLYGON_STIPPLE);
         glPolygonStipple(stipple_patterns[id]);
+        current_pattern = id;
     }
 }
 
@@ -1419,13 +1472,13 @@ int iris_get_mouse_y(void) {
 
 void iris_motion_func(int x, int y) {
     current_mouse_x = x;
-    current_mouse_y = y;
+    current_mouse_y = window_height - y;
     
     if (queued_devices[MOUSEX]) {
-        queue_event(MOUSEX, x);
+        queue_event(MOUSEX, current_mouse_x);
     }
     if (queued_devices[MOUSEY]) {
-        queue_event(MOUSEY, y);
+        queue_event(MOUSEY, current_mouse_y);
     }
 }
 
@@ -1886,18 +1939,18 @@ static double iris_depth_to_norm(unsigned long zval)
 void setdepth(unsigned long znear, unsigned long zfar)
 {
     // IRIS GL: définit la plage de profondeur pour le depth test
-    /*double n = iris_depth_to_norm(znear);
+    double n = iris_depth_to_norm(znear);
     double f = iris_depth_to_norm(zfar);
-    glDepthRange(n, f);*/
+    glDepthRange(n, f);
 }
 
 void lsetdepth(unsigned long znear, unsigned long zfar)
 {
     // Beaucoup d’exemples IRIS utilisent lsetdepth pour l’inversion
     // de la plage, combinée à zfunction. Ici on le mappe comme setdepth.
-    /*double n = iris_depth_to_norm(znear);
+    double n = iris_depth_to_norm(znear);
     double f = iris_depth_to_norm(zfar);
-    glDepthRange(n, f);*/
+    glDepthRange(n, f);
 }
 
 void gexit(void)

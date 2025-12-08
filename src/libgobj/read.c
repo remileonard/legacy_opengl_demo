@@ -688,6 +688,10 @@ void readtrans(trans_t *t)
 {
     fillbuf();
     t->type = atoi(buf);
+	t->angle = 0;
+	t->x = 0.0;
+	t->y = 0.0;
+	t->z = 0.0;
     switch(t->type)
     {
 	case ROTX:

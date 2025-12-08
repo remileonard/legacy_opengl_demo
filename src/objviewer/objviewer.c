@@ -760,7 +760,7 @@ static void initGL(void) {
 int main(int argc, char **argv) {
     glutInit(&argc, argv);
     //init_lighting();
-    obj = readobj("stealth.d");
+    obj = readobj("hills.d");
     iris_init_colormap();
     init_lighting();
     if (!obj) {
