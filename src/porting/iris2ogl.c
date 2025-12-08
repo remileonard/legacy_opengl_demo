@@ -18,15 +18,6 @@
 #define M_PI 3.14159265358979323846
 #endif
 
-void iris_glDisable_trace(GLenum cap) {
-    if (cap == GL_TEXTURE_GEN_S || cap == GL_TEXTURE_GEN_T) {
-        printf("!!! iris_glDisable_trace(%s) called !!!\n", 
-               cap == GL_TEXTURE_GEN_S ? "GL_TEXTURE_GEN_S" : "GL_TEXTURE_GEN_T");
-    }
-    // Appel DIRECT à la vraie fonction OpenGL (pas de macro)
-    glDisable(cap);
-}
-
 // === Global state ===
 float iris_colormap[256][3];
 static int current_matrix_mode = GL_MODELVIEW;
@@ -190,8 +181,8 @@ void clear() {
         GLint h = vp[3];
 
         // Désactiver ce qui pourrait gêner
-        iris_glDisable_trace(GL_DEPTH_TEST);
-        iris_glDisable_trace(GL_LIGHTING);
+        glDisable(GL_DEPTH_TEST);
+        glDisable(GL_LIGHTING);
 
         // Passer en projection 2D avec les coordonnées du viewport
         glMatrixMode(GL_PROJECTION);
@@ -229,7 +220,7 @@ void clear() {
         glScissor(previous_scissor[0], previous_scissor[1],
                   previous_scissor[2], previous_scissor[3]);
     } else {
-        iris_glDisable_trace(GL_SCISSOR_TEST);
+        glDisable(GL_SCISSOR_TEST);
     }
 }
 #ifdef CLEAR_WITH_QUAD
@@ -253,8 +244,8 @@ void clear() {
     GLint h = vp[3];
 
     // Désactiver ce qui pourrait gêner
-    iris_glDisable_trace(GL_DEPTH_TEST);
-    iris_glDisable_trace(GL_LIGHTING);
+    glDisable(GL_DEPTH_TEST);
+    glDisable(GL_LIGHTING);
 
     // Passer en projection 2D avec les coordonnées du viewport
     glMatrixMode(GL_PROJECTION);
@@ -286,8 +277,8 @@ void clear() {
     glMatrixMode(matrixMode);
 
     // Restauration des états
-    if (depthTest) glEnable(GL_DEPTH_TEST); else iris_glDisable_trace(GL_DEPTH_TEST);
-    if (lighting)  glEnable(GL_LIGHTING);   else iris_glDisable_trace(GL_LIGHTING);
+    if (depthTest) glEnable(GL_DEPTH_TEST); else glDisable(GL_DEPTH_TEST);
+    if (lighting)  glEnable(GL_LIGHTING);   else glDisable(GL_LIGHTING);
 }
 #endif
 // === Buffer Swapping ===
@@ -485,7 +476,7 @@ void zbuffer(Boolean enable) {
     if (enable) {
         glEnable(GL_DEPTH_TEST);
     } else {
-        iris_glDisable_trace(GL_DEPTH_TEST);
+        glDisable(GL_DEPTH_TEST);
     }
 }
 
@@ -521,7 +512,7 @@ void defpattern(int id, int size, Pattern16 pattern) {
 
 void setpattern(int id) {
     if (id == 0) {
-        iris_glDisable_trace(GL_POLYGON_STIPPLE);
+        glDisable(GL_POLYGON_STIPPLE);
         current_pattern = 0;
     } else if (id > 0 && id < MAX_PATTERNS && pattern_defined[id]) {
         glEnable(GL_POLYGON_STIPPLE);
@@ -785,7 +776,7 @@ void lmbind(int target, int index) {
             if (index == 0) {
                 // Unbind/disable this light
                 if (was_enabled) {
-                    iris_glDisable_trace(light_id);
+                    glDisable(light_id);
                     if (iris_active_light_count > 0) {
                         iris_active_light_count--;
                     }
@@ -793,7 +784,7 @@ void lmbind(int target, int index) {
 
                 // Si plus aucune light active, couper l'éclairage global
                 if (iris_active_light_count == 0) {
-                    iris_glDisable_trace(GL_LIGHTING);
+                    glDisable(GL_LIGHTING);
                 }
             } else if (index > 0 && index < MAX_LIGHTS && lights[index].defined) {
                 LightDef *light = &lights[index];
@@ -833,7 +824,7 @@ void lmbind(int target, int index) {
                 current_material = 0;
             } else if (index > 0 && index < MAX_MATERIALS && materials[index].defined) {
                 // Bind material
-                iris_glDisable_trace(GL_COLOR_MATERIAL);
+                glDisable(GL_COLOR_MATERIAL);
                 MaterialDef *mat = &materials[index];
                 current_material = index;
   
@@ -847,7 +838,7 @@ void lmbind(int target, int index) {
                     glEnable(GL_BLEND);
                     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
                 } else {
-                    iris_glDisable_trace(GL_BLEND);
+                    glDisable(GL_BLEND);
                 }
             }
             break;
@@ -870,7 +861,7 @@ void lmbind(int target, int index) {
                     }
                 }
                 current_light_model = 0;
-                iris_glDisable_trace(GL_LIGHTING);
+                glDisable(GL_LIGHTING);
             } 
             if (index > 0 && index < MAX_MATERIALS && light_models[index].defined) {
                 LightModelDef *lm = &light_models[index];
@@ -902,7 +893,7 @@ void lmcolor(int mode) {
         glEnable(GL_COLOR_MATERIAL);
         glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
     } else {
-        iris_glDisable_trace(GL_COLOR_MATERIAL);
+        glDisable(GL_COLOR_MATERIAL);
     }
 }
 
@@ -1072,7 +1063,7 @@ void fmprstr(const char *str) {
             glMatrixMode(GL_PROJECTION);
             glPopMatrix();
             glMatrixMode(GL_MODELVIEW);
-            iris_glDisable_trace(GL_LINE_SMOOTH);
+            glDisable(GL_LINE_SMOOTH);
             glPopAttrib();
         } else {
             for (const char *c = str; *c != '\0'; c++) {
@@ -1696,9 +1687,9 @@ void smoothline(Boolean on)
         // Optionnel: pour une meilleure qualité
         glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
     } else {
-        iris_glDisable_trace(GL_LINE_SMOOTH);
+        glDisable(GL_LINE_SMOOTH);
         // Ne pas forcément couper le blend globalement si ton app l’utilise ailleurs
-        // iris_glDisable_trace(GL_BLEND);
+        // glDisable(GL_BLEND);
     }
 }
 
@@ -2188,7 +2179,7 @@ void scrmask(Screencoord left, Screencoord right,
     Screencoord w = right  - left;
     Screencoord h = top    - bottom;
     if (w <= 0 || h <= 0) {
-        iris_glDisable_trace(GL_SCISSOR_TEST);
+        glDisable(GL_SCISSOR_TEST);
         scrmask_enabled = 0;
         return;
     }
@@ -2199,7 +2190,7 @@ void scrmask(Screencoord left, Screencoord right,
     // Cas "plein écran" (comme IRIS) → désactive le masque
     if (left == 0 && bottom == 0 &&
         right == win_w && top == win_h) {
-        iris_glDisable_trace(GL_SCISSOR_TEST);
+        glDisable(GL_SCISSOR_TEST);
         scrmask_enabled = 0;
         return;
     }
@@ -2223,14 +2214,14 @@ void scrmask(Screencoord left, Screencoord right,
     if (sc_y + sc_h > win_h) sc_h = win_h - sc_y;
 
     if (sc_w <= 0 || sc_h <= 0) {
-        iris_glDisable_trace(GL_SCISSOR_TEST);
+        glDisable(GL_SCISSOR_TEST);
         scrmask_enabled = 0;
         return;
     }
 
     glEnable(GL_SCISSOR_TEST);
     glScissor(sc_x, sc_y, sc_w, sc_h);
-    iris_glDisable_trace(GL_DEPTH_TEST);
+    glDisable(GL_DEPTH_TEST);
     glMatrixMode(GL_PROJECTION);
     glPushMatrix();
     glLoadIdentity();
@@ -2271,7 +2262,7 @@ void drawmode(int mode) {
     case OVERDRAW:
     case PUPDRAW:
         // Overlays / PUP : par-dessus, sans interaction Z
-        iris_glDisable_trace(GL_DEPTH_TEST);
+        glDisable(GL_DEPTH_TEST);
         glDepthMask(GL_FALSE);
         glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
         break;
@@ -2300,7 +2291,7 @@ static int line_styles_defined[MAX_LINE_STYLES] = {0};
 
 void setlinestyle(int style) {
     if (style == 0) {
-        iris_glDisable_trace(GL_LINE_STIPPLE);
+        glDisable(GL_LINE_STIPPLE);
     } else if (style > 0 && style < MAX_LINE_STYLES && line_styles_defined[style]) {
         glEnable(GL_LINE_STIPPLE);
         glLineStipple(1, line_styles[style]);
@@ -2319,7 +2310,7 @@ void linesmooth(unsigned long mode) {
         glEnable(GL_LINE_SMOOTH);
         glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
     } else {
-        iris_glDisable_trace(GL_LINE_SMOOTH);
+        glDisable(GL_LINE_SMOOTH);
     }
 }
 
@@ -2494,7 +2485,7 @@ void texdef2d(int texid, int nc, int width, int height, void* image, int np, flo
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
    
-    
+
     GLint internal_format;
     GLenum format;
     
@@ -2693,9 +2684,7 @@ void texbind(int target, int texid) {
     glEnable(GL_TEXTURE_2D);
     glBindTexture(GL_TEXTURE_2D, textures[texid].gl_id);
     current_texture_id = texid;
-    
-    // PAS DE GL_TEXTURE_GEN !
-    // Les coordonnées sont passées directement via t2f()
+
 }
 void tevbind(int target, int texid) {
     (void)target; // Le target est généralement ignoré (toujours 0 en IRIS GL)

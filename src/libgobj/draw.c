@@ -371,32 +371,19 @@ draw_tlpu_geom(sect) geometry_t *sect;
     polygon_t *p;
     
     static int first_call = 1;
-    printf("draw_tlpu_geom called\n");
-    debug_texture_coordinates();
-    setmaterial(sect->material);
-    
+
     for (i = 0; i < sect->pcount; i++) {
         p = &sect->plist[i];
         
         bgnpolygon();
         n3f(p->normal);
         for (j = 0; j < p->vcount; j++) {
-            if (i == 0 && j == 0) {
-                printf("First vertex of first polygon:\n");
-                printf("  Texcoords: (%f, %f)\n", p->xlist[j][0], p->xlist[j][1]);
-                printf("  Vertex: (%f, %f, %f)\n", p->vlist[j][0], p->vlist[j][1], p->vlist[j][2]);
-                debug_texture_coordinates();
-            }
             t2f(p->xlist[j]);
             v3f(p->vlist[j]);
         }
         endpolygon();
         
     }
-    printf("---------- after draw\n");
-    debug_texture_coordinates();
-    printf("---------- end draw_tlpu_geom\n");
-    fflush(stdout);
 }
 
 drawpsect(sect) geometry_t *sect;
