@@ -166,14 +166,8 @@ void spQuantifyMachine(void) {
         Counter.hw_graphics = -2;
         Counter.stars_per_square = 128;
         Counter.cutoff = 0.05;
-        printf("DEBUG: SP_HW_UNKNOWN - Counter.flags = 0x%08X, Counter.stars_per_square = %d\n", 
-               Counter.flags, Counter.stars_per_square);
         break;
     }
-    
-    printf("DEBUG: spQuantifyMachine() END - Counter.flags = 0x%08X, Counter.stars_per_square = %d\n", 
-           Counter.flags, Counter.stars_per_square);
-    fflush(stdout);
 }
 
 /**********************************************************************

@@ -421,6 +421,9 @@ void wmpack(unsigned long mask);
 
 // === Texture coordinates ===
 void t2f(float texcoord[2]);
+void t2i(Icoord texcoord[2]);
+void debug_texture_coordinates(void);
+void t2s(Scoord texcoord[2]);
 
 // === Picking/Feedback ===
 void feedback(short *buffer, long size);
@@ -467,7 +470,7 @@ int getgdesc(int descriptor);
 #define MTEXTURE    1
 
 // === Texture constants (IRIS GL texture mapping) ===
-#define TX_MAGFILTER        0
+
 #define TX_MINFILTER        1
 #define TX_BILINEAR         2
 #define TX_POINT            3
@@ -475,7 +478,45 @@ int getgdesc(int descriptor);
 #define TX_MIPMAP_POINT     5
 #define TX_WRAP             6
 #define TX_CLAMP            7
+#define TX_MAGFILTER        8
+#define TX_WRAP_S           9
+#define TX_WRAP_T           10
 
+
+// Texture environment modes
+
+#define TV_DECAL    1
+#define TV_BLEND    2
+#define TV_COLOR    3
+#define TV_MODULATE 4
+#define TV_REPLACE  5
+
+// Texture filter modes
+
+// Texture wrap modes
+#define TX_REPEAT  1
+
+// Texture properties
+
+#define MAX_TEX_ENVS 32
+
+typedef struct {
+    Boolean defined;
+    int mode;           // GL_MODULATE, GL_DECAL, GL_BLEND, GL_REPLACE
+    float color[4];     // Couleur pour GL_BLEND
+    float scale[2];     // Facteurs d'échelle (si utilisés)
+} TexEnvDef;
+
+// === Texture Object Management ===
+#define MAX_TEXTURES 256
+
+typedef struct {
+    Boolean defined;
+    GLuint gl_id;
+    int width;
+    int height;
+    int components;
+} TextureDef;
 // UNIX compatibility
 char* iris_cuserid(char *buf);
 #define cuserid(x) iris_cuserid(x)

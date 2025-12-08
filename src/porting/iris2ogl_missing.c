@@ -197,12 +197,6 @@ void wmpack(unsigned long mask) {
     }
 }
 
-// === Texture Coordinate Functions ===
-void t2f(float texcoord[2]) {
-    // IRIS GL texture coordinate (2D)
-    glTexCoord2fv(texcoord);
-}
-
 // === Picking/Feedback Functions ===
 static short *feedback_buffer = NULL;
 static long feedback_size = 0;

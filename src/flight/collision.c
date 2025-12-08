@@ -105,6 +105,7 @@ float swap_float(float val) {
 grid_t *read_grid(char *fname) {
     int x, z;
     FILE *fp;
+    float ftemp;
     grid_t *g;
 
     if ((fp = fopen(fname, "rb")) == NULL) {
@@ -158,16 +159,10 @@ grid_t *read_grid(char *fname) {
 
     for (z = 0; z <= g->zsize; z++) {
         for (x = 0; x <= g->xsize; x++) {
-            float ftemp;
             fread(&ftemp, sizeof(float), 1, fp);
-            float debug_val = swap_float(ftemp) * 2000.0;
-            if (temp != 0) {
-                fprintf(stdout, "Read elevation[%d][%d] = %f (%d)\n", x, z, debug_val, swap_int32(temp));
-            }
-            g->elv[x][z] = debug_val;
+            g->elv[x][z] = swap_float(ftemp) * 2000.0;;
         }
     }
-    fflush(stdout);
     fclose(fp);
     g->stepsize = 2000.0;
     g->xmin = g->zmin = 0.0;

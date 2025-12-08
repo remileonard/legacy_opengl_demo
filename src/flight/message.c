@@ -287,16 +287,6 @@ void display_message_no_wait(char **msg, int transparent) {
 
     y = 90;
     COLOR(C_WHITE);
-    {
-        GLfloat col[4];
-        GLboolean lighting = glIsEnabled(GL_LIGHTING);
-        glGetFloatv(GL_CURRENT_COLOR, col);
-        fprintf(stderr,
-            "[display_message_no_wait] AFTER COLOR(C_WHITE): "
-            "CURRENT_COLOR=(%f,%f,%f,%f) LIGHTING=%d\n",
-            col[0], col[1], col[2], col[3], lighting);
-    }
-    fflush(stderr);
     while (**msg) /* display help in white	*/
     {
         cmov2((float)(xmiddle - w), y);
@@ -313,6 +303,4 @@ void display_message_no_wait(char **msg, int transparent) {
 
     if (!transparent)
         swapbuffers();
-    fprintf(stderr, "[display_message_no_wait] EXIT\n");
-    fflush(stderr);
 }

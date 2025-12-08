@@ -69,8 +69,6 @@ void h_init_vertex(int n)
     int i;
 
     vsize = n * 2;
-    printf("h_init_vertex: n=%d vsize=%d\n", n, vsize);
-	fflush(stdout);
 	size_t hvsi = sizeof(h_vertex);
     vh = (h_vertex *)malloc(hvsi * vsize);
 

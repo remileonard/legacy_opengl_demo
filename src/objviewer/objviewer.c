@@ -742,19 +742,6 @@ static void display(void) {
             glEnable(GL_NORMALIZE);
             
             drawobj(obj, 0xFFFF);
-
-            GLfloat check_diffuse[4];
-            glGetMaterialfv(GL_FRONT, GL_DIFFUSE, check_diffuse);
-            printf("     OpenGL diffuse check: (%f, %f, %f, %f)\n", 
-                   check_diffuse[0], check_diffuse[1], check_diffuse[2], check_diffuse[3]);
-                
-            GLenum error = glGetError();
-            if (error != GL_NO_ERROR) {
-                printf("ERROR: OpenGL error during macro test: %d\n", error);
-            } else {
-                printf("Macros work correctly!\n");
-            }
-            fflush(stdout);
         }
         
         glutSwapBuffers();

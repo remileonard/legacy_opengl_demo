@@ -369,41 +369,33 @@ draw_tlpu_geom(sect) geometry_t *sect;
 {
     int i, j;
     polygon_t *p;
-    printf("draw_tlpu_geom: material=%d, pcount=%d\n", sect->material, sect->pcount);
     
+    static int first_call = 1;
+    printf("draw_tlpu_geom called\n");
+    debug_texture_coordinates();
     setmaterial(sect->material);
-
+    
     for (i = 0; i < sect->pcount; i++) {
         p = &sect->plist[i];
-        if (i < 2 && p->vcount >= 3) {
-            float *v0 = p->vlist[0];
-            float *v1 = p->vlist[1];
-            float *v2 = p->vlist[2];
-            
-            // Calculer la normale à partir des vertices (produit vectoriel)
-            float e1[3] = {v1[0]-v0[0], v1[1]-v0[1], v1[2]-v0[2]};
-            float e2[3] = {v2[0]-v0[0], v2[1]-v0[1], v2[2]-v0[2]};
-            float calc_n[3];
-            calc_n[0] = e1[1]*e2[2] - e1[2]*e2[1];
-            calc_n[1] = e1[2]*e2[0] - e1[0]*e2[2];
-            calc_n[2] = e1[0]*e2[1] - e1[1]*e2[0];
-            
-            // Dot product entre normale stockée et normale calculée
-            float dot = p->normal[0]*calc_n[0] + p->normal[1]*calc_n[1] + p->normal[2]*calc_n[2];
-            
-            printf("  poly[%d]: stored_normal=(%f,%f,%f) calc_normal=(%f,%f,%f) dot=%f\n",
-                   i, p->normal[0], p->normal[1], p->normal[2],
-                   calc_n[0], calc_n[1], calc_n[2], dot);
-        }
+        
         bgnpolygon();
-        float inverted_normal[3];
         n3f(p->normal);
         for (j = 0; j < p->vcount; j++) {
+            if (i == 0 && j == 0) {
+                printf("First vertex of first polygon:\n");
+                printf("  Texcoords: (%f, %f)\n", p->xlist[j][0], p->xlist[j][1]);
+                printf("  Vertex: (%f, %f, %f)\n", p->vlist[j][0], p->vlist[j][1], p->vlist[j][2]);
+                debug_texture_coordinates();
+            }
             t2f(p->xlist[j]);
             v3f(p->vlist[j]);
         }
         endpolygon();
+        
     }
+    printf("---------- after draw\n");
+    debug_texture_coordinates();
+    printf("---------- end draw_tlpu_geom\n");
     fflush(stdout);
 }
 
@@ -480,7 +472,6 @@ drawclsgeom(g) geometry_t *g;
     int i, j;
     polygon_t *p;
 
-    printf("drawclsgeom: color=0x%08lx, pcount=%d\n", g->color, g->pcount);
     cpack(g->color);
     glColor3f(1.0f, 0.0f, 0.0f);  // Rouge pur
     glDisable(GL_LIGHTING);       // Désactiver éclairage
@@ -488,15 +479,12 @@ drawclsgeom(g) geometry_t *g;
 
     for (i = 0; i < g->pcount; i++) {
         p = &g->plist[i];
-        printf("  line[%d] vcount=%d\n", i, p->vcount);
         bgnline();
         for (j = 0; j < p->vcount; j++) {
-            printf("    v[%d]=(%f,%f,%f)\n", j, p->vlist[j][0], p->vlist[j][1], p->vlist[j][2]);
             v3f(p->vlist[j]);
         }
         endline();
     }
-    fflush(stdout);
 }
 
 drawcdvgeom(sect) geometry_t *sect;
