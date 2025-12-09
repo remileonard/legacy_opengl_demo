@@ -290,9 +290,12 @@ float current_eye[4];      /* current eye position */
 float frustum[4][4];
 float clip_planes[4][4];
 
-flight(argc, argv) int argc;
-char *argv[];
-{
+
+
+void read_objects(int event_break);
+
+
+void flight(int argc, char *argv[]) {
     int itemp; /* temp integer variable	*/
 
     float temp; /* temp float variable	*/
@@ -339,7 +342,7 @@ char *argv[];
                 multicast = FALSE;
                 break;
             case 'I':
-                if (--argc > 0)
+                if (--argc >= 0)
                     mcast_ifaddr = *++argv;
                 break;
             case 'T':
@@ -398,7 +401,6 @@ char *argv[];
         fprintf(stderr, usage);
         exit(0);
     }*/
-
     eye_x = TOWER_X;
     eye_y = TOWER_Y;
     eye_z = TOWER_Z;
@@ -1034,7 +1036,7 @@ init_dials() {
  *  each data file read for events pending in the queue.  If it find
  *  events it will abort.
  */
-read_objects(event_break) int event_break;
+void read_objects(int event_break)
 {
     static int objects_to_read = TRUE;
     int i;
@@ -1592,14 +1594,17 @@ read_queue() {
             sbtz = val;
             break;
         case F1KEY: /* toggle fog */
-            if (val)
+            if (val) {
                 fogit = !fogit && !in_cmode && (getgdesc(GD_FOGVERTEX) > 0);
+            }
+                
             break;
         case F2KEY: /* toggle texturing */
             if (val)
                 texit = !texit && !in_cmode && (getgdesc(GD_TEXTURE) > 0);
             break;
         case REDRAW:
+            init_window_size();
             redraw_screen();
             break;
         case WINQUIT:
@@ -2742,7 +2747,6 @@ draw_world() {
     if (texit) {
         texturing(TRUE);
     }
-    
     drawobj(hillsobj, 0x1);
     if (texit) {
         texturing(FALSE);

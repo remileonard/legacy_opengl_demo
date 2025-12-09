@@ -130,9 +130,10 @@ void radar_loop() {
         /*
          *  display any network messages
          */
+        zbuffer(FALSE);
         ortho2(-200.0, 200.0, -300.0, 100.0);
         draw_messages();
-
+        zbuffer(TRUE);
         swapbuffers();
     }
 }
@@ -302,8 +303,8 @@ void radar_text() {
                 p->azimuth, p->elevation, p->twist, p->mstatus, p->mtype);
     }
     sprintf(*msg, "");
-    COLOR(C_BLUE);
-    clear();
+    //COLOR(C_BLUE);
+    //clear();
     display_message_no_wait(buffers, 1);
 }
 
@@ -391,7 +392,7 @@ void radar_picture() {
     float y, dy; /* height of text in user space */
     Plane p, *pp;
     radar_hist_t *rh;
-
+    zbuffer(FALSE);
     ortho2(ucx - usx, ucx + usx, ucy - usy, ucy + usy);
     pushmatrix();
 
@@ -456,6 +457,7 @@ void radar_picture() {
 
     if (show_help)
         overlay_radar_help();
+    zbuffer(TRUE);
 }
 
 void draw_radar_world() {

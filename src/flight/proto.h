@@ -24,7 +24,6 @@
 #ifndef __PROTO_H__
 #define __PROTO_H__
 
-
 /************************** prototypes for color.c ***************************/
 
 void setup_colormaps();
@@ -35,13 +34,11 @@ void restore_map();
 unsigned long rgb2cpack(short r, short g, short b);
 void load_rgb_table(int i, short r, short g, short b);
 
-
 /*************************** prototypes for comm.c ***************************/
 
 void partial_plane_move(Plane p0, Plane p1, float percent);
 
 int read_infile(Plane p, float current_time);
-
 
 /*************************** prototypes for cull.c ***************************/
 
@@ -51,21 +48,17 @@ int read_infile(Plane p, float current_time);
  */
 int cull_sphere(float *center, float radius);
 
-
 /*
  *  cull_shadow() returns TRUE if the shadow of plane pp is outside the
  *  viewing frustom, FALSE other wise.
  */
 int cull_shadow(Plane pp, float xf, float zf);
 
-
 /************************** prototypes for flight.c **************************/
 
 void calc_clip_planes(Matrix mat, float *eye_point);
 
-
 /************************** prototypes for instr.c **************************/
-
 
 /*
  *  Add an instrument to the instrument list.
@@ -93,7 +86,6 @@ void set_instruments_time(int daytime);
  */
 void draw_instruments();
 
-
 /*
  * Call all update functions in update list
  */
@@ -105,7 +97,6 @@ void update_instruments(int forceupdate);
  */
 void init_altimeter(float px, float py, float pz, float size);
 
-
 /*
  * Initialize the horizon's private data and add its functions to
  * the drawing lists
@@ -116,37 +107,30 @@ void init_text_meter(float px, float py, float pz, float size);
 
 void init_stores_meter(float px, float py, float pz, float size);
 
-void init_airspeedmach_meter(float px, float py, float pz, float size,
-		  float maxspeed, int machmeter, float maxmach,
-		  float machstep, int nummachticks);
+void init_airspeedmach_meter(float px, float py, float pz, float size, float maxspeed, int machmeter, float maxmach,
+                             float machstep, int nummachticks);
 
-void init_airspeed_meter(float px, float py, float pz, float size,
-			     float maxspeed);
+void init_airspeed_meter(float px, float py, float pz, float size, float maxspeed);
 
-void init_mach_meter(float px, float py, float pz, float size,
-		  float maxmach, float machstep, int nummachticks);
+void init_mach_meter(float px, float py, float pz, float size, float maxmach, float machstep, int nummachticks);
 
-void init_vertvel_meter(float px, float py, float pz, float size,
-			    float maxvel, float divisions, int numsmallticks);
+void init_vertvel_meter(float px, float py, float pz, float size, float maxvel, float divisions, int numsmallticks);
 
 void init_radar(float px, float py, float pz, float size);
 
 void init_compass(float px, float py, float pz, float size);
 
-void init_thrustthrottle(float px, float py, float pz, float size,
-			 float tickstep, int numticks);
+void init_thrustthrottle(float px, float py, float pz, float size, float tickstep, int numticks);
 
-void init_fuelgauge(float px, float py, float pz, float size, float maxfuel,
-		    float tickstep, int numticks, int scale);
+void init_fuelgauge(float px, float py, float pz, float size, float maxfuel, float tickstep, int numticks, int scale);
 
 void set_fuelgauge(float maxfuel, float tickstep, int numticks, int scale);
 
-void init_flapspoiler(float px, float py, float pz, float size,
-		      int maxflap, int flaptickstep, int numflapticks,
-		      int maxspoiler, int spoilertickstep, int numspoilerticks);
+void init_flapspoiler(float px, float py, float pz, float size, int maxflap, int flaptickstep, int numflapticks,
+                      int maxspoiler, int spoilertickstep, int numspoilerticks);
 
-void set_flapspoiler(int maxflap, int flaptickstep, int numflapticks,
-		     int maxspoiler, int spoilertickstep, int numspoilerticks);
+void set_flapspoiler(int maxflap, int flaptickstep, int numflapticks, int maxspoiler, int spoilertickstep,
+                     int numspoilerticks);
 
 void init_gear(float px, float py, float pz, float size);
 
@@ -156,14 +140,17 @@ void init_wlight(float px, float py, float pz, float size, short *warning, char 
 
 void draw_plate(object_t *obj, unsigned long mode);
 
+void clear_inst1();
+void clear_inst2();
+void clear_inst4();
+void clear_inst5();
+
 
 /************************** prototypes for land1.c ***************************/
 
 void init_window_size();
 
-
 /*************************** prototypes for mat.c ***************************/
-
 
 /*
  *  Turn mat into an identity matrix.
@@ -211,7 +198,6 @@ void matrix_print(Matrix mat);
  */
 void vec_len(float *iv0, float *iv1, float len, float *ov);
 
-
 /************************* prototypes for messages.c *************************/
 
 void display_help();
@@ -226,7 +212,6 @@ void display_score();
 int wait_for_input();
 int display_message(char **msg);
 void display_message_no_wait(char **msg, int transparent);
-
 
 /************************** prototypes for meters.c **************************/
 
@@ -255,13 +240,11 @@ void init_meter_sizes();
 void draw_meter_static();
 void old_meters();
 
-
 /************************* prototypes for objext.c ***************************/
 
 void avg_verts(object_t *obj, float *cx, float *cy, float *cz);
 void remap_obj(object_t *obj);
 void remap_geom(geometry_t *g);
-
 
 /************************** prototypes for radar.c ***************************/
 
@@ -281,11 +264,9 @@ void draw_radar_world();
 void draw_projectile();
 void draw_triangle();
 
-
 /************************* prototypes for uflight.c **************************/
 
-void my_lookat(float vx, float vy, float vz, float px, float py, float pz,
-	       Matrix resmat);
+void my_lookat(float vx, float vy, float vz, float px, float py, float pz, Matrix resmat);
 
 void set_f14_form(Plane pp);
 
@@ -300,8 +281,7 @@ void set_ci_f16_form(Plane pp);
 /*
  *  draw the planes and their shadows that are visible
  */
-void draw_planes(float ex, float ey, float ez,
-		 int start_plane, int num_planes);
+void draw_planes(float ex, float ey, float ez, int start_plane, int num_planes);
 
 void draw_missiles();
 
@@ -309,8 +289,7 @@ void draw_buildings(float ex, float ey, float ez);
 
 void draw_threats();
 
-void draw_everything(float ex, float ey, float ez,
-		     int numplanes, int draw_self);
+void draw_everything(float ex, float ey, float ez, int numplanes, int draw_self);
 
 /*
  *  add an object to the sort obj list
@@ -328,6 +307,5 @@ void sink_sort(int n, float *array, void **array_tag);
 int flight_random(int maxr);
 
 float range(float x1, float y1, float z1, float x2, float y2, float z2);
-
 
 #endif /* __PROTO_H__ */

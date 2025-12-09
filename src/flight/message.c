@@ -255,8 +255,6 @@ void display_message_no_wait(char **msg, int transparent) {
     float delta;
     int w, mw;
     char **tmp;
-
-    fprintf(stderr, "[display_message_no_wait] ENTER\n");
     if (hud || shadow || radar) {
         viewport(0, xmaxwindow, 0, ymaxwindow);
         ortho2(-200.0, 200.0, -150.0, 150.0);
@@ -284,23 +282,16 @@ void display_message_no_wait(char **msg, int transparent) {
         COLOR(C_BLUE);
         clear();
     }
-
+    zbuffer(FALSE);
     y = 90;
     COLOR(C_WHITE);
     while (**msg) /* display help in white	*/
     {
         cmov2((float)(xmiddle - w), y);
-        {
-            GLfloat col[4];
-            glGetFloatv(GL_CURRENT_COLOR, col);
-            fprintf(stderr,
-                "[intro] COLOR=(%f,%f,%f,%f)\n",
-                col[0], col[1], col[2], col[3]);
-        }
         charstr(*msg++);
         y -= delta;
     }
-
+    zbuffer(TRUE);
     if (!transparent)
         swapbuffers();
 }

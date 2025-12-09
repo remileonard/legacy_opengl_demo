@@ -370,7 +370,7 @@ void update_instruments(int forceupdate) {
     popmatrix();
 }
 
-clear_inst1() {
+void clear_inst1() {
     static float verts[4][3] = {{-9.0, -9.0}, {-9.0, 9.0}, {9.0, 9.0}, {9.0, -9.0}};
     zbuffer(FALSE);
     bgnpolygon();
@@ -382,7 +382,7 @@ clear_inst1() {
     zbuffer(TRUE);
 }
 
-clear_inst2() {
+void clear_inst2() {
     static float verts[4][3] = {{-2.1, -15.1}, {2.1, -15.1}, {2.1, 15.1}, {-2.1, 15.1}};
     zbuffer(FALSE);
     bgnpolygon();
@@ -394,7 +394,7 @@ clear_inst2() {
     zbuffer(TRUE);
 }
 
-clear_inst4() {
+void clear_inst4() {
     static float verts[4][3] = {{-13.1, -3.1}, {-13.1, 3.1}, {13.1, 3.1}, {13.1, -3.1}};
     zbuffer(FALSE);
     bgnpolygon();
@@ -406,7 +406,7 @@ clear_inst4() {
     zbuffer(TRUE);
 }
 
-clear_inst5() {
+void clear_inst5() {
     static float verts[4][3] = {{-13.1, -2.6}, {-13.1, 2.6}, {13.1, 2.6}, {13.1, -2.6}};
     zbuffer(FALSE);
     bgnpolygon();

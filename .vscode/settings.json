@@ -6,9 +6,6 @@
     "cmake.buildBeforeRun": true,
     "cmake.parallelJobs": 8,
     "cmake.useCMakePresets": "always",
-    "cmake.debugConfig": {
-        "args": ["x29.bin"]
-    },
     "workbench.colorCustomizations": {
         "activityBar.activeBackground": "#689fd0",
         "activityBar.background": "#689fd0",

@@ -91,7 +91,7 @@ InitComm(game) char *game;
     if (infile || outfile) {
         numrecs = 0;
         if (infile) {
-            inf = fopen(infile, "r");
+            inf = fopen(infile, "rb");
             if (inf == NULL) {
                 fprintf(stderr, "input file '%s' not found\n", infile);
                 exit(3);
@@ -99,7 +99,7 @@ InitComm(game) char *game;
             fread(&numrecs, sizeof(numrecs), 1, inf);
         }
         if (outfile) {
-            outf = fopen(outfile, "w");
+            outf = fopen(outfile, "wb");
             if (outf == NULL) {
                 fprintf(stderr, "could not open output file '%s'\n", outfile);
                 exit(3);
@@ -277,7 +277,7 @@ int count;
 {
     Plane p, *pp, retval;
     Plane pf, *ppf, ptmp;
-    float current_time;
+    float current_time = 0.0;
     static float future_time = 0.0;
     float last_m[MAX_PLANES][4];
     int i;

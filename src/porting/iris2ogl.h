@@ -95,6 +95,7 @@ typedef int16_t Device;
 #define GD_BITS_UNDR_SNG_CMODE 15  // Underlay single buffer color mode bits
 #define GD_ZMAX         16
 #define GD_ZMIN         17
+#define GD_TEXTURE_PERSP 18
 
 #define MAX_LIGHTS 8
 #define MAX_MATERIALS 256
@@ -166,6 +167,7 @@ typedef struct {
 extern float iris_colormap[256][3];
 void set_iris_colormap(int index, float r, float g, float b);
 void iris_init_colormap(void);
+void init_texture_system(void);
 void cpack(uint32_t color);
 void mapcolor(Colorindex index, RGBvalue r, RGBvalue g, RGBvalue b);
 void RGBcolor(RGBvalue r, RGBvalue g, RGBvalue b);
@@ -471,6 +473,7 @@ int getgdesc(int descriptor);
 
 // === Texture constants (IRIS GL texture mapping) ===
 
+#define TX_NULL             0
 #define TX_MINFILTER        1
 #define TX_BILINEAR         2
 #define TX_POINT            3
@@ -481,15 +484,31 @@ int getgdesc(int descriptor);
 #define TX_MAGFILTER        8
 #define TX_WRAP_S           9
 #define TX_WRAP_T           10
+#define TX_MIPMAP_BILINEAR  11
+#define TX_MIPMAP_TRILINEAR 12
 
+
+#define TX_TEXTURE_0       0
+#define TX_TEXTURE_1       1
+#define TX_TEXTURE_2       2
+#define TX_TEXTURE_3       3
+#define TX_TEXTURE_4       4
+
+#define TV_ENV0   0
+#define TV_ENV1   1
+#define TV_ENV2   2
+#define TV_ENV3   3
+#define TV_ENV4   4
 
 // Texture environment modes
 
+#define TV_NULL     0
 #define TV_DECAL    1
 #define TV_BLEND    2
 #define TV_COLOR    3
 #define TV_MODULATE 4
 #define TV_REPLACE  5
+#define TV_SCALE    6
 
 // Texture filter modes
 

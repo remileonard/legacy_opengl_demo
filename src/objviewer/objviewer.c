@@ -13,6 +13,7 @@
 #include <time.h>
 #include "libgobj/gobj.h"
 #include "porting/iris2ogl.h"
+#include <fcntl.h>
 
 #define MAT_SWAMP	 1
 #define MAT_PLANE	 2
@@ -441,6 +442,31 @@ float inst_light[] = {AMBIENT, 0.3, 0.3, 0.3,
 		      POSITION, 0.0, 1.0, 0.5, 0.0,
 		      LMNULL};
 
+float texprops[] = {TX_MAGFILTER, TX_POINT, TX_MINFILTER, TX_MIPMAP_POINT, 0};
+/* Texture color is brick-red */
+float tevprops[] = {TV_NULL};
+
+
+
+unsigned char hills[128 * 128]; /* Texture image buffer */
+void readtex(char *fname, unsigned long *buf, int size)
+{
+    long ifd;
+
+    if ((ifd = open(fname, O_RDONLY)) == -1) {
+        fprintf(stderr, "flight: can't open texture file %s\n", fname);
+        exit(1);
+    }
+
+    int readt = read(ifd, buf, size);
+    if (readt != size) {
+        fprintf(stderr, "flight: error reading texture file %s\n", fname);
+        close(ifd);
+        exit(1);
+    }
+    close(ifd);
+}
+
 void load_rgb_table(int index, unsigned char r, unsigned char g, unsigned char b)
 {
     set_iris_colormap(index, r/255.0f, g/255.0f, b/255.0f);
@@ -740,8 +766,15 @@ static void display(void) {
             glLightfv(GL_LIGHT0, GL_AMBIENT, light_ambient);
         
             glEnable(GL_NORMALIZE);
-            
+            texbind(TX_TEXTURE_0, 1);
+            tevbind(TV_ENV0, 1);
             drawobj(obj, 0xFFFF);
+            texbind(TX_TEXTURE_0, 0);
+            tevbind(TV_ENV0, 0);
+            GLenum error = glGetError();
+            if (error != GL_NO_ERROR) {
+                printf("ERROR: OpenGL error during object rendering: %d\n", error);
+            }
         }
         
         glutSwapBuffers();
@@ -779,7 +812,12 @@ int main(int argc, char **argv) {
     initGL();
     iris_init_colormap();
     init_lighting();
-    obj = readobj("f18.d");
+    init_texture_system();
+    readtex("./hills.t", hills, 128 * 128);
+    texdef2d(1, 1, 128, 128, hills, 0, texprops);
+    tevdef(1, 0, tevprops);
+    
+    obj = readobj("hills.d");
     if (!obj) {
         fprintf(stderr, "Failed to load object file 'f18.d'\n");
         return EXIT_FAILURE;

@@ -2449,12 +2449,81 @@ float fexp(float x) {
     return expf(x);
 }
 
-// Fog functions
 void fogvertex(int mode, float density[]) {
     // IRIS GL fog vertex mode
-    glFogi(GL_FOG_MODE, mode == 0 ? GL_LINEAR : GL_EXP);
-    if (density && mode != 0) {
-        glFogf(GL_FOG_DENSITY, density[0]);
+    // mode: FG_OFF (0), FG_ON (1), FG_DEFINE (2), etc.
+    
+    switch (mode) {
+        case FG_OFF:
+            // Désactiver le brouillard
+            glDisable(GL_FOG);
+            break;
+            
+        case FG_ON:
+            // Activer le brouillard
+            glEnable(GL_FOG);
+            break;
+            
+        case FG_DEFINE:
+            // Définir les paramètres du brouillard
+            if (density) {
+                glFogi(GL_FOG_MODE, GL_EXP);
+                glFogf(GL_FOG_DENSITY, density[0]);
+                
+                // Définir la couleur du brouillard (RGB de density[1..3])
+                GLfloat fog_color[4] = {
+                    density[1],  // R
+                    density[2],  // G
+                    density[3],  // B
+                    1.0f         // A
+                };
+                glFogfv(GL_FOG_COLOR, fog_color);
+                glHint(GL_FOG_HINT, GL_NICEST);
+            }
+            break;
+            
+        case FG_VTX_LIN:
+            // Mode linéaire vertex fog
+            glFogi(GL_FOG_MODE, GL_LINEAR);
+            if (density) {
+                glFogf(GL_FOG_START, density[0]);
+                glFogf(GL_FOG_END, density[1]);
+                
+                // Couleur si fournie
+                if (density[2] != 0.0f || density[3] != 0.0f) {
+                    GLfloat fog_color[4] = {
+                        density[1],
+                        density[2],
+                        density[3],
+                        1.0f
+                    };
+                    glFogfv(GL_FOG_COLOR, fog_color);
+                }
+            }
+            glHint(GL_FOG_HINT, GL_NICEST);
+            break;
+            
+        case FG_VTX_EXP:
+            // Mode exponentiel vertex fog
+            glFogi(GL_FOG_MODE, GL_EXP);
+            if (density) {
+                glFogf(GL_FOG_DENSITY, density[0]);
+            }
+            glHint(GL_FOG_HINT, GL_NICEST);
+            break;
+            
+        case FG_VTX_EXP2:
+            // Mode exponentiel carré vertex fog
+            glFogi(GL_FOG_MODE, GL_EXP2);
+            if (density) {
+                glFogf(GL_FOG_DENSITY, density[0]);
+            }
+            glHint(GL_FOG_HINT, GL_NICEST);
+            break;
+            
+        default:
+            fprintf(stderr, "Warning: Unknown fog mode %d\n", mode);
+            break;
     }
 }
 
@@ -2466,9 +2535,6 @@ void texdef2d(int texid, int nc, int width, int height, void* image, int np, flo
     
     TextureDef *tex = &textures[texid];
 
-    // DEBUG: Vérifier l'ID OpenGL
-    printf("texdef2d(%d): GL ID = %u (before bind)\n", texid, tex->gl_id);
-    
     if (tex->gl_id == 0) {
         fprintf(stderr, "ERROR: Texture %d has no OpenGL ID! Call winopen() first!\n", texid);
         return;
@@ -2480,14 +2546,14 @@ void texdef2d(int texid, int nc, int width, int height, void* image, int np, flo
     
     glBindTexture(GL_TEXTURE_2D, tex->gl_id);
     
+    // Valeurs par défaut (sans mipmaps)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-   
 
-    GLint internal_format;
-    GLenum format;
+    GLint internal_format = 0;
+    GLenum format = 0;
     
     switch (nc) {
         case 1: internal_format = GL_LUMINANCE; format = GL_LUMINANCE; break;
@@ -2497,62 +2563,101 @@ void texdef2d(int texid, int nc, int width, int height, void* image, int np, flo
         default: internal_format = GL_LUMINANCE; format = GL_LUMINANCE; break;
     }
     
-    Boolean wrap_s_set = FALSE;
-    Boolean wrap_t_set = FALSE;
-    
-    if (props && np > 0) {
-        for (int i = 0; i < np; i++) {
-            int token = (int)props[i];
+    // Parser les propriétés jusqu'à TX_NULL (comme IRIS GL)
+    int use_mipmaps = 0;
+    if (props) {
+        int i = 0;
+        while (1) {
+            int token = (int)props[i++];
+            
+            // Terminer à TX_NULL (valeur 0)
+            if (token == TX_NULL) {
+                break;
+            }
             
             switch (token) {
                 case TX_MAGFILTER:
-                    if (++i < np) {
-                        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER,
-                            (int)props[i] == TX_POINT ? GL_NEAREST : GL_LINEAR);
+                    {
+                        GLenum mag_filter = ((int)props[i++] == TX_POINT) ? GL_NEAREST : GL_LINEAR;
+                        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, mag_filter);
                     }
                     break;
                     
                 case TX_MINFILTER:
-                    if (++i < np) {
-                        int filter = (int)props[i];
+                    {
+                        int filter = (int)props[i++];
                         GLenum min_filter;
                         switch (filter) {
-                            case TX_POINT: min_filter = GL_NEAREST; break;
-                            case TX_BILINEAR: min_filter = GL_LINEAR; break;
-                            case TX_MIPMAP_POINT: min_filter = GL_NEAREST_MIPMAP_NEAREST; break;
-                            case TX_MIPMAP_LINEAR: min_filter = GL_LINEAR_MIPMAP_LINEAR; break;
-                            default: min_filter = GL_LINEAR; break;
+                            case TX_POINT: 
+                                min_filter = GL_NEAREST; 
+                                break;
+                            case TX_BILINEAR: 
+                                min_filter = GL_LINEAR; 
+                                break;
+                            case TX_MIPMAP_POINT: 
+                                min_filter = GL_NEAREST_MIPMAP_NEAREST; 
+                                use_mipmaps = 1;
+                                break;
+                            case TX_MIPMAP_LINEAR: 
+                                min_filter = GL_LINEAR_MIPMAP_LINEAR; 
+                                use_mipmaps = 1;
+                                break;
+                            case TX_MIPMAP_BILINEAR:
+                                min_filter = GL_LINEAR_MIPMAP_NEAREST;
+                                use_mipmaps = 1;
+                                break;
+                            case TX_MIPMAP_TRILINEAR:
+                                min_filter = GL_LINEAR_MIPMAP_LINEAR;
+                                use_mipmaps = 1;
+                                break;
+                            default: 
+                                min_filter = GL_LINEAR; 
+                                break;
                         }
                         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, min_filter);
                     }
                     break;
                     
+                case TX_WRAP:
                 case TX_WRAP_S:
-                    if (++i < np) {
-                        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S,
-                            (int)props[i] == TX_CLAMP ? GL_CLAMP : GL_REPEAT);
-                        wrap_s_set = TRUE;
+                    {
+                        GLenum wrap = ((int)props[i++] == TX_CLAMP) ? GL_CLAMP : GL_REPEAT;
+                        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrap);
                     }
                     break;
                     
                 case TX_WRAP_T:
-                    if (++i < np) {
-                        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T,
-                            (int)props[i] == TX_CLAMP ? GL_CLAMP : GL_REPEAT);
-                        wrap_t_set = TRUE;
+                    {
+                        GLenum wrap = ((int)props[i++] == TX_CLAMP) ? GL_CLAMP : GL_REPEAT;
+                        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrap);
                     }
                     break;
                     
-                case 0: i = np; break;
+                default: 
+                    // Propriété inconnue - ignorer
+                    break;
             }
         }
     }
     
-    
-    glTexImage2D(GL_TEXTURE_2D, 0, internal_format, width, height, 0,
-                 format, GL_UNSIGNED_BYTE, image);
+    // Charger la texture
+    if (use_mipmaps) {
+        // Utiliser gluBuild2DMipmaps pour générer automatiquement les mipmaps
+        gluBuild2DMipmaps(GL_TEXTURE_2D, internal_format, width, height,
+                         format, GL_UNSIGNED_BYTE, image);
+    } else {
+        // Texture simple sans mipmaps
+        glTexImage2D(GL_TEXTURE_2D, 0, internal_format, width, height, 0,
+                     format, GL_UNSIGNED_BYTE, image);
+    }
     
     tex->defined = TRUE;
+    
+    // Vérifier les erreurs OpenGL
+    GLenum err = glGetError();
+    if (err != GL_NO_ERROR) {
+        fprintf(stderr, "OpenGL error in texdef2d(%d): 0x%x\n", texid, err);
+    }
 }
 void debug_texture_coordinates(void) {
     if (current_texture_id <= 0 || current_texture_id >= MAX_TEXTURES) {
@@ -2564,33 +2669,16 @@ void debug_texture_coordinates(void) {
     
     printf("=== DEBUG TEXTURE %d ===\n", current_texture_id);
     printf("Size: %dx%d, Components: %d\n", tex->width, tex->height, tex->components);
+    printf("OpenGL ID: %u\n", tex->gl_id);
     
-    // Vérifier si TEXTURE_GEN est actif
-    GLboolean gen_s = glIsEnabled(GL_TEXTURE_GEN_S);
-    GLboolean gen_t = glIsEnabled(GL_TEXTURE_GEN_T);
-    printf("TEXTURE_GEN: S=%s, T=%s\n", gen_s ? "ON" : "OFF", gen_t ? "ON" : "OFF");
+    // Vérifier si les textures sont activées
+    GLboolean tex_enabled = glIsEnabled(GL_TEXTURE_2D);
+    printf("GL_TEXTURE_2D: %s\n", tex_enabled ? "ENABLED" : "DISABLED");
     
-    if (gen_s) {
-        GLint mode_s;
-        GLfloat plane_s[4];
-        glGetTexGeniv(GL_S, GL_TEXTURE_GEN_MODE, &mode_s);
-        glGetTexGenfv(GL_S, GL_OBJECT_PLANE, plane_s);
-        printf("  S mode: %s\n", mode_s == GL_OBJECT_LINEAR ? "OBJECT_LINEAR" : 
-                                  mode_s == GL_EYE_LINEAR ? "EYE_LINEAR" : "OTHER");
-        printf("  S plane: [%.4f, %.4f, %.4f, %.4f]\n", 
-               plane_s[0], plane_s[1], plane_s[2], plane_s[3]);
-    }
-    
-    if (gen_t) {
-        GLint mode_t;
-        GLfloat plane_t[4];
-        glGetTexGeniv(GL_T, GL_TEXTURE_GEN_MODE, &mode_t);
-        glGetTexGenfv(GL_T, GL_OBJECT_PLANE, plane_t);
-        printf("  T mode: %s\n", mode_t == GL_OBJECT_LINEAR ? "OBJECT_LINEAR" : 
-                                  mode_t == GL_EYE_LINEAR ? "EYE_LINEAR" : "OTHER");
-        printf("  T plane: [%.4f, %.4f, %.4f, %.4f]\n", 
-               plane_t[0], plane_t[1], plane_t[2], plane_t[3]);
-    }
+    // Vérifier quelle texture est actuellement liée
+    GLint bound_tex = 0;
+    glGetIntegerv(GL_TEXTURE_BINDING_2D, &bound_tex);
+    printf("Bound texture ID: %d\n", bound_tex);
     
     // Vérifier les paramètres de texture
     GLint wrap_s, wrap_t, mag_filter, min_filter;
@@ -2606,6 +2694,18 @@ void debug_texture_coordinates(void) {
            mag_filter == GL_LINEAR ? "LINEAR" : "NEAREST",
            min_filter == GL_LINEAR ? "LINEAR" : "NEAREST");
     
+    // Vérifier l'environnement de texture
+    GLint tex_env_mode;
+    glGetTexEnviv(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, &tex_env_mode);
+    const char* mode_str = "UNKNOWN";
+    switch (tex_env_mode) {
+        case GL_MODULATE: mode_str = "MODULATE"; break;
+        case GL_DECAL: mode_str = "DECAL"; break;
+        case GL_BLEND: mode_str = "BLEND"; break;
+        case GL_REPLACE: mode_str = "REPLACE"; break;
+    }
+    printf("Texture env mode: %s\n", mode_str);
+    
     printf("=======================\n");
     fflush(stdout);
 }
@@ -2615,16 +2715,19 @@ void tevdef(int texid, int nc, float props[]) {
     TexEnvDef *tev = &tex_envs[texid];
     
     // Valeurs par défaut
-    tev->mode = GL_MODULATE;  // Mode par défaut IRIS GL
+    tev->mode = GL_MODULATE;
     tev->color[0] = tev->color[1] = tev->color[2] = 0.0f;
     tev->color[3] = 1.0f;
     tev->scale[0] = tev->scale[1] = 1.0f;
     
-    // Parser les propriétés (si props n'est pas NULL et nc > 0)
-    if (props && nc > 0) {
+    if (props) {
         int i = 0;
-        while (i < nc) {
+        while (1) {
             int token = (int)props[i++];
+            
+            if (token == LMNULL || token == TX_NULL) {
+                break;
+            }
             
             switch (token) {
                 case TV_MODULATE:
@@ -2637,29 +2740,27 @@ void tevdef(int texid, int nc, float props[]) {
                     
                 case TV_BLEND:
                     tev->mode = GL_BLEND;
-                    if (i + 3 < nc) {
-                        tev->color[0] = props[i++];
-                        tev->color[1] = props[i++];
-                        tev->color[2] = props[i++];
-                        tev->color[3] = 1.0f;
-                    }
+                    tev->color[0] = props[i++];
+                    tev->color[1] = props[i++];
+                    tev->color[2] = props[i++];
+                    tev->color[3] = 1.0f;
                     break;
                     
                 case TV_COLOR:
-                    if (i + 3 < nc) {
-                        tev->color[0] = props[i++];
-                        tev->color[1] = props[i++];
-                        tev->color[2] = props[i++];
-                        tev->color[3] = 1.0f;
-                    }
+                    tev->color[0] = props[i++];
+                    tev->color[1] = props[i++];
+                    tev->color[2] = props[i++];
+                    tev->color[3] = 1.0f;
                     break;
                     
-                case LMNULL: // LMNULL ou fin de liste
-                    i = nc;
+                case TV_SCALE:
+                    // Facteurs d'échelle pour s et t
+                    tev->scale[0] = props[i++];  // scale_s
+                    tev->scale[1] = props[i++];  // scale_t
                     break;
                     
                 default:
-                    // Propriété inconnue, continuer
+                    fprintf(stderr, "tevdef: unknown property %d\n", token);
                     break;
             }
         }
@@ -2687,11 +2788,16 @@ void texbind(int target, int texid) {
 
 }
 void tevbind(int target, int texid) {
-    (void)target; // Le target est généralement ignoré (toujours 0 en IRIS GL)
+    (void)target;
     
     if (texid == 0) {
-        // Désactiver l'environnement de texture
+        // Réinitialiser l'environnement et la matrice de texture
         glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+        
+        glMatrixMode(GL_TEXTURE);
+        glLoadIdentity();
+        glMatrixMode(GL_MODELVIEW);
+        
         current_tex_env = 0;
         return;
     }
@@ -2710,11 +2816,23 @@ void tevbind(int target, int texid) {
     if (tev->mode == GL_BLEND) {
         glTexEnvfv(GL_TEXTURE_ENV, GL_TEXTURE_ENV_COLOR, tev->color);
     }
+    
+    // Appliquer le scaling de texture via la matrice
+    if (tev->scale[0] != 1.0f || tev->scale[1] != 1.0f) {
+        glMatrixMode(GL_TEXTURE);
+        glLoadIdentity();
+        glScalef(tev->scale[0], tev->scale[1], 1.0f);
+        glMatrixMode(GL_MODELVIEW);
+    } else {
+        // Réinitialiser la matrice si pas de scaling
+        glMatrixMode(GL_TEXTURE);
+        glLoadIdentity();
+        glMatrixMode(GL_MODELVIEW);
+    }
 }
-
 // === Texture Coordinate Functions ===
 void t2f(float texcoord[2]) {
-    glTexCoord2fv(texcoord);
+    glTexCoord2f(texcoord[0], texcoord[1]);
 }
 void t2i(Icoord texcoord[2]) {
     glTexCoord2i(texcoord[0], texcoord[1]);

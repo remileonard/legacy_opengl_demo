@@ -371,10 +371,10 @@ draw_tlpu_geom(sect) geometry_t *sect;
     polygon_t *p;
     
     static int first_call = 1;
-
+    setmaterial(sect->material);
+    
     for (i = 0; i < sect->pcount; i++) {
         p = &sect->plist[i];
-        
         bgnpolygon();
         n3f(p->normal);
         for (j = 0; j < p->vcount; j++) {
@@ -382,7 +382,6 @@ draw_tlpu_geom(sect) geometry_t *sect;
             v3f(p->vlist[j]);
         }
         endpolygon();
-        
     }
 }
 

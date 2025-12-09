@@ -286,6 +286,8 @@ int getgdesc(int descriptor) {
             return 0;  // Valeur minimale de profondeur
         case GD_ZMAX:
             return 1;  // Valeur maximale de profondeur
+        case GD_FOGVERTEX:
+            return 1;  // On considère que le fog par vertex est disponible
         default:
             return 0;
     }
