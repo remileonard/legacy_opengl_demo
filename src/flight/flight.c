@@ -401,7 +401,6 @@ void flight(int argc, char *argv[]) {
         fprintf(stderr, usage);
         exit(0);
     }*/
-    dogfight = TRUE;
     eye_x = TOWER_X;
     eye_y = TOWER_Y;
     eye_z = TOWER_Z;
