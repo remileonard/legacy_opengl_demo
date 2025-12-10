@@ -25,7 +25,7 @@
 #endif
 #include "porting/irix_network.h"
 #include "udpbrdcst.h"
-
+#define SGI_DOGFIGHT_PORT 5130
 #define DOG_MCAST_ADDR "224.0.1.2" /* official address */
 #define DEFAULT_TTL 8              /* packet time-to-live */
 #define MAX_TTL 32                 /* can't go beyond the "site" */
@@ -50,12 +50,20 @@ struct sockaddr_in *addr;
     struct servent *sp;
     int fd;
     int on = 1;
+    unsigned short port;
 
     /* Get our port number */
     sp = getservbyname(service, "udp");
     if (sp == 0) {
-        printf("Can't find udp service \"%s\"\n", service);
-        return (-2);
+        // Fallback pour sgi-dogfight
+        if (strcmp(service, "sgi-dogfight") == 0) {
+            port = htons(SGI_DOGFIGHT_PORT);
+        } else {
+            printf("Can't find udp service \"%s\"\n", service);
+            return (-2);
+        }
+    } else {
+        port = sp->s_port;
     }
 
     /* Open the socket */
@@ -68,7 +76,7 @@ struct sockaddr_in *addr;
     bzero(addr, sizeof(*addr));
     addr->sin_addr.s_addr = INADDR_ANY;
     addr->sin_family = AF_INET;
-    addr->sin_port = sp->s_port;
+    addr->sin_port = port;
     if (bind(fd, addr, sizeof(*addr)) < 0) {
         perror("bind");
         close_socket(fd);

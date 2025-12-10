@@ -1111,6 +1111,7 @@ void winopen(const char *title) {
     glutInitWindowPosition(window_x, window_y);
     main_window = glutCreateWindow(title);
     init_texture_system();
+    init_network_layer();
     //   GLUT callbacks
     glutDisplayFunc(iris_display_func);
     glutIdleFunc(iris_idle_func);  // Keep processing events
