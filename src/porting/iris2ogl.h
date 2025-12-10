@@ -347,9 +347,9 @@ void set_win_coords(void);
 #define DIAL7           20
 
 // Additional mouse buttons
-#define MOUSE1          21
-#define MOUSE2          22
-#define MOUSE3          23
+#define MOUSE1          102
+#define MOUSE2          101
+#define MOUSE3          100
 
 // Spaceball buttons
 #define SBPICK          24

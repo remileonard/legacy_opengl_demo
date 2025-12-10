@@ -964,8 +964,8 @@ void add_report_line(float x, float y, char *line) {
 void draw_report() {
     int i;
 
-    //viewport(report_x1, report_x2, report_y1, report_y2);
-    //ortho2(report_x1 - 0.5, report_x2 + 0.5, 0.0, 1.0);
+    viewport(report_x1, report_x2, report_y1, report_y2);
+    ortho2(report_x1 - 0.5, report_x2 + 0.5, 0.0, 1.0);
     COLOR(C_WHITE);
 
     for (i = 0; i < report_lines; i++) {

@@ -2718,6 +2718,17 @@ draw_scene() {
             overlay_shadow_help();
         else
             overlay_help();
+    
+    if (!hud) {
+        zbuffer(FALSE);
+        pushmatrix();
+        pushviewport();
+        clear_report_area();
+        draw_report();
+        popmatrix();
+        popviewport();
+        zbuffer(TRUE);
+    }
 }
 
 draw_world() {

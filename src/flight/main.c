@@ -85,13 +85,16 @@ make_crash(msg) char *msg;
 
     if (!hud) {
         frontbuffer(TRUE);
+        zbuffer(FALSE);
         pushmatrix();
         pushviewport();
         clear_report_area();
         draw_report();
         popmatrix();
         popviewport();
+        zbuffer(TRUE);
         frontbuffer(FALSE);
+        swapbuffers();
     }
 }
 
