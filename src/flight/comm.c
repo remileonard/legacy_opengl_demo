@@ -56,7 +56,7 @@ float read_speed = 1.0;
 /****************************************************************/
 
 /* init ethernet interface, discard my packets, no debug	*/
-InitComm(game) char *game;
+InitComm(char *game)
 {
     char buf[80];
     char *name;
@@ -122,11 +122,11 @@ InitComm(game) char *game;
              */
             restore_map();
             drawmode(PUPDRAW);
-            color(0);
-            clear();
+            //color(0);
+            //clear();
             drawmode(UNDERDRAW);
-            color(0);
-            clear();
+            //color(0);
+            //clear();
             gexit();
 
             if (enet == -2)
@@ -526,6 +526,7 @@ ctrlu:
     *str = '\0';
 
     while (1) {
+        zbuffer(FALSE);
         COLOR(C_BLACK);
         clear();
         COLOR(C_WHITE);
@@ -533,6 +534,7 @@ ctrlu:
         cmov2i(llx + 12, lly + 10);
         charstr(prompt);
         charstr(strbuf);
+        zbuffer(TRUE);
         swapbuffers();
 
         type = qread(&val);
@@ -567,10 +569,11 @@ all_done:
     *--str = '\0'; /* remove cursor	*/
     strcpy(user_buf, strbuf);
     curson();
-    COLOR(C_BLACK);
-    clear();
+    //COLOR(C_BLACK);
+    //clear();
+
     swapbuffers();
-    clear();
+    //clear();
 }
 
 draw_messages() {

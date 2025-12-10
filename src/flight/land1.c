@@ -34,7 +34,7 @@ static unsigned short nocursor[] = {
 /*
  *  init_graphics() initilizes graphics for flight
  */
-init_graphics(name) char *name;
+int init_graphics(char *name)
 {
     static Pattern16 shadow_pattern = {
         0x5555, 0xaaaa, 0x5555, 0xaaaa, 0x5555, 0xaaaa, 0x5555, 0xaaaa,
