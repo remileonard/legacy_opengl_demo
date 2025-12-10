@@ -2223,26 +2223,6 @@ void scrmask(Screencoord left, Screencoord right,
     glEnable(GL_SCISSOR_TEST);
     glScissor(sc_x, sc_y, sc_w, sc_h);
     glDisable(GL_DEPTH_TEST);
-    glMatrixMode(GL_PROJECTION);
-    glPushMatrix();
-    glLoadIdentity();
-    gluOrtho2D(0, win_w, 0, win_h);
-    glMatrixMode(GL_MODELVIEW);
-    glPushMatrix();
-    glLoadIdentity();
-
-    glColor3f(1, 1, 0); // jaune
-    glBegin(GL_LINE_LOOP);
-        glVertex2i(sc_x,         sc_y);
-        glVertex2i(sc_x+sc_w,    sc_y);
-        glVertex2i(sc_x+sc_w,    sc_y+sc_h);
-        glVertex2i(sc_x,         sc_y+sc_h);
-    glEnd();
-
-    glPopMatrix();
-    glMatrixMode(GL_PROJECTION);
-    glPopMatrix();
-    glMatrixMode(GL_MODELVIEW);
     scrmask_enabled = 1;
 }
 
