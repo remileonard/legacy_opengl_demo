@@ -369,8 +369,11 @@ void loadmatrix(Matrix m)
     if (current_matrix_mode == GL_PROJECTION) {
         glMatrixMode(GL_PROJECTION);
         glLoadMatrixf((GLfloat*)m);
-    } else {
+    } else if (current_matrix_mode == GL_MODELVIEW) {
         glMatrixMode(GL_MODELVIEW);
+        glLoadMatrixf((GLfloat*)m);
+    } else if (current_matrix_mode == GL_TEXTURE) {
+        glMatrixMode(GL_TEXTURE);
         glLoadMatrixf((GLfloat*)m);
     }
 }
@@ -404,6 +407,10 @@ void mmode(int mode) {
         case MPROJECTION:
             glMatrixMode(GL_PROJECTION);
             current_matrix_mode = GL_PROJECTION;
+            break;
+        case MTEXTURE:
+            glMatrixMode(GL_TEXTURE);
+            current_matrix_mode = GL_TEXTURE;
             break;
         default:
             fprintf(stderr, "mmode: unknown mode %d\n", mode);

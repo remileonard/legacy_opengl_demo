@@ -8,6 +8,9 @@ set(SIMPLE_EXECUTABLES
     road
     plasma
     reflexion
+    voronoi
+    texture
+    rotate
 )
 
 foreach(target ${SIMPLE_EXECUTABLES})

@@ -29,34 +29,41 @@ add_subdirectory(src/space)
 add_subdirectory(src/flight)
 add_subdirectory(src/iris)
 
-set(LEGACY_DEMOS
-    atlantis
-    bounce
+set (BUTTON_FLY
     buttonfly
+)
+set(LEGACY_INTERACTIVE
     cycles
     distort
     enterprise
     flight
     flip
     gl_puzzle
-    glutplane
-    ideas
     insect
     maze
     objviewer
-    plasma
-    rc
-    reflexion
     road
-    scube
-    sgi_bounce
     smooth
     space
+)
+set (LEGACY_DEMOS
+    bounce
+    atlantis
+    glutplane
+    ideas
+    scube
+    sgi_bounce
+    reflexion
+    plasma
+    rc
     stars
 )
 
 # Répertoire de distribution
 set(DIST_DIR "${CMAKE_BINARY_DIR}/dist")
+
+set(DEMO_DIR "${DIST_DIR}/demos")
+set(INTERACTIVE_DIR "${DIST_DIR}/interactive")
 
 # Cible personnalisée pour créer le dossier de distribution
 add_custom_target(dist ALL
@@ -64,7 +71,7 @@ add_custom_target(dist ALL
 )
 
 # Pour chaque exécutable, copie vers dist/
-foreach(demo ${LEGACY_DEMOS})
+foreach(demo ${BUTTON_FLY})
     add_dependencies(dist ${demo})
 
     add_custom_command(TARGET dist POST_BUILD
@@ -73,6 +80,30 @@ foreach(demo ${LEGACY_DEMOS})
             "$<TARGET_FILE:${demo}>"
             "${DIST_DIR}/"
         COMMENT "Copie de l'exécutable ${demo} vers ${DIST_DIR}"
+    )
+endforeach()
+
+foreach(demo ${LEGACY_DEMOS})
+    add_dependencies(dist ${demo})
+
+    add_custom_command(TARGET dist POST_BUILD
+        COMMAND "${CMAKE_COMMAND}" -E make_directory "${DEMO_DIR}"
+        COMMAND "${CMAKE_COMMAND}" -E copy_if_different
+            "$<TARGET_FILE:${demo}>"
+            "${DEMO_DIR}/"
+        COMMENT "Copie de l'exécutable ${demo} vers ${DEMO_DIR}"
+    )
+endforeach()
+
+foreach(demo ${LEGACY_INTERACTIVE})
+    add_dependencies(dist ${demo})
+
+    add_custom_command(TARGET dist POST_BUILD
+        COMMAND "${CMAKE_COMMAND}" -E make_directory "${INTERACTIVE_DIR}"
+        COMMAND "${CMAKE_COMMAND}" -E copy_if_different
+            "$<TARGET_FILE:${demo}>"
+            "${INTERACTIVE_DIR}/"
+        COMMENT "Copie de l'exécutable ${demo} vers ${INTERACTIVE_DIR}"
     )
 endforeach()
 
@@ -96,6 +127,12 @@ foreach(dll ${ALL_DLLS})
         COMMAND "${CMAKE_COMMAND}" -E copy_if_different
             "${dll}"
             "${DIST_DIR}/"
+        COMMAND "${CMAKE_COMMAND}" -E copy_if_different
+            "${dll}"
+            "${DEMO_DIR}/"
+        COMMAND "${CMAKE_COMMAND}" -E copy_if_different
+            "${dll}"
+            "${INTERACTIVE_DIR}/"
         COMMENT "Copie de la DLL ${dll} vers ${DIST_DIR}"
     )
 endforeach()

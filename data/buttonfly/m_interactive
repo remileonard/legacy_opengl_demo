@@ -1,0 +1,24 @@
+Maze
+	interactive/maze.exe
+	.color. .9 .5 .9
+	.highcolor. 1.0 .7 1.0
+Enterprise
+	interactive/enterprise.exe
+	.color. .9 .5 .9
+	.highcolor. 1.0 .7 1.0
+Road
+	interactive/road.exe
+	.color. .9 .5 .9
+	.highcolor. 1.0 .7 1.0
+Distort
+	interactive/distort.exe ./data/dog.rgb
+	.color. .9 .5 .9
+	.highcolor. 1.0 .7 1.0
+GL Puzzle
+	interactive/gl_puzzle.exe
+	.color. .9 .5 .9
+	.highcolor. 1.0 .7 1.0
+Cycles
+	interactive/cycles.exe
+	.color. .9 .5 .9
+	.highcolor. 1.0 .7 1.0

@@ -1,0 +1,33 @@
+Atlantis
+	./demos/atlantis.exe
+	.color. .9 .5 .9
+	.highcolor. 1.0 .7 1.0
+Bounce
+	./demos/bounce.exe
+	.color. .9 .5 .9
+	.highcolor. 1.0 .7 1.0
+
+Glut Planes
+	./demos/glutplane.exe
+	.color. .9 .5 .9
+	.highcolor. 1.0 .7 1.0
+SCube
+	./demos/scube.exe
+	.color. .9 .5 .9
+	.highcolor. 1.0 .7 1.0
+Stars
+	./demos/stars.exe
+	.color. .9 .5 .9
+	.highcolor. 1.0 .7 1.0
+Plasma
+	./demos/plasma.exe
+	.color. .9 .5 .9
+	.highcolor. 1.0 .7 1.0
+Roller Coaster
+	./demos/rc.exe
+	.color. .9 .5 .9
+	.highcolor. 1.0 .7 1.0
+Ideas
+	./demos/ideas.exe
+	.color. .9 .5 .9
+	.highcolor. 1.0 .7 1.0

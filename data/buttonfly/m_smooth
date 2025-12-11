@@ -1,0 +1,44 @@
+Al
+	./interactive/smooth.exe data/al.obj
+Castle
+	./interactive/smooth.exe data/castle.obj
+Couch
+	./interactive/smooth.exe data/couch.obj
+Cow
+	./interactive/smooth.exe data/cow.obj
+Cube
+	./interactive/smooth.exe data/cube.obj
+Cut cube
+	./interactive/smooth.exe data/cutcube.obj
+Dolphins
+	./interactive/smooth.exe data/dolphins.obj
+Dragon
+	./interactive/smooth.exe data/dragon.obj
+Eagle
+	./interactive/smooth.exe data/eagle.obj
+Galleon
+	./interactive/smooth.exe data/galleon.obj
+Head chord
+	./interactive/smooth.exe data/head_chord.obj
+NCC1701b
+	./interactive/smooth.exe data/ncc1701b.obj
+Pawn
+	./interactive/smooth.exe data/pawn.obj
+Pig
+	./interactive/smooth.exe data/pig.obj
+Rose Vase
+	./interactive/smooth.exe data/rose+vase.obj
+Shark
+	./interactive/smooth.exe data/shark.obj
+Slices
+	./interactive/smooth.exe data/slices.obj
+Soccer Ball
+	./interactive/smooth.exe data/soccerball.obj
+Teapot
+	./interactive/smooth.exe data/teapot.obj
+Venus de Milo
+	./interactive/smooth.exe data/venus.obj
+Woman Head
+	./interactive/smooth.exe data/womanhead.obj
+World curved
+	./interactive/smooth.exe data/world_curved.obj

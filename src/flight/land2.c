@@ -289,9 +289,9 @@ draw_infinite_world(elv) float elv;
      *  sun
      */
 
-    
-    /*draw_cloud_layer();*/
-    
+    if (fogit) {
+        draw_cloud_layer();
+    }
 }
 
 #define CLOUD_ELEV 4000.0

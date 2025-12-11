@@ -246,6 +246,7 @@ void delobj(Object obj);
 #define MSINGLE     0
 #define MPROJECTION 1
 #define MVIEWING    2
+#define MTEXTURE    3
 
 void resetmaterials(void);
 void mmode(int mode);
@@ -468,8 +469,6 @@ int getgdesc(int descriptor);
 // === Pattern constants ===
 #define PATTERN_16  16
 
-// === Material/Texture binding ===
-#define MTEXTURE    1
 
 // === Texture constants (IRIS GL texture mapping) ===
 
