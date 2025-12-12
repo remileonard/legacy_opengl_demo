@@ -303,6 +303,8 @@ void ghost_think(mazeobj *self) {
 }
 void generate_random_maze(void) {
     int x, y;
+    int r, i, rx, ry;
+    int dir, d;
     Cell stack[MAZE_WIDTH * MAZE_HEIGHT];
     int stack_size = 0;
     Room rooms[10];
@@ -335,7 +337,7 @@ void generate_random_maze(void) {
         }
     }
     
-    for (int r = 0; r < max_rooms && num_rooms < 10; r++) {
+    for ( r = 0; r < max_rooms && num_rooms < 10; r++) {
         int room_width = 3 + (rand() % 3) * 2;   // 3, 5 ou 7
         int room_height = 3 + (rand() % 3) * 2;  // 3, 5 ou 7
 
@@ -347,7 +349,7 @@ void generate_random_maze(void) {
             continue;
 
         
-        for (int i = 0; i < num_rooms; i++) {
+        for ( i = 0; i < num_rooms; i++) {
             if (!(room_x + room_width + 2 < rooms[i].x || 
                   room_x > rooms[i].x + rooms[i].width + 2 ||
                   room_y + room_height + 2 < rooms[i].y || 
@@ -366,8 +368,8 @@ void generate_random_maze(void) {
         rooms[num_rooms].height = room_height;
         num_rooms++;
 
-        for (int ry = room_y; ry < room_y + room_height; ry++) {
-            for (int rx = room_x; rx < room_x + room_width; rx++) {
+        for ( ry = room_y; ry < room_y + room_height; ry++) {
+            for ( rx = room_x; rx < room_x + room_width; rx++) {
                 mazedata[ry][rx] = ' ';
                 visited[ry][rx] = 1;
             }
@@ -409,7 +411,7 @@ void generate_random_maze(void) {
         int neighbors[4];
         int neighbor_count = 0;
         
-        for (int dir = 0; dir < 4; dir++) {
+        for ( dir = 0; dir < 4; dir++) {
             int nx = current_x + dx[dir] * 2;
             int ny = current_y + dy[dir] * 2;
 
@@ -438,10 +440,10 @@ void generate_random_maze(void) {
         }
     }
 
-    for (int r = 0; r < num_rooms; r++) {
+    for ( r = 0; r < num_rooms; r++) {
         int num_doors = 1 + (rand() % 3); // 1 à 3 portes
         
-        for (int d = 0; d < num_doors; d++) {
+        for ( d = 0; d < num_doors; d++) {
             int side = rand() % 4;
             int door_x, door_y;
             
@@ -664,12 +666,13 @@ int drawtop() {
 }
 static int drawground(void) {
     int dl;
+    int x, y;
     glNewList(dl = glGenLists(1), GL_COMPILE);
     glBegin(GL_QUADS);
     glNormal3f(0.0f, 0.0f, 1.0f);
     glColor3f(1.0f, 0.6f, 0.0f);
-    for (int y = 0; y < MAZE_HEIGHT; ++y) {
-        for (int x = 0; x < MAZE_WIDTH; ++x) {
+    for ( y = 0; y < MAZE_HEIGHT; ++y) {
+        for ( x = 0; x < MAZE_WIDTH; ++x) {
             float x0 = (float)x,     x1 = x0 + 1.0f;
             float y0 = (float)y,     y1 = y0 + 1.0f;
 
@@ -685,12 +688,13 @@ static int drawground(void) {
 }
 static int drawcelling(void) {
     int dl;
+    int x, y;
     glNewList(dl = glGenLists(1), GL_COMPILE);
     glBegin(GL_QUADS);
     glNormal3f(0.0f, 0.0f, -1.0f);
     glColor3f(0.6f, 0.6f, 1.0f);
-    for (int y = 0; y < MAZE_HEIGHT; ++y) {
-        for (int x = 0; x < MAZE_WIDTH; ++x) {
+    for ( y = 0; y < MAZE_HEIGHT; ++y) {
+        for ( x = 0; x < MAZE_WIDTH; ++x) {
             float x0 = (float)x,     x1 = x0 + 1.0f;
             float y0 = (float)y,     y1 = y0 + 1.0f;
 

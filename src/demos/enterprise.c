@@ -415,7 +415,8 @@ static void draw_cracked_screen_overlay(float damage_level) {
     glMatrixMode(GL_MODELVIEW);
 }
 static void init_stars(void) {
-    for (int i = 0; i < STAR_COUNT; ++i) {
+    int i;
+    for ( i = 0; i < STAR_COUNT; ++i) {
         stars[i].x = ((float)rand() / RAND_MAX - 0.5f) * 40.0f;
         stars[i].y = ((float)rand() / RAND_MAX - 0.5f) * 40.0f;
     }
@@ -428,23 +429,25 @@ static void wrap_star(star_t *star) {
 }
 static void update_starfield(float delta_time) {
     (void)delta_time;
+    int i;
     float delta_heading = player.h - previous_player_heading;
     while (delta_heading > 180.0f) delta_heading -= 360.0f;
     while (delta_heading < -180.0f) delta_heading += 360.0f;
     float lateral_shift = delta_heading * 0.05f;
-    for (int i = 0; i < STAR_COUNT; ++i) {
+    for ( i = 0; i < STAR_COUNT; ++i) {
         stars[i].x += lateral_shift;
         wrap_star(&stars[i]);
     }
     previous_player_heading = player.h;
 }
 static void draw_starfield(void) {
+    int i;
     glDisable(GL_LIGHTING);
     glPushMatrix();
     glTranslatef(-player.x * 0.2f, -player.y * 0.2f, -5.0f);
     glColor3f(1.0f, 1.0f, 1.0f);
     
-    for (int i = 0; i < STAR_COUNT; ++i) {
+    for ( i = 0; i < STAR_COUNT; ++i) {
         glPointSize(i%5);
         glBegin(GL_POINTS);
         glVertex3f(stars[i].x, stars[i].y, 0.0f);
@@ -517,10 +520,10 @@ static void draw_bitmap_text_wrapped(
     const float line_height = (float)glutBitmapHeight(GLUT_BITMAP_HELVETICA_18) / (float)viewport_height;
     float cursor_x = origin_x;
     float cursor_y = origin_y;
-
+    unsigned char *c;
     glRasterPos2f(cursor_x, cursor_y);
 
-    for (const unsigned char *c = (const unsigned char *)text; *c; ++c) {
+    for (*c = (unsigned char *)text; *c; ++c) {
         if (*c == '\n') {
             cursor_x = origin_x;
             cursor_y -= line_height;
@@ -770,6 +773,7 @@ static void draw_spaceship_top_view(void) {
     glPointSize(1.0f);
 }
 static void draw_player_ship_top_view(void) {
+    int i;
     // Soucoupe principale (saucer section) - forme elliptique
     glBegin(GL_TRIANGLE_FAN);
     glColor3f(0.7f, 0.7f, 0.75f);
@@ -777,7 +781,7 @@ static void draw_player_ship_top_view(void) {
     
     // Dessiner un cercle aplati (ellipse)
     int segments = 20;
-    for (int i = 0; i <= segments; ++i) {
+    for ( i = 0; i <= segments; ++i) {
         float angle = (float)i / (float)segments * 2.0f * 3.14159265f;
         float x = cosf(angle) * 0.035f; // Largeur
         float y = sinf(angle) * 0.035f; // Hauteur (plus court)
@@ -789,7 +793,7 @@ static void draw_player_ship_top_view(void) {
     glBegin(GL_TRIANGLE_FAN);
     glColor3f(0.5f, 0.5f, 0.6f);
     glVertex2f(0.0f, 0.0f);
-    for (int i = 0; i <= segments; ++i) {
+    for ( i = 0; i <= segments; ++i) {
         float angle = (float)i / (float)segments * 2.0f * 3.14159265f;
         float x = cosf(angle) * 0.008f;
         float y = sinf(angle) * 0.006f;
@@ -1486,7 +1490,8 @@ static void initGL(void) {
     current_game_state = GAME_STATE_TITLE;
 }
 static void init_enemies(void) {
-    for (int i=0; i<nb_enemies; i++) {
+    int i;
+    for ( i=0; i<nb_enemies; i++) {
         struct entity_list_t *new_node = (struct entity_list_t *)malloc(sizeof(struct entity_list_t));
         new_node->entities = (entity_t *)malloc(sizeof(entity_t));
         new_node->entities->x = (float)(rand() % 100) / 50.0f - 1.0f;

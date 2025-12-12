@@ -23,7 +23,8 @@
 #include <stdio.h>
 
 float weight();
-
+void scale_g(geometry_t *g,float  x,float  y,float  z);
+void translate_g(geometry_t *g,float x,float y,float z);
 
 void setrotation(object_t * obj, int tnum, int angle,char axis) {
     obj->tlist[tnum].angle = angle;
@@ -387,7 +388,7 @@ void scale_obj(object_t *obj,float x,float y,float z)
         scale_g(&obj->glist[i], x, y, z);
 }
 
-int scale_g(geometry_t *g,float  x,float  y,float  z)
+void scale_g(geometry_t *g,float  x,float  y,float  z)
 {
     int i;
 
@@ -410,7 +411,7 @@ void translate_obj(object_t *obj,float x,float y,float z)
 }
 
 
-int translate_g(geometry_t *g,float x,float y,float z)
+void translate_g(geometry_t *g,float x,float y,float z)
 {
     int i;
 

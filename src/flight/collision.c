@@ -103,7 +103,7 @@ float swap_float(float val) {
  *  Read a grid file
  */
 grid_t *read_grid(char *fname) {
-    int x, z;
+    int x, z, i;
     FILE *fp;
     float ftemp;
     grid_t *g;
@@ -148,7 +148,7 @@ grid_t *read_grid(char *fname) {
         g->elv[x] = (float *)malloc(sizeof(float) * (g->zsize + 1));
         if (g->elv[x] == NULL) {
             fprintf(stderr, "malloc failed for grid elevation row\n");
-            for (int i = 0; i < x; i++)
+            for (i = 0; i < x; i++)
                 free(g->elv[i]);
             free(g->elv);
             free(g);

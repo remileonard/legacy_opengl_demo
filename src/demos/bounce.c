@@ -106,6 +106,7 @@ static void
 draw(void)
 {
   GLint i;
+  int j;
   glClear(GL_COLOR_BUFFER_BIT);
 
   glIndexi(CYAN);
@@ -159,7 +160,7 @@ draw(void)
   glBegin(GL_TRIANGLE_FAN);
   glIndexi(5);
   glVertex2f(0.0f, 0.0f); // centre
-  for (int j = 0; j <= numSegments; ++j)
+  for (j = 0; j <= numSegments; ++j)
   {
     float angle = 2.0f * 3.14159f * j / numSegments;
     glVertex2f(cos(angle) * radius, sin(angle) * radius);

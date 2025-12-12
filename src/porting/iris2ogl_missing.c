@@ -37,7 +37,8 @@ void charstr(const char *str) {
 
 fmfonthandle fmscalefont(fmfonthandle font, float scale) {
     // Chercher si cette combinaison font/scale existe déjà
-    for (int i = 0; i < scaled_font_count; i++) {
+    int i;
+    for (i = 0; i < scaled_font_count; i++) {
         if (scaled_fonts[i].base_font == font && 
             fabsf(scaled_fonts[i].scale - scale) < 0.01f) {
             return (fmfonthandle)&scaled_fonts[i];
@@ -62,7 +63,8 @@ fmfonthandle fmscalefont(fmfonthandle font, float scale) {
 
 // Fonction helper pour vérifier si un font handle est un ScaledFont
 int is_scaled_font(fmfonthandle font, ScaledFont** out_sf) {
-    for (int i = 0; i < scaled_font_count; i++) {
+    int i;
+    for (i = 0; i < scaled_font_count; i++) {
         if ((void*)font == (void*)&scaled_fonts[i]) {
             if (out_sf) *out_sf = &scaled_fonts[i];
             return 1;

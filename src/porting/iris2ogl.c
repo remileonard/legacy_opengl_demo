@@ -70,11 +70,12 @@ static TextureDef textures[MAX_TEXTURES];
 static int current_texture_id = 0;
 
 void init_texture_system(void) {
+    int i;
     memset(tex_envs, 0, sizeof(tex_envs));
     memset(textures, 0, sizeof(textures));
     
     // Générer les IDs OpenGL pour les textures
-    for (int i = 1; i < MAX_TEXTURES; i++) {
+    for (i = 1; i < MAX_TEXTURES; i++) {
         glGenTextures(1, &textures[i].gl_id);
     }
 }
@@ -89,8 +90,9 @@ void set_iris_colormap(int index, float r, float g, float b) {
     }
 }
 void iris_init_colormap(void) {
+    int i;
     // Initialize with grayscale ramp
-    for (int i = 0; i < 256; i++) {
+    for (i = 0; i < 256; i++) {
         float val = i / 255.0f;
         iris_colormap[i][0] = val;
         iris_colormap[i][1] = val;
@@ -387,9 +389,10 @@ void rect(Icoord x1, Icoord y1, Icoord x2, Icoord y2) {
 
 void circf(Coord x, Coord y, Coord radius) {
     int segments = 32;
+    int i;
     glBegin(GL_TRIANGLE_FAN);
     glVertex2f(x, y);
-    for (int i = 0; i <= segments; i++) {
+    for (i = 0; i <= segments; i++) {
         float angle = 2.0f * M_PI * i / segments;
         glVertex2f(x + cos(angle) * radius, y + sin(angle) * radius);
     }
@@ -398,8 +401,9 @@ void circf(Coord x, Coord y, Coord radius) {
 
 void circ(Coord x, Coord y, Coord radius) {
     int segments = 32;
+    int i;
     glBegin(GL_LINE_LOOP);
-    for (int i = 0; i < segments; i++) {
+    for (i = 0; i < segments; i++) {
         float angle = 2.0f * M_PI * i / segments;
         glVertex2f(x + cos(angle) * radius, y + sin(angle) * radius);
     }
@@ -415,24 +419,27 @@ void sboxfi(Icoord x1, Icoord y1, Icoord x2, Icoord y2) {
 }
 
 void polf2(int32_t n, Coord parray[][2]) {
+    int i;
     glBegin(GL_POLYGON);
-    for (int i = 0; i < n; i++) {
+    for (i = 0; i < n; i++) {
         glVertex2f(parray[i][0], parray[i][1]);
     }
     glEnd();
 }
 
 void polf2i(int32_t n, Icoord parray[][2]) {
+    int i;
     glBegin(GL_POLYGON);
-    for (int i = 0; i < n; i++) {
+    for (i = 0; i < n; i++) {
         glVertex2i(parray[i][0], parray[i][1]);
     }
     glEnd();
 }
 
 void polf2s(int32_t n, Scoord parray[][2]) {
+    int i;
     glBegin(GL_POLYGON);
-    for (int i = 0; i < n; i++) {
+    for (i = 0; i < n; i++) {
         glVertex2s(parray[i][0], parray[i][1]);
     }
     glEnd();
@@ -639,16 +646,17 @@ void linewidth(int width) {
 
 
 void defpattern(int id, int size, Pattern16 pattern) {
+    int y,rep,x;
     if (id >= 0 && id < MAX_PATTERNS && size == 16) {
         // Convert 16x16 pattern to OpenGL stipple pattern (32x32)
         memset(stipple_patterns[id], 0, 128);
-        for (int y = 0; y < 16; y++) {
+        for (y = 0; y < 16; y++) {
             uint16_t row = pattern[y];
             // Replicate each row twice for 32x32
-            for (int rep = 0; rep < 2; rep++) {
+            for (rep = 0; rep < 2; rep++) {
                 int idx = (y * 2 + rep) * 4;
                 // Replicate each bit twice horizontally
-                for (int x = 0; x < 16; x++) {
+                for (x = 0; x < 16; x++) {
                     if (row & (1 << (15 - x))) {
                         int bit_pos = x * 2;
                         stipple_patterns[id][idx + bit_pos / 8] |= (3 << (6 - (bit_pos % 8)));
@@ -683,7 +691,8 @@ static int current_light_model = 0;
 
 void resetmaterials(void) {
     // Reset all materials to undefined
-    for (int i = 0; i < MAX_MATERIALS; i++) {
+    int i;
+    for (i = 0; i < MAX_MATERIALS; i++) {
         materials[i].defined = FALSE;
     }
 }
@@ -908,7 +917,7 @@ void lmdef(int deftype, int index, int np, float props[]) {
 }
 
 void lmbind(int target, int index) {
-    
+    int li;
     switch (target) {
         case LIGHT0:
         case LIGHT1:
@@ -1002,7 +1011,7 @@ void lmbind(int target, int index) {
                 glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER, GL_FALSE);
 
                 // Reset light attenuation to defaults
-                for (int li = 0; li < MAX_LIGHTS; ++li) {
+                for (li = 0; li < MAX_LIGHTS; ++li) {
                     GLenum lid = GL_LIGHT0 + li;
                     if (glIsEnabled(lid)) {
                         glLightf(lid, GL_CONSTANT_ATTENUATION, 1.0f);
@@ -1020,7 +1029,7 @@ void lmbind(int target, int index) {
                 glLightModelfv(GL_LIGHT_MODEL_AMBIENT, lm->ambient);
                 glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER, lm->local_viewer ? GL_TRUE : GL_FALSE);
 
-                for (int li = 0; li < MAX_LIGHTS; ++li) {
+                for (li = 0; li < MAX_LIGHTS; ++li) {
                     GLenum lid = GL_LIGHT0 + li;
                     if (glIsEnabled(lid)) {
                         glLightf(lid, GL_CONSTANT_ATTENUATION, lm->attenuation[0]);
@@ -1169,6 +1178,7 @@ void debug_opengl_state(void) {
     }
 }
 void fmprstr(const char *str) {
+    char *c;
     if (current_font == NULL) {
         current_font = glut_fonts[DEFAULT_FONT];
     }
@@ -1203,7 +1213,7 @@ void fmprstr(const char *str) {
             float stroke_scale = scale * 0.0032f; // Les polices GLUT stroke sont à l'échelle ~119 unités
             glScalef(stroke_scale, stroke_scale, 1.0f);
             float advance = 0.0f;
-            for (const char *c = str; *c != '\0'; c++) {
+            for (*c = str; *c != '\0'; c++) {
                 glutStrokeCharacter(actual_font, *c);
                 advance += glutStrokeWidth(actual_font, *c) * stroke_scale;
             }
@@ -1216,13 +1226,13 @@ void fmprstr(const char *str) {
             glDisable(GL_LINE_SMOOTH);
             glPopAttrib();
         } else {
-            for (const char *c = str; *c != '\0'; c++) {
+            for (*c = str; *c != '\0'; c++) {
                 glutBitmapCharacter(actual_font, *c);
             }
         }
     } else {
         // Font normal sans scaling
-        for (const char *c = str; *c != '\0'; c++) {
+        for (*c = str; *c != '\0'; c++) {
             glutBitmapCharacter(current_font, *c);
         }
     }
@@ -1261,7 +1271,9 @@ void winopen(const char *title) {
     glutInitWindowPosition(window_x, window_y);
     main_window = glutCreateWindow(title);
     init_texture_system();
+#if _WIN32
     init_network_layer();
+#endif
     //   GLUT callbacks
     glutDisplayFunc(iris_display_func);
     glutIdleFunc(iris_idle_func);  // Keep processing events
@@ -1877,9 +1889,10 @@ static int     last_menu_choice = -1;
 // Callback global GLUT -> route vers notre PupMenu
 static void iris_pup_menu_callback(int value)
 {
+    int i;
     last_menu_choice = value;
     int glut_id = glutGetMenu();
-    for (int i = 0; i < MAX_PUP_MENUS; ++i) {
+    for (i = 0; i < MAX_PUP_MENUS; ++i) {
         if (pup_menus[i].used && pup_menus[i].glut_menu_id == glut_id) {
             PupMenu *pm = &pup_menus[i];
             int idx = value - 1;
@@ -1904,7 +1917,8 @@ static void iris_pup_menu_callback(int value)
 // Création d'un nouveau menu IRISGL
 Menu newpup(void)
 {
-    for (int i = 0; i < MAX_PUP_MENUS; ++i) {
+    int i;
+    for (i = 0; i < MAX_PUP_MENUS; ++i) {
         if (!pup_menus[i].used) {
             PupMenu *pm = &pup_menus[i];
             memset(pm, 0, sizeof(PupMenu));
@@ -2215,8 +2229,9 @@ void pnt2s(Scoord x, Scoord y) {
 
 // 2D polygon
 void poly2(int32_t n, Coord parray[][2]) {
+    int32_t i;
     glBegin(GL_POLYGON);
-    for (int32_t i = 0; i < n; i++) {
+    for (i = 0; i < n; i++) {
         glVertex2f(parray[i][0], parray[i][1]);
     }
     glEnd();
@@ -2248,9 +2263,10 @@ void rects(Scoord x1, Scoord y1, Scoord x2, Scoord y2) {
 // Filled circle - short coordinates
 void circfs(Scoord x, Scoord y, Scoord radius) {
     int segments = 32;
+    int i;
     glBegin(GL_TRIANGLE_FAN);
     glVertex2s(x, y);
-    for (int i = 0; i <= segments; i++) {
+    for (i = 0; i <= segments; i++) {
         float angle = 2.0f * M_PI * i / segments;
         glVertex2f(x + radius * cos(angle), y + radius * sin(angle));
     }
@@ -2259,10 +2275,11 @@ void circfs(Scoord x, Scoord y, Scoord radius) {
 
 // Text functions
 int strwidth(const char* str) {
-    if (!str) return 0;
+    char *p;
     int width = 0;
     void* font = GLUT_BITMAP_9_BY_15;
-    for (const char* p = str; *p; p++) {
+    if (!str) return 0;
+    for (p = str; *p; p++) {
         width += glutBitmapWidth(font, *p);
     }
     return width;
@@ -2289,8 +2306,9 @@ static Screencoord current_scrmask[4] = {0, 0, 0, 0};
 static int scrmask_enabled = 0;
 
 void pushviewport(void) {
+    int i;
     if (viewport_stack_depth < MAX_VIEWPORT_STACK) {
-        for (int i = 0; i < 4; i++) {
+        for (i = 0; i < 4; i++) {
             viewport_stack[viewport_stack_depth][i] = current_viewport[i];
         }
         viewport_stack_depth++;
@@ -2298,9 +2316,10 @@ void pushviewport(void) {
 }
 
 void popviewport(void) {
+    int i;
     if (viewport_stack_depth > 0) {
         viewport_stack_depth--;
-        for (int i = 0; i < 4; i++) {
+        for (i = 0; i < 4; i++) {
             current_viewport[i] = viewport_stack[viewport_stack_depth][i];
         }
         glViewport(current_viewport[0], current_viewport[2], 
@@ -2572,7 +2591,8 @@ void tie(Device button, Device val1, Device val2) {
     
     // Find existing tie for this button, or create new one
     DeviceTie *tie = NULL;
-    for (int i = 0; i < tie_count; i++) {
+    int i;
+    for (i = 0; i < tie_count; i++) {
         if (device_ties[i].master == button) {
             tie = &device_ties[i];
             break;
@@ -2590,7 +2610,7 @@ void tie(Device button, Device val1, Device val2) {
     // Add slaves if they don't exist already
     if (val1 != 0) {
         int found = 0;
-        for (int i = 0; i < tie->slave_count; i++) {
+        for (i = 0; i < tie->slave_count; i++) {
             if (tie->slaves[i] == val1) {
                 found = 1;
                 break;
@@ -2603,7 +2623,7 @@ void tie(Device button, Device val1, Device val2) {
     
     if (val2 != 0) {
         int found = 0;
-        for (int i = 0; i < tie->slave_count; i++) {
+        for (i = 0; i < tie->slave_count; i++) {
             if (tie->slaves[i] == val2) {
                 found = 1;
                 break;
@@ -2617,10 +2637,11 @@ void tie(Device button, Device val1, Device val2) {
 
 // Helper function to queue tied devices
 static void queue_tied_devices(Device master_dev) {
-    for (int i = 0; i < tie_count; i++) {
+    int i,j;
+    for (i = 0; i < tie_count; i++) {
         if (device_ties[i].master == master_dev) {
             // Queue all slave devices
-            for (int j = 0; j < device_ties[i].slave_count; j++) {
+            for (j = 0; j < device_ties[i].slave_count; j++) {
                 Device slave = device_ties[i].slaves[j];
                 int16_t val = (int16_t)getvaluator(slave);
                 queue_event(slave, val);
@@ -3125,7 +3146,7 @@ void rectread(Screencoord x1, Screencoord y1, Screencoord x2, Screencoord y2, ui
     int height = abs(y2 - y1) + 1;
     int min_x = (x1 < x2) ? x1 : x2;
     int min_y = (y1 < y2) ? y1 : y2;
-    
+    int i;
     // Lire en RGB avec unsigned byte puis convertir
     int pixel_count = width * height;
     unsigned char *temp = (unsigned char*)malloc(pixel_count * 3);
@@ -3134,7 +3155,7 @@ void rectread(Screencoord x1, Screencoord y1, Screencoord x2, Screencoord y2, ui
         glReadPixels(min_x, min_y, width, height, GL_RGB, GL_UNSIGNED_BYTE, temp);
         
         // Convertir RGB888 vers RGB565 (16-bit)
-        for (int i = 0; i < pixel_count; i++) {
+        for (i = 0; i < pixel_count; i++) {
             unsigned char r = temp[i * 3 + 0];
             unsigned char g = temp[i * 3 + 1];
             unsigned char b = temp[i * 3 + 2];
