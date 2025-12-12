@@ -8,7 +8,7 @@
 #include "data.h"
 #include "graph.h"
 
-
+#define C_WIDTH 2.0f
 
 static int esc_pressed = 0;
 static struct timespec esc_press_time;
@@ -1021,7 +1021,11 @@ void stroke(char *str)
     int i, j;
     int x = 0, y = 0;  // Position courante
     int in_stroke = 0;
+    glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glEnable (GL_BLEND);
 
+	glEnable (GL_LINE_SMOOTH);
+	glHint (GL_LINE_SMOOTH_HINT, GL_NICEST);
     while (*str) {
         unsigned char c = (unsigned char)*str;
         
@@ -1063,11 +1067,11 @@ void stroke(char *str)
             }
             
             // Avancer au caractère suivant (largeur fixe de 6 unités)
-            x += 6;
+            x += C_WIDTH;
             y = 0;
         } else {
             // Caractère non défini, avancer quand même
-            x += 6;
+            x += C_WIDTH;
         }
         
         str++;
@@ -1077,6 +1081,49 @@ void stroke(char *str)
     if (in_stroke) {
         glEnd();
     }
+    glDisable(GL_LINE_SMOOTH);
+    glDisable(GL_BLEND);
+}
+static float get_char_width(unsigned char c) {
+    int i = 0;
+    int x = 0;
+    int max_x = 0;
+    
+    if (!chrtbl[c][0][0]) {
+        // Caractère non défini, utiliser la largeur par défaut
+        return C_WIDTH;
+    }
+    
+    // Parcourir tous les segments du caractère
+    while (chrtbl[c][i][0] != 0) {
+        int dx = chrtbl[c][i][1];
+        x += dx;
+        
+        // Suivre la position X maximale
+        if (x > max_x) {
+            max_x = x;
+        }
+        
+        i++;
+    }
+    
+    // Retourner la largeur maximale atteinte
+    return (float)max_x;
+}
+
+static float get_text_width(char *str) {
+    float width = 0.0f;
+    
+    while (*str) {
+        unsigned char c = (unsigned char)*str;
+        
+        // Utiliser la largeur réelle du caractère
+        width += get_char_width(c);
+        width += C_WIDTH;
+        str++;
+    }
+    
+    return width;
 }
 void draw_button_label(button_struct *button)
 {
@@ -1094,43 +1141,50 @@ void draw_button_label(button_struct *button)
     glScalef(-0.01f, 0.01f, 0.01f);
 
     // Épaisseur de ligne
-    glLineWidth(2.0f);
+    glLineWidth(1.0f);
 
     switch (button->wc) {
 
         case 1:
+            float len0 = (float)get_text_width(button->name[0]) / 2.0f;
             glPushMatrix();
             // Augmenter le décalage pour centrer plus à gauche
-            glTranslatef(-5.5f * (float)strlen(button->name[0]), -4.0f, 0.0f);
+            glTranslatef(-len0, -4.0f, 0.0f);
             stroke(button->name[0]);
             glPopMatrix();
             break;
 
         case 2:
+            float len0_2 = (float)get_text_width(button->name[0]) / 2.0f;
+            float len1_2 = (float)get_text_width(button->name[1]) / 2.0f;
+
             glPushMatrix();
-            glTranslatef(-5.5f * (float)strlen(button->name[0]), 1.0f, 0.0f);
+            glTranslatef(-len0_2, 1.0f, 0.0f);
             stroke(button->name[0]);
             glPopMatrix();
             
             glPushMatrix();
-            glTranslatef(-5.5f * (float)strlen(button->name[1]), -9.0f, 0.0f);
+            glTranslatef(-len1_2, -9.0f, 0.0f);
             stroke(button->name[1]);
             glPopMatrix();
             break;
 
         case 3:
+            float len0_3 = (float)get_text_width(button->name[0]) / 2.0f;
+            float len1_3 = (float)get_text_width(button->name[1]) / 2.0f;
+            float len2_3 = (float)get_text_width(button->name[2]) / 2.0f;
             glPushMatrix();
-            glTranslatef(-5.5f * (float)strlen(button->name[0]), 6.0f, 0.0f);
+            glTranslatef(-len0_3, 6.0f, 0.0f);
             stroke(button->name[0]);
             glPopMatrix();
             
             glPushMatrix();
-            glTranslatef(-5.5f * (float)strlen(button->name[1]), -4.0f, 0.0f);
+            glTranslatef(-len1_3, -4.0f, 0.0f);
             stroke(button->name[1]);
             glPopMatrix();
             
             glPushMatrix();
-            glTranslatef(-5.5f * (float)strlen(button->name[2]), -14.0f, 0.0f);
+            glTranslatef(-len2_3, -14.0f, 0.0f);
             stroke(button->name[2]);
             glPopMatrix();
             break;
@@ -1144,32 +1198,64 @@ void draw_button_label(button_struct *button)
     glPopMatrix();
 }
 button_struct *which_button(int mx, int my) {
-    float x, y;
     button_struct *button;
-
-    sizex = glutGet(GLUT_WINDOW_WIDTH);
-    sizey = glutGet(GLUT_WINDOW_HEIGHT);
-    originx = 0;
-    originy = 0;
-
+    GLdouble modelMatrix[16];
+    GLdouble projMatrix[16];
+    GLint viewport[4];
+    
+    // Récupérer les matrices et le viewport
+    glGetDoublev(GL_MODELVIEW_MATRIX, modelMatrix);
+    glGetDoublev(GL_PROJECTION_MATRIX, projMatrix);
+    glGetIntegerv(GL_VIEWPORT, viewport);
+    
     button = current_buttons;
-
+    
     if (button) do {
-        // Convertir les coordonnées de fenêtre en coordonnées OpenGL
-        x = (float)(mx-sizex/2-originx)/(float)sizex;
-        y = (float)((sizey-my)-sizey/2-originy)/(float)sizey/1.25; // Inverser Y
-
-        x = x * (-button->tz+SCREEN+THICK*2.0);
-        y = y * (-button->tz+SCREEN+THICK*2.0);
-
-        if (button->tx-0.625<x && button->tx+0.625>x &&
-            button->ty-0.5<y && button->ty+0.5>y) {
-            return (button);
+        // Calculer la matrice de transformation complète pour ce bouton
+        glPushMatrix();
+        glLoadIdentity();
+        glTranslatef(0.0f, 0.0f, -5.0f / 4.0f);  // Vue de base
+        glTranslatef(button->tx, button->ty, button->tz);
+        glRotatef(.1*button->ax, 1.0f, 0.0f, 0.0f);
+        glRotatef(.1*button->ay, 0.0f, 1.0f, 0.0f);
+        glRotatef(.1*button->az, 0.0f, 0.0f, 1.0f);
+        
+        GLdouble btnModelMatrix[16];
+        glGetDoublev(GL_MODELVIEW_MATRIX, btnModelMatrix);
+        glPopMatrix();
+        
+        // Projeter les 4 coins du bouton à l'écran
+        GLdouble screenX[4], screenY[4], screenZ[4];
+        double min_x = 1e9, max_x = -1e9;
+        double min_y = 1e9, max_y = -1e9;
+        
+        for (int i = 0; i < 4; i++) {
+            gluProject(front_polys[0][i][0], 
+                      front_polys[0][i][1], 
+                      front_polys[0][i][2] - THICK,
+                      btnModelMatrix, projMatrix, viewport,
+                      &screenX[i], &screenY[i], &screenZ[i]);
+            
+            // Calculer la boîte englobante
+            if (screenX[i] < min_x) min_x = screenX[i];
+            if (screenX[i] > max_x) max_x = screenX[i];
+            if (screenY[i] < min_y) min_y = screenY[i];
+            if (screenY[i] > max_y) max_y = screenY[i];
         }
-
+        
+        // Inverser Y correctement pour correspondre aux coordonnées de la souris
+        double screen_min_y = viewport[3] - max_y;
+        double screen_max_y = viewport[3] - min_y;
+        
+        // Tester si la souris est dans la boîte englobante
+        if (mx >= min_x && mx <= max_x && 
+            my >= screen_min_y && my <= screen_max_y) {
+            return button;
+        }
+        
     } while ((button = button->next) != 0);
-
-    return(NULL);
+    
+    return NULL;
 }
 
 void add_button_to_path(button_struct *current, button_struct *button) {
