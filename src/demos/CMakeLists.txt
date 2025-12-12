@@ -11,6 +11,7 @@ set(SIMPLE_EXECUTABLES
     voronoi
     texture
     rotate
+    mandel
 )
 
 foreach(target ${SIMPLE_EXECUTABLES})
