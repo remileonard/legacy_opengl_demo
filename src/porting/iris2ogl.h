@@ -305,6 +305,7 @@ void getsize(int *width, int *height);
 void getorigin(int *x, int *y);
 void reshapeviewport(void);
 void keepaspect(int x, int y);
+void winconstraints();
 void prefposition(int x1, int y1, int x2, int y2);
 void prefsize(int width, int height);
 void maxsize(int width, int height);
@@ -392,6 +393,9 @@ void set_win_coords(void);
 #define F12KEY          126
 #define PAUSEKEY        127
 #define HOMEKEY         128
+#define GKEY            139
+#define PKEY            140
+#define BKEY            142
 
 // Pad buttons (game controller or dials)
 #define PAD0            129
@@ -566,6 +570,9 @@ inline int bcmp(const void *s1, const void *s2, size_t n) {
 extern char *optarg;
 extern int optind;
 int getopt(int argc, char * const argv[], const char *optstring);
+
+void srandom(unsigned int seed);
+long random(void);
 #else
 #include <unistd.h>
 #endif
@@ -674,7 +681,16 @@ void qenter(Device dev, int16_t val);
 void gexit(void);
 
 // === Additional IRIS GL functions ===
-
+// Polygon drawing functions
+void pmv(Coord x, Coord y, Coord z);
+void pdr(Coord x, Coord y, Coord z);
+void pclos(void);
+void pmv2(Coord x, Coord y);
+void pdr2(Coord x, Coord y);
+void pmv2i(Icoord x, Icoord y);
+void pdr2i(Icoord x, Icoord y);
+void pmv2s(Scoord x, Scoord y);
+void pdr2s(Scoord x, Scoord y);
 // 2D drawing functions
 void move(Coord x, Coord y, Coord z);
 void draw(Coord x, Coord y, Coord z);
@@ -710,6 +726,14 @@ void setlinestyle(int style);
 void deflinestyle(int style, unsigned short pattern);
 void linesmooth(unsigned long mode);
 
+// Coordinate mapping functions
+void mapw(Object obj, Screencoord sx, Screencoord sy, 
+          Coord *x1, Coord *y1, Coord *z1, 
+          Coord *x2, Coord *y2, Coord *z2);
+void mapw2(Screencoord sx, Screencoord sy, Coord *wx, Coord *wy);
+
+
+
 // Cursor functions
 void cursoff(void);
 void curson(void);
@@ -738,6 +762,7 @@ void qreset(void);
 void setvaluator(Device dev, int16_t init, int16_t vmin, int16_t vmax);
 void setbell(int volume);
 void ringbell(void);
+void tie(Device button, Device val1, Device val2);  // <-- Ajouter cette ligne
 
 // Math functions
 void gl_sincos(int angle_decidegrees, float* sinval, float* cosval);
@@ -760,5 +785,9 @@ void tevbind(int target, int texid);
 void gflush(void);
 void getmcolor(Colorindex index, RGBvalue* r, RGBvalue* g, RGBvalue* b);
 void glcompat(int mode, int value);
+void polarview(Coord dist, Angle azim, Angle inc, Angle twist);
+
+void lrectread(Screencoord x1, Screencoord y1, Screencoord x2, Screencoord y2, uint32_t *buffer);
+void rectread(Screencoord x1, Screencoord y1, Screencoord x2, Screencoord y2, uint16_t *buffer);
 
 #endif // IRIS2OGL_H

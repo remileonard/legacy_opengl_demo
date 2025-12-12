@@ -286,6 +286,90 @@ void clear() {
 void swapbuffers(void) {
     glutSwapBuffers();
 }
+// === Polygon Drawing Functions ===
+static int polygon_started = 0;
+
+void pmv(Coord x, Coord y, Coord z) {
+    // IRIS GL pmv: polygon move - start a new polygon or move to new position
+    if (polygon_started) {
+        glEnd();
+    }
+    glBegin(GL_POLYGON);
+    glVertex3f(x, y, z);
+    polygon_started = 1;
+}
+
+void pdr(Coord x, Coord y, Coord z) {
+    // IRIS GL pdr: polygon draw - add vertex to current polygon
+    if (!polygon_started) {
+        // Si pas de polygone en cours, commencer un nouveau
+        glBegin(GL_POLYGON);
+        polygon_started = 1;
+    }
+    glVertex3f(x, y, z);
+}
+
+void pclos(void) {
+    // IRIS GL pclos: polygon close - finish and close current polygon
+    if (polygon_started) {
+        glEnd();
+        polygon_started = 0;
+    }
+}
+
+// Versions 2D
+void pmv2(Coord x, Coord y) {
+    if (polygon_started) {
+        glEnd();
+    }
+    glBegin(GL_POLYGON);
+    glVertex2f(x, y);
+    polygon_started = 1;
+}
+
+void pdr2(Coord x, Coord y) {
+    if (!polygon_started) {
+        glBegin(GL_POLYGON);
+        polygon_started = 1;
+    }
+    glVertex2f(x, y);
+}
+
+// Versions entières
+void pmv2i(Icoord x, Icoord y) {
+    if (polygon_started) {
+        glEnd();
+    }
+    glBegin(GL_POLYGON);
+    glVertex2i(x, y);
+    polygon_started = 1;
+}
+
+void pdr2i(Icoord x, Icoord y) {
+    if (!polygon_started) {
+        glBegin(GL_POLYGON);
+        polygon_started = 1;
+    }
+    glVertex2i(x, y);
+}
+
+// Versions short
+void pmv2s(Scoord x, Scoord y) {
+    if (polygon_started) {
+        glEnd();
+    }
+    glBegin(GL_POLYGON);
+    glVertex2s(x, y);
+    polygon_started = 1;
+}
+
+void pdr2s(Scoord x, Scoord y) {
+    if (!polygon_started) {
+        glBegin(GL_POLYGON);
+        polygon_started = 1;
+    }
+    glVertex2s(x, y);
+}
 
 // === Geometric Primitives ===
 
@@ -444,6 +528,65 @@ void lookat(Coord vx, Coord vy, Coord vz, Coord px, Coord py, Coord pz, Angle tw
     // twist is in 1/10 degree units in IRIS GL
     // For now, we ignore twist (typically 0)
     gluLookAt(vx, vy, vz, px, py, pz, 0.0, 1.0, 0.0);
+}
+
+void mapw(Object obj, Screencoord sx, Screencoord sy, 
+          Coord *x1, Coord *y1, Coord *z1, 
+          Coord *x2, Coord *y2, Coord *z2) {
+    // IRIS GL mapw: convert window coordinates to a 3D ray (near and far points)
+    // obj parameter is typically used for picking but often ignored
+    GLdouble modelMatrix[16];
+    GLdouble projMatrix[16];
+    GLint viewport[4];
+    GLdouble nearX, nearY, nearZ;
+    GLdouble farX, farY, farZ;
+    
+    // Get current matrices and viewport
+    glGetDoublev(GL_MODELVIEW_MATRIX, modelMatrix);
+    glGetDoublev(GL_PROJECTION_MATRIX, projMatrix);
+    glGetIntegerv(GL_VIEWPORT, viewport);
+    
+    // Unproject to near plane (winZ = 0.0)
+    gluUnProject((GLdouble)sx, (GLdouble)sy, 0.0,
+                 modelMatrix, projMatrix, viewport,
+                 &nearX, &nearY, &nearZ);
+    
+    // Unproject to far plane (winZ = 1.0)
+    gluUnProject((GLdouble)sx, (GLdouble)sy, 1.0,
+                 modelMatrix, projMatrix, viewport,
+                 &farX, &farY, &farZ);
+    
+    // Set output values for near point
+    if (x1) *x1 = (Coord)nearX;
+    if (y1) *y1 = (Coord)nearY;
+    if (z1) *z1 = (Coord)nearZ;
+    
+    // Set output values for far point
+    if (x2) *x2 = (Coord)farX;
+    if (y2) *y2 = (Coord)farY;
+    if (z2) *z2 = (Coord)farZ;
+}
+
+void mapw2(Screencoord sx, Screencoord sy, Coord *wx, Coord *wy) {
+    // IRIS GL mapw2: convert window coordinates to 2D world coordinates (Z=0 plane)
+    GLdouble modelMatrix[16];
+    GLdouble projMatrix[16];
+    GLint viewport[4];
+    GLdouble objX, objY, objZ;
+    
+    // Get current matrices and viewport
+    glGetDoublev(GL_MODELVIEW_MATRIX, modelMatrix);
+    glGetDoublev(GL_PROJECTION_MATRIX, projMatrix);
+    glGetIntegerv(GL_VIEWPORT, viewport);
+    
+    // Unproject to near plane (winZ = 0.0)
+    gluUnProject((GLdouble)sx, (GLdouble)sy, 0.0,
+                 modelMatrix, projMatrix, viewport,
+                 &objX, &objY, &objZ);
+    
+    // Set output values (2D only)
+    if (wx) *wx = (Coord)objX;
+    if (wy) *wy = (Coord)objY;
 }
 
 // === Display Lists ===
@@ -1202,6 +1345,10 @@ void keepaspect(int x, int y) {
     // GLUT doesn't support aspect ratio locking directly
     // This is a no-op in this implementation
 }
+void winconstraints(void) {
+    // GLUT doesn't support size constraints directly
+    // This is a no-op in this implementation
+}
 
 void prefposition(int x1, int x2, int y1, int y2) {
     window_x = x1;
@@ -1269,14 +1416,6 @@ void backbuffer(Boolean enable) {
 
 // === Device/Event Management ===
 
-static void queue_event(Device dev, int16_t val) {
-    int next = (event_queue_tail + 1) % EVENT_QUEUE_SIZE;
-    if (next != event_queue_head) {
-        event_queue[event_queue_tail].device = dev;
-        event_queue[event_queue_tail].value = val;
-        event_queue_tail = next;
-    }
-}
 void qenter(Device dev, int16_t val) {
     // IRIS GL ne nécessite pas que le device soit "qdevice"‑é pour qenter,
     // mais on respecte la même file pour cohérence.
@@ -1382,6 +1521,8 @@ void iris_keyboard_func(unsigned char key, int x, int y) {
         case ' ': dev = SPACEKEY; break;
         case 'h': case 'H': dev = HKEY; break;
         case 'a': case 'A': dev = AKEY; break;
+        case 'g': case 'G': dev = GKEY; break;
+        case 'p': case 'P': dev = PKEY; break;
         default:
             dev = 0;  // Not a special key
             break;
@@ -2413,6 +2554,97 @@ void ringbell(void) {
 #endif
 }
 
+// === Device Tying ===
+#define MAX_TIED_DEVICES 8
+
+typedef struct {
+    Device master;
+    Device slaves[MAX_TIED_DEVICES];
+    int slave_count;
+} DeviceTie;
+
+#define MAX_TIES 16
+static DeviceTie device_ties[MAX_TIES];
+static int tie_count = 0;
+
+void tie(Device button, Device val1, Device val2) {
+    // IRIS GL tie: when button events occur, automatically queue val1 and val2
+    
+    // Find existing tie for this button, or create new one
+    DeviceTie *tie = NULL;
+    for (int i = 0; i < tie_count; i++) {
+        if (device_ties[i].master == button) {
+            tie = &device_ties[i];
+            break;
+        }
+    }
+    
+    if (!tie && tie_count < MAX_TIES) {
+        tie = &device_ties[tie_count++];
+        tie->master = button;
+        tie->slave_count = 0;
+    }
+    
+    if (!tie) return;  // No room
+    
+    // Add slaves if they don't exist already
+    if (val1 != 0) {
+        int found = 0;
+        for (int i = 0; i < tie->slave_count; i++) {
+            if (tie->slaves[i] == val1) {
+                found = 1;
+                break;
+            }
+        }
+        if (!found && tie->slave_count < MAX_TIED_DEVICES) {
+            tie->slaves[tie->slave_count++] = val1;
+        }
+    }
+    
+    if (val2 != 0) {
+        int found = 0;
+        for (int i = 0; i < tie->slave_count; i++) {
+            if (tie->slaves[i] == val2) {
+                found = 1;
+                break;
+            }
+        }
+        if (!found && tie->slave_count < MAX_TIED_DEVICES) {
+            tie->slaves[tie->slave_count++] = val2;
+        }
+    }
+}
+
+// Helper function to queue tied devices
+static void queue_tied_devices(Device master_dev) {
+    for (int i = 0; i < tie_count; i++) {
+        if (device_ties[i].master == master_dev) {
+            // Queue all slave devices
+            for (int j = 0; j < device_ties[i].slave_count; j++) {
+                Device slave = device_ties[i].slaves[j];
+                int16_t val = (int16_t)getvaluator(slave);
+                queue_event(slave, val);
+            }
+            break;
+        }
+    }
+}
+
+// Modifier queue_event pour supporter les devices liés
+static void queue_event(Device dev, int16_t val) {
+    if ((event_queue_tail + 1) % EVENT_QUEUE_SIZE == event_queue_head) {
+        // Queue full, drop oldest event
+        event_queue_head = (event_queue_head + 1) % EVENT_QUEUE_SIZE;
+    }
+    
+    event_queue[event_queue_tail].device = dev;
+    event_queue[event_queue_tail].value = val;
+    event_queue_tail = (event_queue_tail + 1) % EVENT_QUEUE_SIZE;
+    
+    // Queue tied devices
+    queue_tied_devices(dev);
+}
+
 // Math functions
 void gl_sincos(int angle_decidegrees, float* sinval, float* cosval) {
     // IRIS GL uses decidegrees (tenths of degrees)
@@ -2847,4 +3079,70 @@ void glcompat(int mode, int value) {
     // Stub - GL compatibility mode setting
     (void)mode;
     (void)value;
+}
+void polarview(Coord dist, Angle azim, Angle inc, Angle twist) {
+    // IRIS GL polarview: position the camera using polar coordinates
+    // All angles are in 1/10 degree units (decidegrees)
+    
+    // Convert from decidegrees to degrees
+    float azim_deg = azim / 10.0f;
+    float inc_deg = inc / 10.0f;
+    float twist_deg = twist / 10.0f;
+    
+    // Apply transformations in the correct order:
+    // 1. Move camera back by distance
+    glTranslatef(0.0f, 0.0f, -dist);
+    
+    // 2. Apply twist (rotation around Z axis)
+    if (twist_deg != 0.0f) {
+        glRotatef(twist_deg, 0.0f, 0.0f, 1.0f);
+    }
+    
+    // 3. Apply inclination (rotation around X axis)
+    if (inc_deg != 0.0f) {
+        glRotatef(inc_deg, 1.0f, 0.0f, 0.0f);
+    }
+    
+    // 4. Apply azimuth (rotation around Y axis)
+    if (azim_deg != 0.0f) {
+        glRotatef(azim_deg, 0.0f, 1.0f, 0.0f);
+    }
+}
+void lrectread(Screencoord x1, Screencoord y1, Screencoord x2, Screencoord y2, uint32_t *buffer) {
+    // IRIS GL lrectread: read rectangle of pixels as 32-bit RGBA values
+    int width = abs(x2 - x1) + 1;
+    int height = abs(y2 - y1) + 1;
+    int min_x = (x1 < x2) ? x1 : x2;
+    int min_y = (y1 < y2) ? y1 : y2;
+    
+    // Read pixels from framebuffer (RGBA format)
+    glReadPixels(min_x, min_y, width, height, GL_RGBA, GL_UNSIGNED_BYTE, buffer);
+}
+
+void rectread(Screencoord x1, Screencoord y1, Screencoord x2, Screencoord y2, uint16_t *buffer) {
+    // IRIS GL rectread: read rectangle of pixels as 16-bit color index values
+    int width = abs(x2 - x1) + 1;
+    int height = abs(y2 - y1) + 1;
+    int min_x = (x1 < x2) ? x1 : x2;
+    int min_y = (y1 < y2) ? y1 : y2;
+    
+    // Lire en RGB avec unsigned byte puis convertir
+    int pixel_count = width * height;
+    unsigned char *temp = (unsigned char*)malloc(pixel_count * 3);
+    
+    if (temp) {
+        glReadPixels(min_x, min_y, width, height, GL_RGB, GL_UNSIGNED_BYTE, temp);
+        
+        // Convertir RGB888 vers RGB565 (16-bit)
+        for (int i = 0; i < pixel_count; i++) {
+            unsigned char r = temp[i * 3 + 0];
+            unsigned char g = temp[i * 3 + 1];
+            unsigned char b = temp[i * 3 + 2];
+            
+            // Pack en 5-6-5 format: RRRRRGGGGGGBBBBB
+            buffer[i] = ((r >> 3) << 11) | ((g >> 2) << 5) | (b >> 3);
+        }
+        
+        free(temp);
+    }
 }

@@ -377,5 +377,14 @@ int getopt(int argc, char * const argv[], const char *optstring) {
 
     return optopt;
 }
+// random() and srandom() implementation for Windows
+void srandom(unsigned int seed) {
+    srand(seed);
+}
 
+long random(void) {
+    // random() returns a value between 0 and RAND_MAX (typically 32767)
+    // For better range, combine multiple rand() calls
+    return rand();
+}
 #endif /* _WIN32 */

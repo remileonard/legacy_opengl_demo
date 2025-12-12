@@ -1,6 +1,7 @@
 set(SIMPLE_EXECUTABLES
     brick
     heat
+    cubetris
 )
 
 foreach(target ${SIMPLE_EXECUTABLES})
