@@ -1,0 +1,19 @@
+Flight
+	interactive/flight.exe -D data/flight
+	.color. .9 .5 .9
+	.highcolor. 1.0 .7 1.0
+
+DogFight
+	interactive/flight.exe -D data/flight -i data/testremi -d
+	.color. .9 .5 .9
+	.highcolor. 1.0 .7 1.0
+
+Shadow
+	interactive/flight.exe -D data/flight -i data/testremi -s
+	.color. .9 .5 .9
+	.highcolor. 1.0 .7 1.0
+
+Radar
+	interactive/flight.exe -D data/flight -i data/testremi -r
+	.color. .9 .5 .9
+	.highcolor. 1.0 .7 1.0

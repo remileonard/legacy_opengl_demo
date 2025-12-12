@@ -1,11 +1,11 @@
 X29
-	./interactive/flip.exe data/x29.bin
+	./interactive/flip.exe data/flip/x29.bin
 
 Martini
-	./interactive/flip.exe data/martini.bin
+	./interactive/flip.exe data/flip/martini.bin
 
 Logo
-	./interactive/flip.exe data/logo.bin
+	./interactive/flip.exe data/flip/logo.bin
 
 VW
-	./interactive/flip.exe data/vw.bin
+	./interactive/flip.exe data/flip/vw.bin

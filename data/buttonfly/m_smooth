@@ -1,44 +1,44 @@
 Al
-	./interactive/smooth.exe data/al.obj
+	./interactive/smooth.exe data/smooth/al.obj
 Castle
-	./interactive/smooth.exe data/castle.obj
+	./interactive/smooth.exe data/smooth/castle.obj
 Couch
-	./interactive/smooth.exe data/couch.obj
+	./interactive/smooth.exe data/smooth/couch.obj
 Cow
-	./interactive/smooth.exe data/cow.obj
+	./interactive/smooth.exe data/smooth/cow.obj
 Cube
-	./interactive/smooth.exe data/cube.obj
+	./interactive/smooth.exe data/smooth/cube.obj
 Cut cube
-	./interactive/smooth.exe data/cutcube.obj
+	./interactive/smooth.exe data/smooth/cutcube.obj
 Dolphins
-	./interactive/smooth.exe data/dolphins.obj
+	./interactive/smooth.exe data/smooth/dolphins.obj
 Dragon
-	./interactive/smooth.exe data/dragon.obj
+	./interactive/smooth.exe data/smooth/dragon.obj
 Eagle
-	./interactive/smooth.exe data/eagle.obj
+	./interactive/smooth.exe data/smooth/eagle.obj
 Galleon
-	./interactive/smooth.exe data/galleon.obj
+	./interactive/smooth.exe data/smooth/galleon.obj
 Head chord
-	./interactive/smooth.exe data/head_chord.obj
+	./interactive/smooth.exe data/smooth/head_chord.obj
 NCC1701b
-	./interactive/smooth.exe data/ncc1701b.obj
+	./interactive/smooth.exe data/smooth/ncc1701b.obj
 Pawn
-	./interactive/smooth.exe data/pawn.obj
+	./interactive/smooth.exe data/smooth/pawn.obj
 Pig
-	./interactive/smooth.exe data/pig.obj
+	./interactive/smooth.exe data/smooth/pig.obj
 Rose Vase
-	./interactive/smooth.exe data/rose+vase.obj
+	./interactive/smooth.exe data/smooth/rose+vase.obj
 Shark
-	./interactive/smooth.exe data/shark.obj
+	./interactive/smooth.exe data/smooth/shark.obj
 Slices
-	./interactive/smooth.exe data/slices.obj
+	./interactive/smooth.exe data/smooth/slices.obj
 Soccer Ball
-	./interactive/smooth.exe data/soccerball.obj
+	./interactive/smooth.exe data/smooth/soccerball.obj
 Teapot
-	./interactive/smooth.exe data/teapot.obj
+	./interactive/smooth.exe data/smooth/teapot.obj
 Venus de Milo
-	./interactive/smooth.exe data/venus.obj
+	./interactive/smooth.exe data/smooth/venus.obj
 Woman Head
-	./interactive/smooth.exe data/womanhead.obj
+	./interactive/smooth.exe data/smooth/womanhead.obj
 World curved
-	./interactive/smooth.exe data/world_curved.obj
+	./interactive/smooth.exe data/smooth/world_curved.obj

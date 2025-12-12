@@ -22,3 +22,9 @@ Cycles
 	interactive/cycles.exe
 	.color. .9 .5 .9
 	.highcolor. 1.0 .7 1.0
+Space
+	interactive/space.exe -f data
+	.color. .9 .5 .9
+	.highcolor. 1.0 .7 1.0
+Flight
+	.menu. data/buttonfly/m_flight

@@ -243,8 +243,11 @@ _glmDirName(char* path)
   char* s;
 
   dir = strdup(path);
-
+#ifndef _WIN32
   s = strrchr(dir, '/');
+#else
+  s = strrchr(dir, '\\');
+#endif
   if (s)
     s[1] = '\0';
   else

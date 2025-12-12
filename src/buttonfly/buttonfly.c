@@ -17,6 +17,15 @@ static button_struct *hovered_button = NULL;  // Bouton actuellement survolé
 static double diff_timespecs(struct timespec *t1, struct timespec *t2) {
     return (t1->tv_sec - t2->tv_sec) + (t1->tv_nsec - t2->tv_nsec)/1000000000.0;
 }
+
+static void convert_path_separators(char *path) {
+    if (!path) return;
+    char *p = path;
+    while (*p) {
+        if (*p == '/') *p = '\\';
+        p++;
+    }
+}
 static struct timespec last_frame_time;
 static int time_initialized = 0;
 static double accumulated_time = 0.0;
@@ -251,10 +260,14 @@ void mouse_click(int button, int state, int x, int y) {
                     }
                     
                     if (scan && scan->action) {
-                        printf("Executing: %s\n", scan->action);
 #ifdef _WIN32
-                        system(scan->action);
+                        char action_copy[1024];
+                        strncpy(action_copy, scan->action, sizeof(action_copy) - 1);
+                        action_copy[sizeof(action_copy) - 1] = '\0';
+                        convert_path_separators(action_copy);
+                        printf("Executing: %s\n", action_copy);                        
 #else
+                        printf("Executing: %s\n", scan->action);
                         system(scan->action);
 #endif
                     }
@@ -519,10 +532,14 @@ short mx, my;
     } else if ((i > 1) && (i <= num+1)) {
 
         for (num=0, scan=b->popup; num != (i-2); num++, scan=scan->next);
-        	/* Keep on scanning... */
+            /* Keep on scanning... */
         
         if (scan && scan->action) {
-            execute_async(scan->action);
+            char action_copy[1024];
+            strncpy(action_copy, scan->action, sizeof(action_copy) - 1);
+            action_copy[sizeof(action_copy) - 1] = '\0';
+            convert_path_separators(action_copy);
+            execute_async(action_copy);
         }
     }
 }
@@ -699,7 +716,11 @@ void push_button(button_struct *selected)
     /* Exécuter l'action (toujours en arrière-plan) */
     if (selected->action != NULL)
     {
-        execute_async(selected->action);
+        char action_copy[1024];
+        strncpy(action_copy, selected->action, sizeof(action_copy) - 1);
+        action_copy[sizeof(action_copy) - 1] = '\0';
+        convert_path_separators(action_copy);
+        execute_async(action_copy);
     }
     
     /* Construire les sous-menus si on a un fichier */

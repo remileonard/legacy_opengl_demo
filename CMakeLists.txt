@@ -79,7 +79,7 @@ foreach(demo ${BUTTON_FLY})
         COMMAND "${CMAKE_COMMAND}" -E copy_if_different
             "$<TARGET_FILE:${demo}>"
             "${DIST_DIR}/"
-        COMMENT "Copie de l'exécutable ${demo} vers ${DIST_DIR}"
+        COMMENT "Copie de l'exécutable ${demo} vers ${DIST_DIR}\n"
     )
 endforeach()
 
@@ -91,7 +91,7 @@ foreach(demo ${LEGACY_DEMOS})
         COMMAND "${CMAKE_COMMAND}" -E copy_if_different
             "$<TARGET_FILE:${demo}>"
             "${DEMO_DIR}/"
-        COMMENT "Copie de l'exécutable ${demo} vers ${DEMO_DIR}"
+        COMMENT "Copie de l'exécutable ${demo} vers ${DEMO_DIR}\n"
     )
 endforeach()
 
@@ -103,7 +103,7 @@ foreach(demo ${LEGACY_INTERACTIVE})
         COMMAND "${CMAKE_COMMAND}" -E copy_if_different
             "$<TARGET_FILE:${demo}>"
             "${INTERACTIVE_DIR}/"
-        COMMENT "Copie de l'exécutable ${demo} vers ${INTERACTIVE_DIR}"
+        COMMENT "Copie de l'exécutable ${demo} vers ${INTERACTIVE_DIR}\n"
     )
 endforeach()
 
@@ -114,7 +114,15 @@ if(EXISTS "${CMAKE_SOURCE_DIR}/data")
         COMMAND "${CMAKE_COMMAND}" -E copy_directory
             "${CMAKE_SOURCE_DIR}/data"
             "${DIST_DIR}/data"
-        COMMENT "Copie des données vers ${DIST_DIR}/data"
+        COMMENT "Copie des données vers ${DIST_DIR}/data\n"
+    )
+endif()
+if (EXISTS "${CMAKE_SOURCE_DIR}/data/buttonfly/menu")
+    add_custom_command(TARGET dist POST_BUILD
+        COMMAND "${CMAKE_COMMAND}" -E copy
+            "${CMAKE_SOURCE_DIR}/data/buttonfly/menu"
+            "${DIST_DIR}/menu"
+        COMMENT "Copie des menu pour buttonfly\n"
     )
 endif()
 
@@ -124,15 +132,15 @@ file(GLOB_RECURSE ALL_DLLS
 
 foreach(dll ${ALL_DLLS})
     add_custom_command(TARGET dist POST_BUILD
-        COMMAND "${CMAKE_COMMAND}" -E copy_if_different
+        COMMAND "${CMAKE_COMMAND}" -E copy
             "${dll}"
             "${DIST_DIR}/"
-        COMMAND "${CMAKE_COMMAND}" -E copy_if_different
+        COMMAND "${CMAKE_COMMAND}" -E copy
             "${dll}"
             "${DEMO_DIR}/"
-        COMMAND "${CMAKE_COMMAND}" -E copy_if_different
+        COMMAND "${CMAKE_COMMAND}" -E copy
             "${dll}"
             "${INTERACTIVE_DIR}/"
-        COMMENT "Copie de la DLL ${dll} vers ${DIST_DIR}"
+        COMMENT "Copie de la DLL ${dll} vers ${DIST_DIR}\n"
     )
 endforeach()
