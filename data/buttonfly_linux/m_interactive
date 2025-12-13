@@ -27,4 +27,4 @@ Space
 	.color. .9 .5 .9
 	.highcolor. 1.0 .7 1.0
 Flight
-	.menu. data/buttonfly/m_flight
+	.menu. data/buttonfly_linux/m_flight

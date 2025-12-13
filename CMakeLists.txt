@@ -117,13 +117,24 @@ if(EXISTS "${CMAKE_SOURCE_DIR}/data")
         COMMENT "Copie des données vers ${DIST_DIR}/data\n"
     )
 endif()
-if (EXISTS "${CMAKE_SOURCE_DIR}/data/buttonfly/menu")
-    add_custom_command(TARGET dist POST_BUILD
-        COMMAND "${CMAKE_COMMAND}" -E copy
-            "${CMAKE_SOURCE_DIR}/data/buttonfly/menu"
-            "${DIST_DIR}/menu"
-        COMMENT "Copie des menu pour buttonfly\n"
-    )
+if (WIN32)
+    if (EXISTS "${CMAKE_SOURCE_DIR}/data/buttonfly/menu")
+        add_custom_command(TARGET dist POST_BUILD
+            COMMAND "${CMAKE_COMMAND}" -E copy
+                "${CMAKE_SOURCE_DIR}/data/buttonfly/menu"
+                "${DIST_DIR}/menu"
+            COMMENT "Copie des menu pour buttonfly\n"
+        )
+    endif()
+else()
+    if (EXISTS "${CMAKE_SOURCE_DIR}/data/buttonfly_linux/menu")
+        add_custom_command(TARGET dist POST_BUILD
+            COMMAND "${CMAKE_COMMAND}" -E copy
+                "${CMAKE_SOURCE_DIR}/data/buttonfly_linux/menu"
+                "${DIST_DIR}/menu"
+            COMMENT "Copie des menu pour buttonfly\n"
+        )
+    endif()
 endif()
 
 file(GLOB_RECURSE ALL_DLLS
