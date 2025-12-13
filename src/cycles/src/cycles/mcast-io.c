@@ -1,9 +1,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
-#include <sys/socket.h>
-#include <net/if.h>
-#include <sys/ioctl.h>
+#ifndef _WIN32
+	#include <sys/socket.h>
+	#include <net/if.h>
+	#include <sys/ioctl.h>
+#endif
 #include "porting/iris2ogl.h"
 #include "porting/irix_network.h"
 #include "cycles.h"

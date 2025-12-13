@@ -517,13 +517,13 @@ static void draw_bitmap_text_wrapped(
     float max_width,
     const char *text
 ) {
+    unsigned char *c = NULL;
     const float line_height = (float)glutBitmapHeight(GLUT_BITMAP_HELVETICA_18) / (float)viewport_height;
     float cursor_x = origin_x;
     float cursor_y = origin_y;
-    unsigned char *c;
+    
     glRasterPos2f(cursor_x, cursor_y);
-
-    for (c = (unsigned char *)text; *c; ++c) {
+    for (c =(unsigned char *)text; *c; ++c) {
         if (*c == '\n') {
             cursor_x = origin_x;
             cursor_y -= line_height;

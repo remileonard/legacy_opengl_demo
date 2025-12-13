@@ -23,5 +23,24 @@
         "sound.h": "c",
         "irix_network.h": "c"
     },
-    "C_Cpp.clang_format_fallbackStyle": "{ BasedOnStyle: LLVM, UseTab: Never, IndentWidth: 4, TabWidth: 4, Break BeforeBraces: Attach, AllowShortIfStatementsOnASingleLine: false, IndentCaseLabels: false, ColumnLimit: 120, A ccessModifierOffset: -4, NamespaceIndentation: All, FixNamespaceComments: false }"
+    "C_Cpp.clang_format_fallbackStyle": "{ BasedOnStyle: LLVM, UseTab: Never, IndentWidth: 4, TabWidth: 4, Break BeforeBraces: Attach, AllowShortIfStatementsOnASingleLine: false, IndentCaseLabels: false, ColumnLimit: 120, A ccessModifierOffset: -4, NamespaceIndentation: All, FixNamespaceComments: false }",
+    "workbench.colorCustomizations": {
+        "activityBar.activeBackground": "#689fd0",
+        "activityBar.background": "#689fd0",
+        "activityBar.foreground": "#15202b",
+        "activityBar.inactiveForeground": "#15202b99",
+        "activityBarBadge.background": "#aa3573",
+        "activityBarBadge.foreground": "#e7e7e7",
+        "commandCenter.border": "#e7e7e799",
+        "sash.hoverBorder": "#689fd0",
+        "statusBar.background": "#4186c4",
+        "statusBar.foreground": "#e7e7e7",
+        "statusBarItem.hoverBackground": "#689fd0",
+        "statusBarItem.remoteBackground": "#4186c4",
+        "statusBarItem.remoteForeground": "#e7e7e7",
+        "titleBar.activeBackground": "#4186c4",
+        "titleBar.activeForeground": "#e7e7e7",
+        "titleBar.inactiveBackground": "#4186c499",
+        "titleBar.inactiveForeground": "#e7e7e799"
+    }
 }
