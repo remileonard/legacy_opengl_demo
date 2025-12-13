@@ -14,7 +14,7 @@
 #include "libgobj/gobj.h"
 #include "porting/iris2ogl.h"
 #include <fcntl.h>
-
+#include <float.h>
 #define MAT_SWAMP	 1
 #define MAT_PLANE	 2
 #define MAT_DIRT	 3
@@ -719,6 +719,89 @@ static void test_opengl_state(void) {
         printf("Macros work correctly!\n");
     }
 }
+static float object_center[3] = {0.0f, 0.0f, 0.0f};
+static float object_radius = 1.0f;
+
+static void calculate_object_bounds(object_t *obj) {
+    if (!obj) return;
+    int v,g;
+    float min_x = FLT_MAX, min_y = FLT_MAX, min_z = FLT_MAX;
+    float max_x = -FLT_MAX, max_y = -FLT_MAX, max_z = -FLT_MAX;
+    
+    // Parcourir tous les geometry nodes
+    for (g = 0; g < obj->gcount; g++) {
+        geometry_t *geom = &obj->glist[g];
+        
+        // Parcourir tous les vertices de cette géométrie
+        for (v = 0; v < geom->vcount; v++) {
+            float x = geom->vlist[v][X];
+            float y = geom->vlist[v][Y];
+            float z = geom->vlist[v][Z];
+            
+            if (x < min_x) min_x = x;
+            if (x > max_x) max_x = x;
+            if (y < min_y) min_y = y;
+            if (y > max_y) max_y = y;
+            if (z < min_z) min_z = z;
+            if (z > max_z) max_z = z;
+        }
+    }
+    
+    // Calculer le centre
+    object_center[0] = (min_x + max_x) / 2.0f;
+    object_center[1] = (min_y + max_y) / 2.0f;
+    object_center[2] = (min_z + max_z) / 2.0f;
+    
+    // Calculer le rayon (distance maximale du centre)
+    float dx = max_x - min_x;
+    float dy = max_y - min_y;
+    float dz = max_z - min_z;
+    object_radius = sqrtf(dx*dx + dy*dy + dz*dz) / 2.0f;
+    
+    // Ajuster la distance de la caméra pour voir tout l'objet
+    camera_distance = object_radius * 2.5f; // Facteur 2.5 pour avoir de la marge
+    
+    printf("Object bounds calculated:\n");
+    printf("  Center: (%.2f, %.2f, %.2f)\n", object_center[0], object_center[1], object_center[2]);
+    printf("  Radius: %.2f\n", object_radius);
+    printf("  Camera distance set to: %.2f\n", camera_distance);
+    fflush(stdout);
+}
+// Ajouter après calculate_object_bounds()
+static void debug_draw_circle(float center_x, float center_y, float center_z, float radius, int segments) {
+    int i;
+    printf("Drawing debug circle: center=(%.2f, %.2f, %.2f) radius=%.2f\n", 
+           center_x, center_y, center_z, radius);
+    
+    glPushAttrib(GL_ALL_ATTRIB_BITS);
+    
+    // Désactiver l'éclairage et les textures
+    glDisable(GL_LIGHTING);
+    glDisable(GL_TEXTURE_2D);
+    glDisable(GL_DEPTH_TEST);
+    
+    // Couleur rouge vif
+    glColor3f(1.0f, 0.0f, 0.0f);
+    glLineWidth(3.0f);
+    
+    // Dessiner le cercle dans le plan XZ (horizontal)
+    bgnclosedline();
+    for (i = 0; i < segments; i++) {
+        float angle = (float)i * 2.0f * M_PI / (float)segments;
+        float x = center_x + radius * cosf(angle);
+        float y = center_y;
+        float z = center_z + radius * sinf(angle);
+        
+        float vertex[3] = {x, y, z};
+        v3f(vertex);
+    }
+    endclosedline();
+    
+    glPopAttrib();
+    
+    printf("Debug circle drawn with %d segments\n", segments);
+    fflush(stdout);
+}
 static void display(void) {
     if (idlefunc) {
         idlefunc();
@@ -734,52 +817,57 @@ static void display(void) {
         float pitch_rad = camera_pitch * M_PI / 180.0f;
         float angle_rad = camera_angle * M_PI / 180.0f;
         
-        float cam_x = camera_distance * cosf(pitch_rad) * sinf(angle_rad);
-        float cam_y = camera_distance * sinf(pitch_rad);
-        float cam_z = camera_distance * cosf(pitch_rad) * cosf(angle_rad);
+        float cam_x = object_center[0] + camera_distance * cosf(pitch_rad) * sinf(angle_rad);
+        float cam_y = object_center[1] + camera_distance * sinf(pitch_rad);
+        float cam_z = object_center[2] + camera_distance * cosf(pitch_rad) * cosf(angle_rad);
         
-        // Positionner la caméra qui regarde vers l'origine
-        gluLookAt(cam_x, cam_y, cam_z,   // Position de la caméra
-                  0.0, 0.0, 0.0,           // Point visé (centre de l'objet)
-                  0.0, 1.0, 0.0);          // Vecteur "haut"
+        // Positionner la caméra qui regarde vers le centre de l'objet
+        gluLookAt(cam_x, cam_y, cam_z,           // Position de la caméra
+                  object_center[0], object_center[1], object_center[2],  // Centre de l'objet
+                  0.0, 1.0, 0.0);                // Vecteur "haut"
     
         glEnable(GL_LIGHTING);
         glEnable(GL_DEPTH_TEST);
-        
-        GLfloat light_position[] = {-5.0f, 5.0f, 5.0f, 0.0f};
-        
 
+        // Dessiner un cercle de debug au centre de l'objet
+        debug_draw_circle(object_center[0], object_center[1], object_center[2], 
+                         object_radius * 0.5f, 32);
         // Dessiner l'objet
         if (obj) {
-            GLfloat light_position[] = {1.0f, 1.0f, 1.0f, 0.0f};
+            GLfloat light_position[] = {
+                object_center[0] + object_radius,
+                object_center[1] + object_radius,
+                object_center[2] + object_radius,
+                0.0f
+            };
+            printf("Camera: pos=(%.2f, %.2f, %.2f) looking at=(%.2f, %.2f, %.2f)\n",
+               cam_x, cam_y, cam_z,
+               object_center[0], object_center[1], object_center[2]);
+        
             glLightfv(GL_LIGHT0, GL_POSITION, light_position);
             glEnable(GL_LIGHT0);
             
-            // Ambient global FAIBLE pour voir les variations d'éclairage
             GLfloat global_ambient[] = {0.1f, 0.1f, 0.1f, 1.0f};
             glLightModelfv(GL_LIGHT_MODEL_AMBIENT, global_ambient);
             
-            // S'assurer que la lumière a une bonne couleur diffuse
             GLfloat light_diffuse[] = {1.0f, 1.0f, 1.0f, 1.0f};
             GLfloat light_ambient[] = {0.2f, 0.2f, 0.2f, 1.0f};
             glLightfv(GL_LIGHT0, GL_DIFFUSE, light_diffuse);
             glLightfv(GL_LIGHT0, GL_AMBIENT, light_ambient);
         
             glEnable(GL_NORMALIZE);
-            texbind(TX_TEXTURE_0, 1);
-            tevbind(TV_ENV0, 1);
+            glScalef(10.0f, 10.0f, 10.0f); // Échelle pour mieux voir l'objet
             drawobj(obj, 0xFFFF);
-            texbind(TX_TEXTURE_0, 0);
-            tevbind(TV_ENV0, 0);
             GLenum error = glGetError();
             if (error != GL_NO_ERROR) {
-                printf("ERROR: OpenGL error during object rendering: %d\n", error);
+                printf("ERROR: OpenGL error during object drawing: %d\n", error);
             }
         }
         
         glutSwapBuffers();
     }
 }
+
 static void initGL(void) {
     last_frame_time = clock();
     iris_init_colormap();
@@ -813,15 +901,18 @@ int main(int argc, char **argv) {
     iris_init_colormap();
     init_lighting();
     init_texture_system();
-    readtex("./hills.t", hills, 128 * 128);
+    /*readtex("./hills.t", hills, 128 * 128);
     texdef2d(1, 1, 128, 128, hills, 0, texprops);
-    tevdef(1, 0, tevprops);
+    tevdef(1, 0, tevprops);*/
     
-    obj = readobj("hills.d");
+    obj = readobj("threat.d");
+    
     if (!obj) {
         fprintf(stderr, "Failed to load object file 'f18.d'\n");
         return EXIT_FAILURE;
     }
+    setscale(obj, 1, 10700.0f, 10700.0f, 10700.0f);
+    calculate_object_bounds(obj);
     glutDisplayFunc(display);
     glutReshapeFunc(reshape);
     glutIdleFunc(idle);

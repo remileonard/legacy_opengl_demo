@@ -459,9 +459,6 @@ drawclsgeom(g) geometry_t *g;
     polygon_t *p;
 
     cpack(g->color);
-    glColor3f(1.0f, 0.0f, 0.0f);  // Rouge pur
-    glDisable(GL_LIGHTING);       // Désactiver éclairage
-    glLineWidth(3.0f);            // Lignes plus épaisses pour visibilité
 
     for (i = 0; i < g->pcount; i++) {
         p = &g->plist[i];

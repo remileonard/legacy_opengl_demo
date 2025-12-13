@@ -280,3 +280,8 @@ object_t *breadobj(char *fname);
 void setmaterial(int name);
 void lsuspend(int b);
 void drawobj(object_t *obj, long state);
+
+
+void setscale(object_t *obj, int tnum, float  x,float  y,float  z);
+void settranslation(object_t *obj, int tnum, float  x,float  y,float  z);
+void setrotation(object_t * obj, int tnum, int angle,char axis);

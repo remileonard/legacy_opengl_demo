@@ -47,14 +47,27 @@ void setrotation(object_t * obj, int tnum, int angle,char axis) {
 
 void setscale(object_t *obj, int tnum,float  x,float  y,float  z)
 {
+    printf("setscale: tnum=%d, tcount=%d, x=%.2f, y=%.2f, z=%.2f\n", 
+           tnum, obj->tcount, x, y, z);
+    
+    if (tnum >= obj->tcount) {
+        printf("ERROR: tnum (%d) >= tcount (%d)\n", tnum, obj->tcount);
+        return;
+    }
+    
     obj->tlist[tnum].type = SCALE;
     obj->tlist[tnum].x = x;
     obj->tlist[tnum].y = y;
     obj->tlist[tnum].z = z;
+    
+    printf("After setscale: type=%d, x=%.2f, y=%.2f, z=%.2f\n",
+           obj->tlist[tnum].type, obj->tlist[tnum].x, 
+           obj->tlist[tnum].y, obj->tlist[tnum].z);
+    fflush(stdout);
 }
 
 
-void settranslation(object_t *obj, int tnum,float  x,float  y,float  z)
+void settranslation(object_t *obj, int tnum, float  x,float  y,float  z)
 {
     obj->tlist[tnum].type = TRANSLATE;
     obj->tlist[tnum].x = x;
