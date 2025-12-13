@@ -5,7 +5,7 @@
 
 #include <GL/gl.h>
 #include <GL/glu.h>
-#include <GL/glut.h>
+#include <GL/freeglut.h>
 
 #include <assert.h>
 #include <math.h>
@@ -523,7 +523,7 @@ static void draw_bitmap_text_wrapped(
     unsigned char *c;
     glRasterPos2f(cursor_x, cursor_y);
 
-    for (*c = (unsigned char *)text; *c; ++c) {
+    for (c = (unsigned char *)text; *c; ++c) {
         if (*c == '\n') {
             cursor_x = origin_x;
             cursor_y -= line_height;

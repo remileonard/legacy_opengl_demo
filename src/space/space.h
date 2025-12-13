@@ -48,7 +48,9 @@ typedef double flot64;
 #define fexp(x) ((flot32)exp((double)(x)))
 #define fpow(x, y) ((flot32)pow((double)(x), (double)(y)))
 #ifdef SP_OPEN_GL
+#ifdef _WIN32
 #include <windows.h>
+#endif
 #include <GL/gl.h>
 #include <GL/glu.h>
 #include <GL/glut.h>
@@ -636,7 +638,7 @@ uint32 spTexDef(uint32, uint32, uint32, void *, uint32 flag);
 void spFlipTex(uint32, uint32);
 
 /*************************** sound.c ******************************/
-void sound_effect(char *);
+void sound_effect(schar8 *soundfile);
 static void play_file(void);
 static void play_sample(uint32);
 static void reverse_buffer(unsigned char *);

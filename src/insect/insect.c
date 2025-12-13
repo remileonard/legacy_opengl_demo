@@ -1004,6 +1004,7 @@ static GLenum MouseDown(int mouseX, int mouseY, GLenum button)
 #include <windows.h>
 #else
 #include <sys/time.h>
+#include <unistd.h>
 #endif
 
 // Variables pour le contrôle du framerate

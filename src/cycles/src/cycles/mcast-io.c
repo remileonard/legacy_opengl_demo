@@ -1,6 +1,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <sys/socket.h>
+#include <net/if.h>
+#include <sys/ioctl.h>
 #include "porting/iris2ogl.h"
 #include "porting/irix_network.h"
 #include "cycles.h"

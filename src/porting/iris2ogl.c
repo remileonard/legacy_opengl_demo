@@ -1213,7 +1213,7 @@ void fmprstr(const char *str) {
             float stroke_scale = scale * 0.0032f; // Les polices GLUT stroke sont à l'échelle ~119 unités
             glScalef(stroke_scale, stroke_scale, 1.0f);
             float advance = 0.0f;
-            for (*c = str; *c != '\0'; c++) {
+            for (c = str; *c != '\0'; c++) {
                 glutStrokeCharacter(actual_font, *c);
                 advance += glutStrokeWidth(actual_font, *c) * stroke_scale;
             }
@@ -1226,13 +1226,13 @@ void fmprstr(const char *str) {
             glDisable(GL_LINE_SMOOTH);
             glPopAttrib();
         } else {
-            for (*c = str; *c != '\0'; c++) {
+            for (c = str; *c != '\0'; c++) {
                 glutBitmapCharacter(actual_font, *c);
             }
         }
     } else {
         // Font normal sans scaling
-        for (*c = str; *c != '\0'; c++) {
+        for (c = str; *c != '\0'; c++) {
             glutBitmapCharacter(current_font, *c);
         }
     }
@@ -1271,8 +1271,8 @@ void winopen(const char *title) {
     glutInitWindowPosition(window_x, window_y);
     main_window = glutCreateWindow(title);
     init_texture_system();
-#if _WIN32
-    init_network_layer();
+#ifdef _WIN32
+    iris2ogl_init_network_layer();
 #endif
     //   GLUT callbacks
     glutDisplayFunc(iris_display_func);

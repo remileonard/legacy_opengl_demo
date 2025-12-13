@@ -1,5 +1,6 @@
 
 #include <stdlib.h>
+#include <stdio.h>
 #include <math.h>
 #include "porting/iris2ogl.h"
 #include "cycles.h"

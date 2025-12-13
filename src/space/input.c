@@ -18,6 +18,10 @@
 #include <sys/ipc.h>
 #include <sys/shm.h>
 #include <sys/types.h>
+static void sginap(long ticks)
+{
+    sleep(ticks); /* Convert to milliseconds */
+}
 #else
 /* Windows doesn't need IPC headers for this implementation */
 #include <windows.h>

@@ -53,8 +53,9 @@ void add_update(int *flag, void (*fn)(void *), char *data) {
 
 // Cette fonction est appelée par glutIdleFunc
 void event(void) {
+    int i;
     // Traiter les updates actives (animations, etc.)
-    for (int i = 0; i < update_count; i++) {
+    for (i = 0; i < update_count; i++) {
         if (updates[i].active_flag && *(updates[i].active_flag)) {
             updates[i].callback(updates[i].data);
         }

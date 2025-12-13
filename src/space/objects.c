@@ -17,8 +17,9 @@
 #include "space.h"
 #include <GL/gl.h>
 #include <math.h>
+#ifdef _WIN32
 #include <windows.h>
-
+#endif
 extern t_stopwatch Counter;
 
 /**********************************************************************

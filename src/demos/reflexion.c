@@ -40,7 +40,7 @@
     #include <windows.h>
 #endif
 #include <GL/gl.h>
-#include <GL/glut.h> /* OpenGL Utility Toolkit header */
+#include <GL/freeglut.h> /* OpenGL Utility Toolkit header */
 #include <math.h>    /* for cos(), sin(), and sqrt() */
 #include <stdio.h>
 #include <stdlib.h>
@@ -985,7 +985,7 @@ int main(int argc, char **argv) {
         /* check for the polygon offset extension */
         if (glutExtensionSupported("GL_EXT_polygon_offset")) {
             polygonOffsetVersion = EXTENSION;
-            glPolygonOffsetEXT(-0.1, -0.002);
+            glPolygonOffset(-0.1, -0.002);
         } else
 #endif
         {

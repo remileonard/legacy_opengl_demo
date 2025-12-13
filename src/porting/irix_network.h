@@ -32,8 +32,8 @@
     #endif
     
     /* Initialize/cleanup Windows sockets */
-    int init_network_layer(void);
-    void cleanup_network(void);
+    int iris2ogl_init_network_layer(void);
+    void iris2ogl_cleanup_network(void);
     
 #else
     /* Unix/Linux networking */
@@ -57,8 +57,8 @@
     #define EWOULDBLOCK_SOCKET EWOULDBLOCK
     
     /* No need for init/cleanup on Unix */
-    static inline int init_network(void) { return 0; }
-    static inline void cleanup_network(void) { }
+    static inline int iris2ogl_init_network_layer(int *) { return 0; }
+    static inline void iris2ogl_cleanup_network(void) { }
     
 #endif
 

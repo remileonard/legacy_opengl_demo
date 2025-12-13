@@ -19,8 +19,9 @@
 #include <math.h>
 #include <stdint.h>
 #include <stdio.h>
+#ifdef _WIN32
 #include <windows.h>
-
+#endif
 #define LOWER_TRI 1
 #define UPPER_TRI 2
 #define BOTHH_TRI 3

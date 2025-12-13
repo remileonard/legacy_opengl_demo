@@ -9,7 +9,7 @@
 #ifdef _WIN32
 
 /* Initialize Windows Sockets */
-int init_network_layer(void)
+int iris2ogl_init_network_layer(void)
 {
     WSADATA wsa_data;
     int result = WSAStartup(MAKEWORD(2, 2), &wsa_data);
@@ -21,7 +21,7 @@ int init_network_layer(void)
 }
 
 /* Cleanup Windows Sockets */
-void cleanup_network(void)
+void iris2ogl_cleanup_network(void)
 {
     WSACleanup();
 }

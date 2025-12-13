@@ -378,7 +378,8 @@ void init_windows(char *title)
 
     /* Open with the executable's name (stripped of directory) */
     {
-        char *t, *strrchr(char *, int);
+        char *t;
+        //char *strrchr(char *, int);
         /* testshare(""); */
         winopen((t = strrchr(title, '/')) != NULL ? t + 1 : title);
     }
@@ -926,7 +927,7 @@ void anything_moving(int *ptr) {
     }
 }
 
-static int spinning(float *r) {
+int spinning(float *r) {
     float sum;
 
     sum = r[0] + r[1] + r[2] + r[3];

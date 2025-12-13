@@ -35,6 +35,8 @@ int is_popup_active(void) {
     return (g_active_popup != NULL);
 }
 void draw_popup_menu(void) {
+    int i;
+    char* c;
     if (!g_active_popup) return;
     
     PopupMenu* menu = g_active_popup;
@@ -99,7 +101,7 @@ void draw_popup_menu(void) {
     glLineWidth(1.0f);
     
     // Dessiner chaque item
-    for (int i = 0; i < menu->count; i++) {
+    for (i = 0; i < menu->count; i++) {
         int item_y = draw_y - i * item_height;
         
         // Highlight si survolé (bleu clair)
@@ -140,7 +142,7 @@ void draw_popup_menu(void) {
         
         // Afficher le texte avec GLUT (fonte plus grande et plus lisible)
         void* font = GLUT_BITMAP_HELVETICA_18;
-        for (char* c = menu->items[i]; *c; c++) {
+        for (c = menu->items[i]; *c; c++) {
             glutBitmapCharacter(font, *c);
         }
     }
@@ -244,6 +246,7 @@ long dopup(long menu_id) {
 }
 
 void freepup(long menu_id) {
+    int i;
     if (menu_id <= 0 || menu_id >= 256 || !menus[menu_id]) return;
     
     // Ne pas libérer si c'est le menu actif
@@ -254,7 +257,7 @@ void freepup(long menu_id) {
     
     PopupMenu *menu = menus[menu_id];
     
-    for (int i = 0; i < menu->count; i++) {
+    for (i = 0; i < menu->count; i++) {
         free(menu->items[i]);
     }
     

@@ -60,11 +60,12 @@ static int mandelbrot(double cx, double cy, int maxIterations) {
 }
 
 static void generateHeightMap(void) {
+    int py, px;
     double aspectRatio = (double)GRID_WIDTH / (double)GRID_HEIGHT;
     int maxIterations = getMaxIterations();
     
-    for (int py = 0; py < GRID_HEIGHT; py++) {
-        for (int px = 0; px < GRID_WIDTH; px++) {
+    for ( py = 0; py < GRID_HEIGHT; py++) {
+        for ( px = 0; px < GRID_WIDTH; px++) {
             double x = (px - GRID_WIDTH / 2.0) / (0.5 * zoom * GRID_WIDTH) * aspectRatio + centerX;
             double y = (py - GRID_HEIGHT / 2.0) / (0.5 * zoom * GRID_HEIGHT) + centerY;
             
@@ -281,6 +282,7 @@ static void specialUp(int key, int x, int y) {
 }
 
 static void display(void) {
+    int py, px;
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glLoadIdentity();
     
@@ -297,8 +299,8 @@ static void display(void) {
     float voxelSize = 0.8f;
     int maxIterations = getMaxIterations();
     
-    for (int py = 0; py < GRID_HEIGHT; py++) {
-        for (int px = 0; px < GRID_WIDTH; px++) {
+    for ( py = 0; py < GRID_HEIGHT; py++) {
+        for ( px = 0; px < GRID_WIDTH; px++) {
             int iterations = heightMap[py * GRID_WIDTH + px];
             
             // Position centrée

@@ -234,6 +234,7 @@ void mouse_motion(int x, int y) {
 }
 
 void mouse_click(int button, int state, int x, int y) {
+    int i;
     // Stocker les coordonnées globales
     g_mouse_x = x;
     g_mouse_y = y;
@@ -255,7 +256,7 @@ void mouse_click(int button, int state, int x, int y) {
                 // Sinon, parcourir les items du popup
                 else if (menu_result > 1) {
                     // Aller à l'item correspondant (menu_result - 2 car "Do It" est à 1)
-                    for (int i = 0; scan && i < (menu_result - 2); i++) {
+                    for (i = 0; scan && i < (menu_result - 2); i++) {
                         scan = scan->next;
                     }
                     
@@ -837,11 +838,11 @@ void draw_selected_button(button_struct *button,float t) {
 
 
 void draw_edge() {
-    
+    int i;
     glEnable(GL_POLYGON_OFFSET_FILL);
     glPolygonOffset(-0.5f, -0.5f);
 
-    for (int i=0; i<8; i++) {
+    for (i=0; i<8; i++) {
         glNormal3fv(edge_normals[i]);
         glBegin(GL_POLYGON);
             glVertex3fv(edge_polys[i][0]);
@@ -1202,6 +1203,7 @@ button_struct *which_button(int mx, int my) {
     GLdouble modelMatrix[16];
     GLdouble projMatrix[16];
     GLint viewport[4];
+    int i;
     
     // Récupérer les matrices et le viewport
     glGetDoublev(GL_MODELVIEW_MATRIX, modelMatrix);
@@ -1229,7 +1231,7 @@ button_struct *which_button(int mx, int my) {
         double min_x = 1e9, max_x = -1e9;
         double min_y = 1e9, max_y = -1e9;
         
-        for (int i = 0; i < 4; i++) {
+        for (i = 0; i < 4; i++) {
             gluProject(front_polys[0][i][0], 
                       front_polys[0][i][1], 
                       front_polys[0][i][2] - THICK,

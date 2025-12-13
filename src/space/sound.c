@@ -21,10 +21,11 @@
 #endif
 #include "space.h"
 #include <GL/gl.h>
-#include <windows.h>
+
 
 /* Windows compatibility for sginap */
 #ifdef _WIN32
+#include <windows.h>
 static void sginap(long ticks)
 {
     Sleep((DWORD)(ticks * 10)); /* Convert to milliseconds */

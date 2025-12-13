@@ -61,8 +61,6 @@ typedef struct {
 
 TrafficCar traffic[MAX_TRAFFIC];
 
-void displayIntro(void);
-void displayManual(void);
 void (*idlefunc)(void) = NULL;
 
 Road *road = NULL;
@@ -180,8 +178,9 @@ static void drawPyramid() {
 #undef CALC_AND_SET_NORMAL
 }
 static void initTraffic() {
+    int i;
     float totalLength = road->count * segmentSize;
-    for (int i = 0; i < MAX_TRAFFIC; i++) {
+    for ( i = 0; i < MAX_TRAFFIC; i++) {
         traffic[i].z = randf() * totalLength;
 
         // Placer sur une voie aléatoire (gauche ou droite)
@@ -249,6 +248,7 @@ static void drawTrafficCar(TrafficCar *car) {
 }
 static void drawBackground(float curveOffset) {
     // Sauvegarder l'état de l'éclairage et du depth test
+    int i;
     glDisable(GL_LIGHTING);
     glDisable(GL_DEPTH_TEST);
 
@@ -295,7 +295,7 @@ static void drawBackground(float curveOffset) {
     // Couche 1 : Montagnes très lointaines (violet/bleu sombre)
     glColor3f(0.3f, 0.3f, 0.5f);
     glBegin(GL_TRIANGLE_STRIP);
-    for (int i = -15; i <= 15; i++) {
+    for ( i = -15; i <= 15; i++) {
         float x = i * 300.0f + bgShift * 0.2f;
         float height = 200.0f + 80.0f * sinf(i * 0.4f);
         glVertex3f(x, height, -1400.0f);
@@ -306,7 +306,7 @@ static void drawBackground(float curveOffset) {
     // Couche 2 : Montagnes moyennes (gris-bleu)
     glColor3f(0.4f, 0.5f, 0.6f);
     glBegin(GL_TRIANGLE_STRIP);
-    for (int i = -15; i <= 15; i++) {
+    for ( i = -15; i <= 15; i++) {
         float x = i * 250.0f + bgShift * 0.4f;
         float height = 150.0f + 60.0f * sinf(i * 0.6f + 1.5f);
         glVertex3f(x, height, -1200.0f);
@@ -317,7 +317,7 @@ static void drawBackground(float curveOffset) {
     // Couche 3 : Collines proches (vert)
     glColor3f(0.3f, 0.6f, 0.4f);
     glBegin(GL_TRIANGLE_STRIP);
-    for (int i = -15; i <= 15; i++) {
+    for ( i = -15; i <= 15; i++) {
         float x = i * 200.0f + bgShift * 0.8f;
         float height = 100.0f + 40.0f * sinf(i * 0.8f + 2.5f);
         glVertex3f(x, height, -1000.0f);
@@ -327,7 +327,7 @@ static void drawBackground(float curveOffset) {
 
     // Nuages (blancs)
     glColor3f(0.95f, 0.95f, 1.0f);
-    for (int i = 0; i < 8; i++) {
+    for ( i = 0; i < 8; i++) {
         float cloudX = -1500.0f + i * 400.0f + bgShift * 0.15f;
         float cloudY = 300.0f + (i % 3) * 80.0f;
         float cloudZ = -1300.0f;
@@ -359,6 +359,7 @@ static void drawBackground(float curveOffset) {
 }
 
 static void drawText(float x, float y, const char *text) {
+    char * c;
     glDisable(GL_LIGHTING);
     glMatrixMode(GL_PROJECTION);
     glPushMatrix();
@@ -373,7 +374,7 @@ static void drawText(float x, float y, const char *text) {
     glColor3f(1.0f, 1.0f, 1.0f);
     glRasterPos2f(x, y);
 
-    for (const char *c = text; *c != '\0'; c++) {
+    for (c = text; *c != '\0'; c++) {
         glutBitmapCharacter(GLUT_BITMAP_9_BY_15, *c);
     }
 
@@ -386,6 +387,7 @@ static void drawText(float x, float y, const char *text) {
     glEnable(GL_LIGHTING);
 }
 static Road *generateRoad(RoadParam params) {
+    int zones, i;
     Road *road = (Road *)malloc(sizeof(Road));
     if (!road)
         return NULL;
@@ -410,7 +412,7 @@ static Road *generateRoad(RoadParam params) {
 
     int segmentIndex = 0;
 
-    for (int zones = params.length; zones > 0; zones--) {
+    for ( zones = params.length; zones > 0; zones--) {
         // Generate current Zone
         float finalHeight;
         switch (currentStateH) {
@@ -438,7 +440,7 @@ static Road *generateRoad(RoadParam params) {
             break;
         }
 
-        for (int i = 0; i < params.zoneSize; i++) {
+        for ( i = 0; i < params.zoneSize; i++) {
             // Add a sprite
             Sprite *sprite = NULL;
             if (i % (params.zoneSize / 4) == 0) {
@@ -494,7 +496,7 @@ static Road *generateRoad(RoadParam params) {
     float heightDiff = road->segments[road->count - 1].height - road->segments[0].height;
     float curveDiff = road->segments[road->count - 1].curve - road->segments[0].curve;
 
-    for (int i = 0; i < road->count; i++) {
+    for ( i = 0; i < road->count; i++) {
         float ratio = (float)i / (float)road->count;
         road->segments[i].height -= heightDiff * ratio;
         road->segments[i].curve -= curveDiff * ratio;
@@ -503,9 +505,10 @@ static Road *generateRoad(RoadParam params) {
     return road;
 }
 static void freeRoad(Road *road) {
+    int i;
     if (road) {
         if (road->segments) {
-            for (int i = 0; i < road->count; i++) {
+            for ( i = 0; i < road->count; i++) {
                 if (road->segments[i].sprite) {
                     free(road->segments[i].sprite);
                 }
@@ -797,7 +800,7 @@ static void specialKeysUp(int key, int x, int y) {
 }
 
 static void displayManual(void) {
-
+    int i;
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glLoadIdentity();
     glLightfv(GL_LIGHT0, GL_POSITION, (GLfloat[]){0.4f, 0.7f, 0.3f, 0.0f});
@@ -842,13 +845,13 @@ static void displayManual(void) {
     glTranslatef(-camX, -camY, -camZ);
 
     // Draw road segments
-    for (int i = 0; i < 150; i++) {
+    for ( i = 0; i < 150; i++) {
         int segIndex = (currentSegment + i) % road->count;
         float z = (i * segmentSize) - (cameraPosition - currentSegment * segmentSize);
         drawRoadSegment(segIndex, z);
     }
 
-    for (int i = 0; i < MAX_TRAFFIC; i++) {
+    for ( i = 0; i < MAX_TRAFFIC; i++) {
         drawTrafficCar(&traffic[i]);
     }
     // glPopMatrix();
@@ -879,6 +882,7 @@ static void displayManual(void) {
 }
 
 static void displayIntro(void) {
+    int i;
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glLoadIdentity();
 
@@ -906,7 +910,7 @@ static void displayIntro(void) {
     glTranslatef(baseOffset, -camY, -10.0f);
     glRotatef(180.0f, 0.0f, 1.0f, 0.0f);
     cameraPosition += 2.0f; // Avancer la caméra pour l'animation du menu
-    for (int i = 0; i < 150; i++) {
+    for ( i = 0; i < 150; i++) {
         int segIndex = (currentSegment + i) % road->count;
         float z = (i * segmentSize) - (cameraPosition - currentSegment * segmentSize);
         drawRoadSegment(segIndex, z);
@@ -928,6 +932,7 @@ static int checkCollision(float pZ, float pX, float tZ, float tX) {
     return 0;
 }
 static void game_loop(double delta_time) {
+    int i;
     if (specialKeyStates[GLUT_KEY_UP]) {
         // Accélération
         if (playerSpeed < maxSpeed) {
@@ -1007,7 +1012,7 @@ static void game_loop(double delta_time) {
     if (carPositionOnRoad >= maxPosition)
         carPositionOnRoad -= maxPosition;
 
-    for (int i = 0; i < MAX_TRAFFIC; i++) {
+    for ( i = 0; i < MAX_TRAFFIC; i++) {
         traffic[i].z += traffic[i].speed;
         if (traffic[i].z >= maxPosition) {
             traffic[i].z -= maxPosition;
@@ -1029,7 +1034,7 @@ static void game_loop(double delta_time) {
         }
     }
     int checkRange = 4;
-    for (int i = -checkRange; i <= checkRange; i++) {
+    for ( i = -checkRange; i <= checkRange; i++) {
         int segIdx = (currentSegmentIndex + i);
         while (segIdx < 0)
             segIdx += road->count;

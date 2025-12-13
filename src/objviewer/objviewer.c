@@ -58,7 +58,7 @@
 #define C_INST_BROWN	8
 #define C_HBLUE		9
 #define C_GREY		10
-
+#define LIGHT_INFINITE	1
 /*
  *  missile contrail
  */
@@ -566,7 +566,7 @@ init_lighting()
     lmdef (DEFMATERIAL, MAT_F14YELLOW, 0, mat_f14yellow);
     lmdef (DEFMATERIAL, MAT_WHITE, 0, mat_white);
 
-    lmdef (DEFLMODEL, INFINITE, 0, infinite);
+    lmdef (DEFLMODEL, LIGHT_INFINITE, 0, infinite);
     lmdef(DEFLIGHT, 1, 0, sun);
     lmbind(LIGHT0, 1);
 }
