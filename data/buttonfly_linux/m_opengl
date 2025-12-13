@@ -1,0 +1,33 @@
+Atlantis
+	./demos/atlantis
+	.color. .9 .5 .9
+	.highcolor. 1.0 .7 1.0
+Bounce
+	./demos/bounce
+	.color. .9 .5 .9
+	.highcolor. 1.0 .7 1.0
+
+Glut Planes
+	./demos/glutplane
+	.color. .9 .5 .9
+	.highcolor. 1.0 .7 1.0
+SCube
+	./demos/scube
+	.color. .9 .5 .9
+	.highcolor. 1.0 .7 1.0
+Stars
+	./demos/stars
+	.color. .9 .5 .9
+	.highcolor. 1.0 .7 1.0
+Plasma
+	./demos/plasma
+	.color. .9 .5 .9
+	.highcolor. 1.0 .7 1.0
+Roller Coaster
+	./demos/rc
+	.color. .9 .5 .9
+	.highcolor. 1.0 .7 1.0
+Ideas
+	./demos/ideas
+	.color. .9 .5 .9
+	.highcolor. 1.0 .7 1.0

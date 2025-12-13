@@ -1,0 +1,12 @@
+Interactive
+	.menu. ./data/buttonfly_linux/m_interactive
+	.color. .2 .5 .9
+	.highcolor. 0.3 .7 1.0
+Opengl
+	.menu. ./data/buttonfly_linux/m_opengl
+	.color. .9 .5 .2
+	.highcolor. 1.0 .7 0.3
+Objects
+	.menu. ./data/buttonfly_linux/m_objects
+	.color. .9 .5 .9
+	.highcolor. 1.0 .7 1.0

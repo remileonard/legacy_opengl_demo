@@ -19,12 +19,16 @@ static double diff_timespecs(struct timespec *t1, struct timespec *t2) {
 }
 
 static void convert_path_separators(char *path) {
+#ifdef _WIN32
     if (!path) return;
     char *p = path;
     while (*p) {
         if (*p == '/') *p = '\\';
         p++;
     }
+#else
+    (void)path; // Ne rien faire sous Linux
+#endif
 }
 static struct timespec last_frame_time;
 static int time_initialized = 0;

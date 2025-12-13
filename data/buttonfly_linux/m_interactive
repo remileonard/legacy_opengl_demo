@@ -1,0 +1,30 @@
+Maze
+	interactive/maze
+	.color. .9 .5 .9
+	.highcolor. 1.0 .7 1.0
+Enterprise
+	interactive/enterprise
+	.color. .9 .5 .9
+	.highcolor. 1.0 .7 1.0
+Road
+	interactive/road
+	.color. .9 .5 .9
+	.highcolor. 1.0 .7 1.0
+Distort
+	interactive/distort ./data/dog.rgb
+	.color. .9 .5 .9
+	.highcolor. 1.0 .7 1.0
+GL Puzzle
+	interactive/gl_puzzle
+	.color. .9 .5 .9
+	.highcolor. 1.0 .7 1.0
+Cycles
+	interactive/cycles
+	.color. .9 .5 .9
+	.highcolor. 1.0 .7 1.0
+Space
+	interactive/space -f data
+	.color. .9 .5 .9
+	.highcolor. 1.0 .7 1.0
+Flight
+	.menu. data/buttonfly/m_flight

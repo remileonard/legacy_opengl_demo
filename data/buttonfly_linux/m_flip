@@ -1,0 +1,11 @@
+X29
+	./interactive/flip data/flip/x29.bin
+
+Martini
+	./interactive/flip data/flip/martini.bin
+
+Logo
+	./interactive/flip data/flip/logo.bin
+
+VW
+	./interactive/flip data/flip/vw.bin
