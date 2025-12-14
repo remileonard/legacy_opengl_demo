@@ -85,8 +85,8 @@ clearz() {
  */
 draw_infinite_world(elv) float elv;
 {
-    static long sky[3] = {0, EDGE, 0};
-    static long horizon1[11][3] = {{-EDGE, 0, -EDGE},
+    static int sky[3] = {0, EDGE, 0};
+    static int horizon1[11][3] = {{-EDGE, 0, -EDGE},
                                    {-EDGE >> 2, 0, -EDGE >> 2},
                                    {-EDGE >> 3, 0, -EDGE >> 3},
                                    {-EDGE >> 4, 0, -EDGE >> 4},
@@ -97,7 +97,7 @@ draw_infinite_world(elv) float elv;
                                    {-EDGE >> 9, 0, -EDGE >> 9},
                                    {-EDGE >> 10, 0, -EDGE >> 10},
                                    {0, 0, 0}};
-    static long horizon2[11][3] = {{-EDGE, 0, EDGE},
+    static int horizon2[11][3] = {{-EDGE, 0, EDGE},
                                    {-EDGE >> 2, 0, EDGE >> 2},
                                    {-EDGE >> 3, 0, EDGE >> 3},
                                    {-EDGE >> 4, 0, EDGE >> 4},
@@ -108,7 +108,7 @@ draw_infinite_world(elv) float elv;
                                    {-EDGE >> 9, 0, EDGE >> 9},
                                    {-EDGE >> 10, 0, EDGE >> 10},
                                    {0, 0, 0}};
-    static long horizon3[11][3] = {{EDGE, 0, EDGE},
+    static int horizon3[11][3] = {{EDGE, 0, EDGE},
                                    {EDGE >> 2, 0, EDGE >> 2},
                                    {EDGE >> 3, 0, EDGE >> 3},
                                    {EDGE >> 4, 0, EDGE >> 4},
@@ -119,7 +119,7 @@ draw_infinite_world(elv) float elv;
                                    {EDGE >> 9, 0, EDGE >> 9},
                                    {EDGE >> 10, 0, EDGE >> 10},
                                    {0, 0, 0}};
-    static long horizon4[11][3] = {{EDGE, 0, -EDGE},
+    static int horizon4[11][3] = {{EDGE, 0, -EDGE},
                                    {EDGE >> 2, 0, -EDGE >> 2},
                                    {EDGE >> 3, 0, -EDGE >> 3},
                                    {EDGE >> 4, 0, -EDGE >> 4},
@@ -245,46 +245,46 @@ draw_infinite_world(elv) float elv;
     if (groundz)
         zbuffer(FALSE);
 
-    /* Face sud-ouest (entre horizon1 et horizon2) */
+    /**/
     bgnpolygon();
     cpack(cp_W_horizon);
-    v3i(horizon1[0]);      /* sud-ouest */
+    v3i(horizon1[0]);     
     cpack(cp_W_horizon);
-    v3i(horizon2[0]);      /* nord-ouest */
+    v3i(horizon2[0]);      
     cpack(cp_sky);
-    v3i(sky);              /* sommet */
+    v3i(sky);              
     endpolygon();
 
-    /* Face nord (entre horizon2 et horizon3) */
+    
     bgnpolygon();
     cpack(cp_W_horizon);
-    v3i(horizon2[0]);      /* nord-ouest */
+    v3i(horizon2[0]);      
     cpack(cp_E_horizon);
-    v3i(horizon3[0]);      /* nord-est */
-    cpack(cp_sky);
-    v3i(sky);
-    endpolygon();
-
-    /* Face est (entre horizon3 et horizon4) */
-    bgnpolygon();
-    cpack(cp_E_horizon);
-    v3i(horizon3[0]);      /* nord-est */
-    cpack(cp_E_horizon);
-    v3i(horizon4[0]);      /* sud-est */
+    v3i(horizon3[0]);      
     cpack(cp_sky);
     v3i(sky);
     endpolygon();
 
-    /* Face sud (entre horizon4 et horizon1) */
+    
     bgnpolygon();
     cpack(cp_E_horizon);
-    v3i(horizon4[0]);      /* sud-est */
-    cpack(cp_W_horizon);
-    v3i(horizon1[0]);      /* sud-ouest */
+    v3i(horizon3[0]);      
+    cpack(cp_E_horizon);
+    v3i(horizon4[0]);      
     cpack(cp_sky);
     v3i(sky);
     endpolygon();
 
+    
+    bgnpolygon();
+    cpack(cp_E_horizon);
+    v3i(horizon4[0]);      
+    cpack(cp_W_horizon);
+    v3i(horizon1[0]);     
+    cpack(cp_sky);
+    v3i(sky);
+    endpolygon();
+    /**/
     /*
      *  sun
      */
