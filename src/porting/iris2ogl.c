@@ -1077,7 +1077,7 @@ void fminit(void) {
     current_font = glut_fonts[DEFAULT_FONT];
 }
 
-fmfonthandle fmfindfont(const char *fontname) {
+fmfonthandle fmfindfont(char *fontname) {
     // Map font names to GLUT fonts
     if (strstr(fontname, "times") || strstr(fontname, "Times")) {
         if (strstr(fontname, "24")) return glut_fonts[3];
@@ -1177,7 +1177,7 @@ void debug_opengl_state(void) {
         printf("OpenGL ERROR: %d\n", error);
     }
 }
-void fmprstr(const char *str) {
+void fmprstr(char *str) {
     char *c;
     if (current_font == NULL) {
         current_font = glut_fonts[DEFAULT_FONT];
@@ -1526,15 +1526,46 @@ Boolean getbutton(Device dev) {
 void iris_keyboard_func(unsigned char key, int x, int y) {
     Device dev = 0;
     
-    // Map special keys to their device codes
     switch (key) {
         case 27: dev = ESCKEY; break;
         case 13: dev = RETKEY; break;
         case ' ': dev = SPACEKEY; break;
-        case 'h': case 'H': dev = HKEY; break;
         case 'a': case 'A': dev = AKEY; break;
+        case 'b': case 'B': dev = BKEY; break;
+        case 'c': case 'C': dev = CKEY; break;
+        case 'd': case 'D': dev = DKEY; break;
+        case 'e': case 'E': dev = EKEY; break;
+        case 'f': case 'F': dev = FKEY; break;
         case 'g': case 'G': dev = GKEY; break;
+        case 'h': case 'H': dev = HKEY; break;
+        case 'i': case 'I': dev = IKEY; break;
+        case 'j': case 'J': dev = JKEY; break;
+        case 'k': case 'K': dev = KKEY; break;
+        case 'l': case 'L': dev = LKEY; break;
+        case 'm': case 'M': dev = MKEY; break;
+        case 'n': case 'N': dev = NKEY; break;
+        case 'o': case 'O': dev = OKEY; break;
         case 'p': case 'P': dev = PKEY; break;
+        case 'q': case 'Q': dev = QKEY; break;
+        case 'r': case 'R': dev = RKEY; break;
+        case 's': case 'S': dev = SKEY; break;
+        case 't': case 'T': dev = TKEY; break;
+        case 'u': case 'U': dev = UKEY; break;
+        case 'v': case 'V': dev = VKEY; break;
+        case 'w': case 'W': dev = WKEY; break;
+        case 'x': case 'X': dev = XKEY; break;
+        case 'y': case 'Y': dev = YKEY; break;
+        case 'z': case 'Z': dev = ZKEY; break;
+        case '0': dev = PAD0; break;
+        case '1': dev = PAD1; break;
+        case '2': dev = PAD2; break;
+        case '3': dev = PAD3; break;
+        case '4': dev = PAD4; break;
+        case '5': dev = PAD5; break;
+        case '6': dev = PAD6; break;
+        case '7': dev = PAD7; break;
+        case '8': dev = PAD8; break;
+        case '9': dev = PAD9; break;
         default:
             dev = 0;  // Not a special key
             break;
@@ -2274,7 +2305,7 @@ void circfs(Scoord x, Scoord y, Scoord radius) {
 }
 
 // Text functions
-int strwidth(const char* str) {
+int strwidth(char* str) {
     char *p;
     int width = 0;
     void* font = GLUT_BITMAP_9_BY_15;

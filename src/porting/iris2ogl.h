@@ -280,11 +280,11 @@ void lmcolor(int mode);
 typedef void* fmfonthandle;
 
 void fminit(void);
-fmfonthandle fmfindfont(const char *fontname);
+fmfonthandle fmfindfont(char *fontname);
 void fmsetfont(fmfonthandle font);
-void fmprstr(const char *str);
+void fmprstr(char *str);
 fmfonthandle fmscalefont(fmfonthandle font, float scale);
-void charstr(const char *str);
+void charstr(char *str);
 
 // Internal font scaling support (defined in iris2ogl_missing.c)
 int is_scaled_font(fmfonthandle font, ScaledFont** out_sf);
@@ -374,8 +374,6 @@ void set_win_coords(void);
 #define ESCKEY          107
 #define RETKEY          108
 #define SPACEKEY        109
-#define HKEY            110
-#define AKEY            111
 #define REDRAW          112
 #define INPUTCHANGE     113
 #define WINQUIT         114
@@ -393,9 +391,35 @@ void set_win_coords(void);
 #define F12KEY          126
 #define PAUSEKEY        127
 #define HOMEKEY         128
-#define GKEY            139
-#define PKEY            140
-#define BKEY            142
+#define AKEY            140
+#define BKEY            141
+#define CKEY            142
+#define DKEY            143
+#define EKEY            144
+#define FKEY            145
+#define GKEY            146
+#define HKEY            147
+#define IKEY            148
+#define JKEY            149
+#define KKEY            150
+#define LKEY            151
+#define MKEY            152
+#define NKEY            153
+#define OKEY            154
+#define PKEY            155
+#define QKEY            156
+#define RKEY            157
+#define SKEY            158
+#define TKEY            159
+#define UKEY            160
+#define VKEY            161
+#define WKEY            162
+#define XKEY            163
+#define YKEY            164
+#define ZKEY            165
+
+
+
 
 // Pad buttons (game controller or dials)
 #define PAD0            129

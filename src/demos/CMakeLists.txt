@@ -12,6 +12,7 @@ set(SIMPLE_EXECUTABLES
     texture
     rotate
     mandel
+    primes
 )
 
 foreach(target ${SIMPLE_EXECUTABLES})

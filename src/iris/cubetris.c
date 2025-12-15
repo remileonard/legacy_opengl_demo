@@ -21,7 +21,7 @@
 
 #define SIZE 6 /* Number of cubes across the playing area */
 
-#define ZSPEED -0.1 /* How fast the pieces fall initially (one */
+#define ZSPEED -0.01 /* How fast the pieces fall initially (one */
 /* unit is one grid space) */
 #define ZSPEEDDELTA -0.02 /* Delta for above, every time a plane is */
 /* cleared. */
@@ -329,6 +329,8 @@ addscore(int value) {
 int getgridloc(int which, int *rx, int *ry, int *rz) {
     int dx, dy, dz, t;
     Shape *s;
+    if (curpiece == NULL)
+        return -1;
     s = curpiece->shapes + curshape;
     dx = (*s)[which][0];
     dy = (*s)[which][1];
@@ -592,14 +594,14 @@ main(int argc, char **argv) {
                 } else
                     mode = NOTHING;
                 break;
-
+            case QKEY:
             case MIDDLEMOUSE:
                 if (val && curpiece) {
                     curshape = (curshape + 1) % curpiece->numshapes;
                     keeppieceonboard();
                 }
                 break;
-
+            case SKEY:
             case RIGHTMOUSE:
                 if (val && curpiece) {
                     currot += 90.0;
@@ -768,6 +770,8 @@ initialize() {
     qdevice(GKEY);
     qdevice(HKEY);
     qdevice(PKEY);
+    qdevice(SKEY);
+    qdevice(QKEY);
     qdevice(RETKEY);
     qdevice(SPACEKEY);
     qdevice(F1KEY);
