@@ -1,0 +1,17 @@
+brick
+	./demos/brick.exe
+	.color. .9 .5 .9
+	.highcolor. 1.0 .7 1.0
+heat
+	./demos/heat.exe
+	.color. .9 .5 .9
+	.highcolor. 1.0 .7 1.0
+
+Cycles
+	./interactive/Cycles.exe
+	.color. .9 .5 .9
+	.highcolor. 1.0 .7 1.0
+Flight
+	.menu. data/buttonfly/m_flight
+Flip
+	.menu. ./data/buttonfly/m_flip

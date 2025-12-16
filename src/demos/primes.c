@@ -449,7 +449,7 @@ static void primes(void) {
         0.0, 1.0, 0.0
     );
     glEnable(GL_LIGHTING);
-    // Dessiner tous les cubes précalculés
+    
     for (int i = 0; i < cubeCount; i++) {
         glPushMatrix();
         glTranslatef(placedCubes[i].x, placedCubes[i].y, placedCubes[i].z);
@@ -519,7 +519,7 @@ static void initGL(void) {
 }
 int main(int argc, char **argv) {
     glutInit(&argc, argv);
-    // Double buffer + RGB + z-buffer
+
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
     glutInitWindowSize(800, 600);
     glutInitWindowPosition(100, 100);

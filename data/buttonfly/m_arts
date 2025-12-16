@@ -1,0 +1,16 @@
+Primes
+	./demos/primes.exe
+	.color. .9 .5 .9
+	.highcolor. 1.0 .7 1.0
+Mandel
+	./demos/mandel.exe
+	.color. .9 .5 .9
+	.highcolor. 1.0 .7 1.0
+Particles
+	./demos/particles.exe
+	.color. .9 .5 .9
+	.highcolor. 1.0 .7 1.0
+Plasma
+	./demos/particles.exe
+	.color. .9 .5 .9
+	.highcolor. 1.0 .7 1.0

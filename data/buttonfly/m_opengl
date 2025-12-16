@@ -31,3 +31,7 @@ Ideas
 	./demos/ideas.exe
 	.color. .9 .5 .9
 	.highcolor. 1.0 .7 1.0
+Reflexions
+	./demos/reflexion.exe
+	.color. .9 .5 .9
+	.highcolor. 1.0 .7 1.0

@@ -52,7 +52,6 @@ void main() {
         fprintf(stderr, "texture mapping not availble on this machine\n");
         return ;
     }
-    readtex("./hills.t", hills, 128 * 128);
     keepaspect(1, 1);
     winopen("brick");
     subpixel(TRUE);

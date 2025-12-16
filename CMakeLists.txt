@@ -45,6 +45,7 @@ set(LEGACY_INTERACTIVE
     road
     smooth
     space
+    cubetris
 )
 set (LEGACY_DEMOS
     bounce
@@ -57,6 +58,11 @@ set (LEGACY_DEMOS
     plasma
     rc
     stars
+    particles
+    mandel
+    primes
+    heat
+    brick
 )
 
 # Répertoire de distribution

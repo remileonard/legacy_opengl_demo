@@ -13,6 +13,7 @@ set(SIMPLE_EXECUTABLES
     rotate
     mandel
     primes
+    particles
 )
 
 foreach(target ${SIMPLE_EXECUTABLES})

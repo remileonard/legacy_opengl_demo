@@ -322,7 +322,9 @@ static void display(void) {
                 
                 // Cube unitaire
                 glColor3f(r, g, b);
-                glutSolidCube(1.0);
+                //glutSolidCube(1.0);
+                glutSolidDodecahedron();
+                //glutSolidSphere(1.0, 6, 6);
                 glPopMatrix();
             } else {
                 glPushMatrix();
