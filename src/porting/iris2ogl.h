@@ -734,7 +734,7 @@ void rects(Scoord x1, Scoord y1, Scoord x2, Scoord y2);
 void circfs(Scoord x, Scoord y, Scoord radius);
 
 // Text functions
-int strwidth(const char* str);
+int strwidth(char* str);
 int getheight(void);
 int getdescender(void);
 void getcpos(Scoord* x, Scoord* y);

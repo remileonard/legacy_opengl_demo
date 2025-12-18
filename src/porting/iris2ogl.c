@@ -2976,10 +2976,6 @@ void debug_texture_coordinates(void) {
         case GL_BLEND: mode_str = "BLEND"; break;
         case GL_REPLACE: mode_str = "REPLACE"; break;
     }
-    printf("Texture env mode: %s\n", mode_str);
-    
-    printf("=======================\n");
-    fflush(stdout);
 }
 void tevdef(int texid, int nc, float props[]) {
     if (texid < 0 || texid >= MAX_TEX_ENVS) return;

@@ -1157,16 +1157,14 @@ void read_objects(int event_break)
         }
     }
 
-#if 0
     TEST_EVENT;
 
     if (!planeobj[STEALTH])
     {
-	strcpy(objfname, objdir);
-	strcat(objfname, "stealth.d");
-	planeobj[STEALTH] = readobj(objfname);
+        strcpy(objfname, objdir);
+        strcat(objfname, "stealth.d");
+        planeobj[STEALTH] = readobj(objfname);
     }
-#endif
 
     TEST_EVENT;
 
@@ -3166,39 +3164,37 @@ select_plane() {
             thrust_type(1);
 #endif
             break;
-#if 0
 	    case 9:
-		plane_type = STEALTH_NAME;
-		pp->type = STEALTH;
-		s = 1000.0;		/* wing area in sq. feet	*/
-		W = 30000.0;		/* weight of plane in lbs.	*/
-		fuel_weight = 14000.0;
-		Mthrust = 25000.0;	/* maximum thrust		*/
-		set_fuelgauge(10000.0, 120.0, 5, 1000);
-		b = 38.0;		/* wing span in feet		*/
-		ef = .85;		/* efficiency factor		*/
-		Lmax = 4.0;		/* maximum lift before wing breaks */
-		Lmin = -2.0;		/* minimum lift before wing breaks */
-		Fmax = 30;		/* maximum flap deflection	*/
-		Smax = 60;		/* maximum spoiler deflection	*/
-		set_flapspoiler(50, 50, 5, 80, 80, 8);
-		MAX_RK = 0;
-		MAX_SW = 4;
-		swpos[3][X] =  14.8; swpos[3][Y] = -2.0; swpos[3][Z] = 4.6334;
-		swpos[2][X] = -14.8; swpos[2][Y] = -2.0; swpos[2][Z] = 4.6334;
-		swpos[1][X] =  12.8; swpos[1][Y] = -2.0; swpos[1][Z] = 4.6334;
-		swpos[0][X] = -12.8; swpos[0][Y] = -2.0; swpos[0][Z] = 4.6334;
-		MIN_LIFT_SPEED = 120;
-		ELEVF = 35.0;		/* elevator rate in degrees/sec	*/
-		ROLLF = 170.0;		/* roll rate (both at 300 mph)	*/
-		pilot_eye[Y] = 0.0;
-		pilot_eye[Z] = 0.0;
-		plane_height = 10.0;
+            plane_type = STEALTH_NAME;
+            pp->type = STEALTH;
+            s = 1000.0;		/* wing area in sq. feet	*/
+            W = 30000.0;		/* weight of plane in lbs.	*/
+            fuel_weight = 14000.0;
+            Mthrust = 25000.0;	/* maximum thrust		*/
+            set_fuelgauge(10000.0, 120.0, 5, 1000);
+            b = 38.0;		/* wing span in feet		*/
+            ef = .85;		/* efficiency factor		*/
+            Lmax = 4.0;		/* maximum lift before wing breaks */
+            Lmin = -2.0;		/* minimum lift before wing breaks */
+            Fmax = 30;		/* maximum flap deflection	*/
+            Smax = 60;		/* maximum spoiler deflection	*/
+            set_flapspoiler(50, 50, 5, 80, 80, 8);
+            MAX_RK = 0;
+            MAX_SW = 4;
+            swpos[3][X] =  14.8; swpos[3][Y] = -2.0; swpos[3][Z] = 4.6334;
+            swpos[2][X] = -14.8; swpos[2][Y] = -2.0; swpos[2][Z] = 4.6334;
+            swpos[1][X] =  12.8; swpos[1][Y] = -2.0; swpos[1][Z] = 4.6334;
+            swpos[0][X] = -12.8; swpos[0][Y] = -2.0; swpos[0][Z] = 4.6334;
+            MIN_LIFT_SPEED = 120;
+            ELEVF = 35.0;		/* elevator rate in degrees/sec	*/
+            ROLLF = 170.0;		/* roll rate (both at 300 mph)	*/
+            pilot_eye[Y] = 0.0;
+            pilot_eye[Z] = 0.0;
+            plane_height = 10.0;
 #ifdef AUDIO
-		thrust_type(1);
+            thrust_type(1);
 #endif
-		break;
-#endif
+            break;
         case 27 - '0':
             end_of_program();
         }

@@ -40,10 +40,6 @@ int init_texturing() {
     
     texdef2d(1, 1, 128, 128, bw, 5, texps_point);
     tevdef(1, 0, tevps);
-    
-    printf("Texture system initialized\n");
-    printf("======================\n\n");
-    fflush(stdout);
 }
 
 int texturing(int b) {

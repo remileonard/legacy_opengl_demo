@@ -74,7 +74,6 @@ static char *shadow_helpmsg[] = {SHADOW_HEADER(VERSION_NUMBER),
                                  "  m  - increase/decrease fog      ESC - quit",
                                  ""};
 
-#define XXXHEADER(vnum) "                          SGI Radar Version vnum"
 #define RADAR_HEADER(vnum) "                          SGI Radar Version 3.4"
 
 static char *radar_helpmsg[] = {RADAR_HEADER(VERSION_NUMBER),
@@ -113,9 +112,7 @@ static char *plane_menu[] = {"                      Choose a plane from the foll
                              "    6   P-38          13,500    1,600    4,000   327    52  +6g  -3.5g   75",
                              "    7   F-14D         42,000   16,200   55,000   565    64  +8g  -4g    115",
                              "    8   Boeing 727   101,773   59,750   48,000  1700   108  +4g  -2g    140",
-#if 0
-"    9   F-117A        30,000   14,000   25,000   900    38  +8g  -6g    120",
-#endif
+                             "    9   F-117A        30,000   14,000   25,000   900    38  +8g  -6g    120",
                              " ",
                              "                                 Additional Help",
                              "The left and right arrow keys rotate  your head left and right when viewing",
