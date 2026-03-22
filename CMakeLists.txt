@@ -3,8 +3,24 @@ project("OpenGL Glut Legacy Demos" VERSION 1.0.0 LANGUAGES C CXX)
 set(CMAKE_C_STANDARD 90)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 
+
+
+if(APPLE)
+    set(CMAKE_FIND_FRAMEWORK FIRST)
+    include_directories(BEFORE ${CMAKE_SOURCE_DIR}/src/porting)
+    add_compile_definitions(GL_SILENCE_DEPRECATION)
+    add_compile_definitions(HZ=100)
+    add_compile_options(
+        -Wno-error=implicit-function-declaration
+        -Wno-error=return-mismatch
+        -Wno-error=int-conversion
+        -Wno-error=incompatible-function-pointer-types
+        -Wno-error=implicit-int
+    )
+endif()
 find_package(OpenGL REQUIRED)
 find_package(GLUT REQUIRED)
+
 
 add_subdirectory(src/porting)
 
