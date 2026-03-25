@@ -39,8 +39,15 @@
 #ifdef _WIN32
     #include <windows.h>
 #endif
-#include <GL/gl.h>
-#include <GL/freeglut.h> /* OpenGL Utility Toolkit header */
+#ifndef __APPLE__
+    #include <GL/gl.h>
+    #include <GL/glu.h>
+    #include <GL/freeglut.h>
+#else
+    #include <OpenGL/gl.h>
+    #include <OpenGL/glu.h>
+    #include <GL/freeglut.h>
+#endif
 #include <math.h>    /* for cos(), sin(), and sqrt() */
 #include <stdio.h>
 #include <stdlib.h>

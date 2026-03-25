@@ -16,7 +16,11 @@
  */
 #define _USE_MATH_DEFINES
 #include "space.h"
-#include <GL/gl.h>
+#ifndef __APPLE__
+    #include <GL/gl.h>
+#else
+    #include <OpenGL/gl.h>
+#endif
 #include <math.h>
 #include <stdint.h>
 #include <stdio.h>

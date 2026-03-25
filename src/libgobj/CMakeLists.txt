@@ -7,9 +7,9 @@ add_library(libgobj ${SC_SOURCE} ${SC_HEADER})
 
 
 if (WIN32)
-    target_link_libraries(libgobj OpenGL::GL OpenGL::GLU GLUT::GLUT porting)
+    target_link_libraries(libgobj OpenGL::GL OpenGL::GLU $<IF:$<TARGET_EXISTS:FreeGLUT::freeglut>,FreeGLUT::freeglut,FreeGLUT::freeglut_static> porting)
 else()
-    target_link_libraries(libgobj OpenGL::GL OpenGL::GLU GLUT::GLUT m porting)
+    target_link_libraries(libgobj OpenGL::GL OpenGL::GLU $<IF:$<TARGET_EXISTS:FreeGLUT::freeglut>,FreeGLUT::freeglut,FreeGLUT::freeglut_static> m porting)
 endif()
 target_include_directories(libgobj PRIVATE ${OPENGL_INCLUDE_DIRS} ${GLUT_INCLUDE_DIRS}  ${CMAKE_CURRENT_SOURCE_DIR}/..)
 

@@ -6,10 +6,15 @@
     #define WIN32_LEAN_AND_MEAN
     #include <windows.h>
 #endif
-#include <GL/gl.h>
-#include <GL/glu.h>
-#include <GL/glut.h>
-
+#ifndef __APPLE__
+    #include <GL/gl.h>
+    #include <GL/glu.h>
+    #include <GL/glut.h>
+#else
+    #include <OpenGL/gl.h>
+    #include <OpenGL/glu.h>
+    #include <GL/freeglut.h>
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -65,8 +70,9 @@ typedef struct path_struct_type {
 #define X 0
 #define Y 1
 #define Z 2
-
+#ifndef M_PI
 #define M_PI 3.14159265358979323846
+#endif
 #define XMAXSCREEN 1024
 #define YMAXSCREEN 768
 

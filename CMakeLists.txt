@@ -19,7 +19,7 @@ if(APPLE)
     )
 endif()
 find_package(OpenGL REQUIRED)
-find_package(GLUT REQUIRED)
+find_package(FreeGLUT CONFIG REQUIRED)
 
 
 add_subdirectory(src/porting)
