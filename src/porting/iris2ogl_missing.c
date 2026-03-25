@@ -31,7 +31,7 @@ void ortho2(Coord left, Coord right, Coord bottom, Coord top) {
 }
 
 // === Additional Font Functions ===
-void charstr(const char *str) {
+void charstr(char *str) {
     fmprstr(str);  // Alias to fmprstr
 }
 

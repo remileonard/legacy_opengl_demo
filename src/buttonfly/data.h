@@ -3,8 +3,11 @@
     #define WIN32_LEAN_AND_MEAN
     #include <Windows.h>
 #endif
-
-#include <GL/gl.h>
+#ifndef __APPLE__
+    #include <GL/gl.h>
+#else
+    #include <OpenGL/gl.h>
+#endif
 
 #define DIAG (1.0/1.414214)
 #define THICK (1.0/8.0)

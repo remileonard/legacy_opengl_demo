@@ -4,16 +4,11 @@ vcpkg_from_github(
     REF "v${VERSION}"
     SHA512 5e891e838a11ffbd5c2aea1f39004be6a0ccc1da11d661a37302c316734e0986ed86622f174ae91f40572ce9d0fbe9c43e0976ee8636f2de25aa8e1ecf256785
     HEAD_REF master
-    PATCHES
-        android.patch
-        x11-dependencies-export.patch
-        fix-debug-macro.patch
-        windows-output-name.patch
 )
 
 if(VCPKG_TARGET_IS_OSX)
     message("Building freeglut with Cocoa backend on macOS.")
-    set(FREEGLUT_COCOA_OPTIONS -DFREEGLUT_USE_X11=OFF -DFREEGLUT_USE_COCOA=ON)
+    set(FREEGLUT_COCOA_OPTIONS -DFREEGLUT_X11=OFF -DFREEGLUT_COCOA=ON)
 elseif(NOT VCPKG_TARGET_IS_WINDOWS AND NOT VCPKG_TARGET_IS_ANDROID)
     message("Freeglut currently requires the following libraries from the system package manager:\n    opengl\n    glu\n    libx11\n    xrandr\n    xi\n    xxf86vm\n\nThese can be installed on Ubuntu systems via apt-get install libxi-dev libgl1-mesa-dev libglu1-mesa-dev mesa-common-dev libxrandr-dev libxxf86vm-dev")
 endif()

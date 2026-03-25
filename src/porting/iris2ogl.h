@@ -15,10 +15,15 @@
     #include <windows.h>
 #endif
 
-
-#include <GL/gl.h>
-#include <GL/glu.h>
-#include <GL/glut.h>
+#ifndef __APPLE__
+    #include <GL/gl.h>
+    #include <GL/glu.h>
+    #include <GL/glut.h>
+#else
+    #include <OpenGL/gl.h>
+    #include <OpenGL/glu.h>
+    #include <GL/freeglut.h>
+#endif
 #include <stdint.h>
 #include <time.h>
 #include <math.h>

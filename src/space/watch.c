@@ -46,7 +46,11 @@ static int gettimeofday(struct timeval *tp, struct timezone *tzp) {
 #include <sys/time.h>
 #endif
 #include "space.h"
-#include <GL/gl.h>
+#ifndef __APPLE__
+    #include <GL/gl.h>
+#else
+    #include <OpenGL/gl.h>
+#endif
 
 typedef struct {
     sint32 year;

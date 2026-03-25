@@ -34,8 +34,11 @@
  *
  * OpenGL(TM) is a trademark of Silicon Graphics, Inc.
  */
-#include <GL/gl.h>
-
+#ifndef __APPLE__
+    #include <GL/gl.h>
+#else
+    #include <OpenGL/gl.h>
+#endif
 /* screen == monitor
  * Note: Ces valeurs sont utilisées pour les calculs de souris.
  * Avec GLUT, on peut obtenir la taille de l'écran dynamiquement.

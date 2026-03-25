@@ -20,8 +20,11 @@
 #ifdef _WIN32
 #include <windows.h>
 #endif
-#include <GL/gl.h>
-
+#ifndef __APPLE__
+    #include <GL/gl.h>
+#else
+    #include <OpenGL/gl.h>
+#endif
 typedef short sint16;
 typedef unsigned short uint16;
 typedef long sint32;

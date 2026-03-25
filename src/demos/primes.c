@@ -2,9 +2,15 @@
     #include <windows.h>
 #endif
 
-#include <GL/gl.h>
-#include <GL/glu.h>
-#include <GL/freeglut.h>
+#ifndef __APPLE__
+    #include <GL/gl.h>
+    #include <GL/glu.h>
+    #include <GL/freeglut.h>
+#else
+    #include <OpenGL/gl.h>
+    #include <OpenGL/glu.h>
+    #include <GL/freeglut.h>
+#endif
 
 #include <assert.h>
 #include <math.h>

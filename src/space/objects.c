@@ -15,7 +15,11 @@
  * rights reserved under the Copyright Laws of the United States.
  */
 #include "space.h"
-#include <GL/gl.h>
+#ifndef __APPLE__
+    #include <GL/gl.h>
+#else
+    #include <OpenGL/gl.h>
+#endif
 #include <math.h>
 #ifdef _WIN32
 #include <windows.h>

@@ -6,4 +6,4 @@ freeglut provides CMake targets:
 freeglut is compatible with built-in CMake targets:
 
     find_package(GLUT REQUIRED)
-    target_link_libraries(main PRIVATE GLUT::GLUT)
+    target_link_libraries(main PRIVATE $<IF:$<TARGET_EXISTS:FreeGLUT::freeglut>,FreeGLUT::freeglut,FreeGLUT::freeglut_static>)
