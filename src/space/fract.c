@@ -552,7 +552,7 @@ void display_fractsphere(void)
 
 {
     sint32 i, j, flag;
-    uint32 hey;
+    uintptr_t hey;
     flot32 vian;
     P5 *p;
     V4 *v;
@@ -718,7 +718,7 @@ static void create_continent(P5 *d, sint32 create, sint32 even)
 
 {
     sint32 cstat, size;
-    sint32 hey;
+    uintptr_t hey;
     TrigPoint *sur, *p0, *p1, *p2, *p3;
     P3 *p;
     flot32 w;
