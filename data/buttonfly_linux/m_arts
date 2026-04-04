@@ -1,0 +1,16 @@
+Primes
+	./demos/primes
+	.color. .9 .5 .9
+	.highcolor. 1.0 .7 1.0
+Mandel
+	./demos/mandel
+	.color. .9 .5 .9
+	.highcolor. 1.0 .7 1.0
+Particles
+	./demos/particles
+	.color. .9 .5 .9
+	.highcolor. 1.0 .7 1.0
+Plasma
+	./demos/particles
+	.color. .9 .5 .9
+	.highcolor. 1.0 .7 1.0
