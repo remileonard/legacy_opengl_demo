@@ -143,8 +143,8 @@ static void particlesystem_renderer(void) {
     glEnd();
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    
-    for (int i = 0; i < particleCount; i++) {
+    int i = 0;
+    for (i = 0; i < particleCount; i++) {
         Particle* p = &particles[i];
         glPushMatrix();
         glTranslatef(p->x, p->y, p->z);
@@ -160,8 +160,8 @@ static void particlesystem_renderer(void) {
 void particlesystem_explode(float x, float y, float z) {
     float speed = 0.1f;
     int numParticles = 12*6;
-
-    for (int i = 0; i < numParticles && particleCount < MAX_PARTICLES; i++) {
+    int i = 0;
+    for (i = 0; i < numParticles && particleCount < MAX_PARTICLES; i++) {
         float theta = ((float)(rand() % 100) / 100.0f) * 2.0f * M_PI;
         float phi = acosf(1.0f - 2.0f * ((float)(rand() % 100) / 100.0f));
         Particle* p = &particles[particleCount++];
@@ -181,8 +181,8 @@ void particlesystem_explode(float x, float y, float z) {
 
 }
 void particlesystem_update(void) {
-
-    for (int i = 0; i < particleCount; ) {
+    int i = 0;
+    for (i = 0; i < particleCount; ) {
         Particle* p = &particles[i];
         p->x += p->vx;
         p->y += p->vy;
