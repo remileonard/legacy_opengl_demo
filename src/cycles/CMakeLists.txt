@@ -3,10 +3,6 @@ project(cycles C)
 
 set(CMAKE_C_STANDARD 99)
 
-# OpenGL et GLUT
-find_package(OpenGL REQUIRED)
-find_package(GLUT REQUIRED)
-
 # Threads
 find_package(Threads REQUIRED)
 
@@ -54,8 +50,9 @@ target_include_directories(cycles PRIVATE
 )
 
 target_link_libraries(cycles
-    ${OPENGL_LIBRARIES}
-    ${GLUT_LIBRARIES}
+    OpenGL::GL
+    OpenGL::GLU
+    $<IF:$<TARGET_EXISTS:FreeGLUT::freeglut>,FreeGLUT::freeglut,FreeGLUT::freeglut_static>
     ${CMAKE_THREAD_LIBS_INIT}
     ${PLATFORM_LIBS}
     porting

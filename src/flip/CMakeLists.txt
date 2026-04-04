@@ -45,8 +45,9 @@ target_include_directories(flip PRIVATE
 )
 
 target_link_libraries(flip
-    ${OPENGL_LIBRARIES}
-    ${GLUT_LIBRARIES}
+    OpenGL::GL
+    OpenGL::GLU
+    $<IF:$<TARGET_EXISTS:FreeGLUT::freeglut>,FreeGLUT::freeglut,FreeGLUT::freeglut_static>
     ${CMAKE_THREAD_LIBS_INIT}
     ${PLATFORM_LIBS}
     porting

@@ -1754,10 +1754,6 @@ void iris_spaceball_update(float dtx, float dty, float dtz,
 
 static void iris_display_func(void) {
     // Generate REDRAW event if it's being listened to
-    printf("Display callback triggered\n");
-    int width, height;
-    getsize(&width, &height);
-    printf("Window size: %d x %d\n", width, height);
     if (queued_devices[REDRAW]) {
         queue_event(REDRAW, 1);
     }
