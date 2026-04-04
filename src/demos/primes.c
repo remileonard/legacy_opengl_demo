@@ -73,7 +73,8 @@ static void primes(void);
 
 static int is_prime(int n) {
     if (n < 2) return 0;
-    for (int i = 2; i * i <= n; i++) {
+    int i = 0;
+    for (i = 2; i * i <= n; i++) {
         if (n % i == 0) return 0;
     }
     return 1;
@@ -81,7 +82,8 @@ static int is_prime(int n) {
 
 static int is_position_valid(float x, float y, float z, float minDist) {
     float minDistSq = minDist * minDist;
-    for (int i = 0; i < cubeCount; i++) {
+    int i = 0;
+    for (i = 0; i < cubeCount; i++) {
         float dx = x - placedCubes[i].x;
         float dy = y - placedCubes[i].y;
         float dz = z - placedCubes[i].z;
@@ -455,8 +457,8 @@ static void primes(void) {
         0.0, 1.0, 0.0
     );
     glEnable(GL_LIGHTING);
-    
-    for (int i = 0; i < cubeCount; i++) {
+    int i = 0;
+    for (i = 0; i < cubeCount; i++) {
         glPushMatrix();
         glTranslatef(placedCubes[i].x, placedCubes[i].y, placedCubes[i].z);
         // Définir la couleur comme matériau émissif + diffus
