@@ -23,7 +23,7 @@ Cycles
 	.color. .9 .5 .9
 	.highcolor. 1.0 .7 1.0
 CubeTris
-	interactive/cubetris.exe
+	interactive/cubetris
 	.color. .9 .5 .9
 	.highcolor. 1.0 .7 1.0
 Space
