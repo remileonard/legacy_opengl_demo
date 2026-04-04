@@ -148,7 +148,7 @@ void remember_view(float *rot, float *trans) {
  *	This function is called whenever a REDRAW event occurs.
  */
 void redraw_scene(void) {
-    long xdim, ydim;
+    int xdim, ydim;
 
     reshapeviewport();
     getsize(&xdim, &ydim);
@@ -343,7 +343,7 @@ void draw_rate(int n)
  */
 void init_windows(char *title)
 {
-    long xorg, yorg, xdim, ydim;
+    int xorg, yorg, xdim, ydim;
     char machinetype[20];
 
     /*if (getgdesc(GD_BITS_NORM_SNG_RED) == 0)

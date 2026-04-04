@@ -37,7 +37,7 @@ void init_fonts(void) {
 }
 
 void scale_fonts_to_win(void) {
-    long x, y;
+    int x, y;
     static int last_y = 0;
 
     getsize(&x, &y);
@@ -196,7 +196,7 @@ void draw_text_port_thing(char *prompt, char *data) {
     color(BLACK);
 #endif
     linewidth(2);
-    rect(-1.9, -0.95, 0.0, -0.75);
+    rectf(-1.9, -0.95, 0.0, -0.75);
     linewidth(1);
     popmatrix();
 
@@ -501,7 +501,7 @@ void draw_buttons(int colour_choice, int num_robots) {
  */
 int over_area(void) {
     int i;
-    long xm, ym, xo, yo, xs, ys;
+    int xm, ym, xo, yo, xs, ys;
     float x, y, dx, dy;
     
 
@@ -511,7 +511,7 @@ int over_area(void) {
     /* scale x, y to window */
     getsize(&xs, &ys);
     
-    printf("DEBUG: xm=%ld, ym=%ld, xs=%ld, ys=%ld\n", 
+    printf("DEBUG: xm=%d, ym=%d, xs=%d, ys=%d\n", 
            xm, ym, xs, ys);
     
     // CORRECTION: Les coordonnées de souris sont déjà relatives à la fenêtre
@@ -523,7 +523,7 @@ int over_area(void) {
     x *= 4.0;
     y *= 2.0;
     
-    printf("Mouse: xm=%ld, ym=%ld, normalized=(%.2f, %.2f), final=(%.2f, %.2f)\n", 
+    printf("Mouse: xm=%d, ym=%d, normalized=(%.2f, %.2f), final=(%.2f, %.2f)\n", 
            xm, ym, (float)xm / (float)xs, 1.0f - (float)ym / (float)ys, x, y);
 
     /* do circular buttons */
