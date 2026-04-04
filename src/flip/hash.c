@@ -50,6 +50,7 @@ static int esize = 0;
 static int lastv = 0;
 static int laste = 0;
 
+int veq(float *v0, float *v1);
 int
 h_get_nv()
 {
@@ -127,9 +128,7 @@ int h_find_vertex(float *xyz)
 #define ABS(a) ((a) < 0.0 ? -(a) : (a))
 #define EQ(a, b) ( ABS((a)-(b)) < FLUFF )
 
-int
-veq(v0, v1)
-float *v0, *v1;
+int veq(float *v0, float *v1)
 {
 	if (EQ(v0[0], v1[0]) && EQ(v0[1], v1[1]) && EQ(v0[2], v1[2]))
 			return 1;

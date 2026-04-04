@@ -39,8 +39,8 @@
  * rotating between drawing them, the magnitude of the rotation
  * defined by how big the 'swirl' paramater is.
  */
-draw_swirl(obj)
-flipobj *obj;
+void drawflipobj(flipobj *obj);
+void draw_swirl(flipobj *obj)
 {
 	  int i;
 	  float *p, *end;
@@ -95,8 +95,7 @@ flipobj *obj;
 	}
 }
 
-swirl_randomize(obj)
-flipobj *obj;
+void swirl_randomize(flipobj *obj)
 {
     int		i, j;
     int		*ip, *ip1;

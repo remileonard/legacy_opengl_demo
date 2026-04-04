@@ -56,7 +56,8 @@ Matrix idmat = {/* Useful Matrix to have around... */
                 {0.0, 0.0, 0.0, 1.0}};
 
 /* Prototypes for local functions */
-void main(int, char **), parse_args(int, char **);
+void main(int, char **);
+void parse_args(int, char **);
 void init_windows(char *);
 void init_menus(void), do_menus(void);
 void read_files(void), draw_scene(void);
@@ -82,6 +83,9 @@ void remake_mmenu(int), remake_dtmenu(int);
 void remake_lsmenu(void);
 void select_lmodel(int), remake_lmmenu(int);
 void anything_moving(int *);
+int make_lights(void);
+void draw_swirl(flipobj *obj);
+void drawflipobj(flipobj *obj);
 
 void main(int argc, char **argv) {
     parse_args(argc, argv); /* This reads in the files, too */

@@ -22,6 +22,8 @@
 #include "hash.h"
 #include "porting/iris2ogl.h"
 
+void swirl_randomize(flipobj *obj);
+int find_edges(flipobj *obj);
 int32_t swap_int32(int32_t val) {
     uint8_t *bytes = (uint8_t *)&val;
     return ((int32_t)bytes[0] << 24) | ((int32_t)bytes[1] << 16) | ((int32_t)bytes[2] << 8) | ((int32_t)bytes[3]);
