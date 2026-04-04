@@ -4,12 +4,14 @@
 #endif
 #ifndef __APPLE__
     #include <GL/gl.h>
-    #include <GL/glut.h>
-else
-    
+    #include <GL/glu.h>
+    #include <GL/freeglut.h>
+#else
+    #include <OpenGL/gl.h>
+    #include <OpenGL/glu.h>
+    #include <GL/freeglut.h>
 #endif
-#include <OpenGL/gl.h>
-#include <gl/freeglut.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
