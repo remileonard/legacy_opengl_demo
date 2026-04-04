@@ -83,7 +83,7 @@ void remake_mmenu(int), remake_dtmenu(int);
 void remake_lsmenu(void);
 void select_lmodel(int), remake_lmmenu(int);
 void anything_moving(int *);
-int make_lights(void);
+void make_lights(void);
 void draw_swirl(flipobj *obj);
 void drawflipobj(flipobj *obj);
 
@@ -593,7 +593,7 @@ static int lights[NUM_LIGHTS];
 /*
  * Define the lighting model, lights, and initial material
  */
-make_lights() {
+void make_lights() {
     int i;
     for (i = 0; i < NUM_LIGHTS; i++)
         lights[i] = 0; /* Off */
