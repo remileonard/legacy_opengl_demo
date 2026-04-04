@@ -5,7 +5,7 @@
 //#include <malloc.h>
 #include <time.h>
 #include <math.h>
-#include <gl/freeglut.h>
+#include <GL/freeglut.h>
 #include "trackball.h"
 
 #define WIDTH 4
