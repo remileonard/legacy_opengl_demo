@@ -7,11 +7,11 @@ Opengl
 	.color. .9 .5 .2
 	.highcolor. 1.0 .7 0.3
 IrisGL
-	.menu. ./data/buttonfly/m_irisgl
+	.menu. ./data/buttonfly_linux/m_irisgl
 	.color. .9 .5 .2
 	.highcolor. 1.0 .7 0.3
 Arts
-	.menu. ./data/buttonfly/m_arts
+	.menu. ./data/buttonfly_linux/m_arts
 	.color. .9 .5 .5
 	.highcolor. 1.0 .7 0.7
 Objects
