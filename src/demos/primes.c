@@ -243,7 +243,8 @@ static void draw_progress_bar() {
     sprintf(text, "Initializing Prime Spiral... %.1f%%", initProgress * 100.0f);
     
     glRasterPos2f(barX, barY + barHeight + 20);
-    for (char* c = text; *c != '\0'; c++) {
+    char * c;
+    for (c = text; *c != '\0'; c++) {
         glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, *c);
     }
     
