@@ -1255,18 +1255,27 @@ void iris_special_func(int key, int x, int y);
 void iris_special_up_func(int key, int x, int y);
 void iris_mouse_func(int button, int state, int x, int y);
 void iris_motion_func(int x, int y);
-
+void iris_glut_report_errors(const char *fmt, va_list ap) {
+    fprintf(stderr, "[freeglut error] ");
+    vfprintf(stderr, fmt, ap);
+    fprintf(stderr, "\n");
+}
+void iris_glut_report_warnings(const char *fmt, va_list ap) {
+    fprintf(stderr, "[freeglut warning] ");
+    vfprintf(stderr, fmt, ap);
+    fprintf(stderr, "\n");
+}
 void winopen(const char *title) {
     // Initialize GLUT if not already done
     static int glut_initialized = 0;
     if (!glut_initialized) {
         int argc = 1;
-        char *argv[1] = {(char *)"iris_gl_emulator"};
+        char *argv[1] = {title};
         glutInit(&argc, argv);
         glut_initialized = 1;
     }
     
-    glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
+    glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH) ;
     glutInitWindowSize(window_width, window_height);
     glutInitWindowPosition(window_x, window_y);
     main_window = glutCreateWindow(title);
@@ -1284,6 +1293,8 @@ void winopen(const char *title) {
     glutMouseFunc(iris_mouse_func);
     glutMotionFunc(iris_motion_func);
     glutPassiveMotionFunc(iris_motion_func);
+    glutInitErrorFunc(iris_glut_report_errors);
+    glutInitWarningFunc(iris_glut_report_warnings);
     
     // Initialize OpenGL state
     glEnable(GL_DEPTH_TEST);
@@ -1292,6 +1303,7 @@ void winopen(const char *title) {
     if (queued_devices[REDRAW]) {
         queue_event(REDRAW, 1);
     }
+    glutReportErrors();
 }
 
 void winclose(int win) {
@@ -1742,6 +1754,10 @@ void iris_spaceball_update(float dtx, float dty, float dtz,
 
 static void iris_display_func(void) {
     // Generate REDRAW event if it's being listened to
+    printf("Display callback triggered\n");
+    int width, height;
+    getsize(&width, &height);
+    printf("Window size: %d x %d\n", width, height);
     if (queued_devices[REDRAW]) {
         queue_event(REDRAW, 1);
     }

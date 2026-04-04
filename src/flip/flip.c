@@ -170,7 +170,6 @@ void redraw_scene(void) {
  * last rotation and drawing the scene over and over.
  */
 void draw_scene(void) {
-    printf("draw_scene called\n");
     update_objeulers();
     draw_objects();
 }
@@ -381,16 +380,25 @@ void init_windows(char *title)
         prefsize(Width, Height);
 
     /* Open with the executable's name (stripped of directory) */
-    {
-        char *t;
-        //char *strrchr(char *, int);
-        /* testshare(""); */
-        winopen((t = strrchr(title, '/')) != NULL ? t + 1 : title);
-    }
-    wintitle(title);
+    
+    char *t;
+    //char *strrchr(char *, int);
+    /* testshare(""); */
+    keepaspect(1, 1);
+    winopen("flip");
+    subpixel(TRUE);
+    RGBmode();
+    doublebuffer();
+    gconfig();
+    qdevice(REDRAW);
+    qtest();
+    clear();
+    swapbuffers();
 
-    reshapeviewport();
-    getsize(&xdim, &ydim);
+    //wintitle(title);
+
+    //reshapeviewport();
+    /*getsize(&xdim, &ydim);
     aspect = (float)xdim / (float)ydim;
 
     RGBmode();
@@ -398,7 +406,7 @@ void init_windows(char *title)
         doublebuffer();
     }
         
-    gconfig();
+    gconfig();*/
 
     zbuffer(TRUE);
 

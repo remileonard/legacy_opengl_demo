@@ -658,14 +658,20 @@ void draw_info(int look_offset, int help_mode, float min, int pts, int big_kills
     set_win_coords();
 }
 
-void set_win_coords(void) { window(-2.0, 2.0, -1.0, 1.0, 1.0, DIM * 3.0); }
+void set_win_coords(void) { 
+    window(-2.0, 2.0, -1.0, 1.0, 1.0, DIM * 3.0); 
+}
 
 /* Open graphics window*/
 void openwindow(void) {
     keepaspect(2, 1);
     minsize(600, 300);
     winopen("Cycles");
-
+    qdevice(REDRAW);
+    qtest();
+    int x, y;
+    getsize(&x, &y);
+    printf("window size: %d x %d\n", x, y);
 #ifdef RGB_MODE
     RGBmode();
 #else
@@ -708,6 +714,7 @@ void openwindow(void) {
     qdevice(SPACEKEY);
     qdevice(LEFTARROWKEY);
     qdevice(RIGHTARROWKEY);
+    
 }
 
 void instructions(void) {

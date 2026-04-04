@@ -84,7 +84,7 @@ int cycles_main_impl(int argc, char **argv) {
     }
     bcopy(cuserid((char *)NULL), name, NAME_SIZE);
 
-    init_fonts();
+    
 
 #ifdef DEBUG
     foreground(); /* @@@ */
@@ -92,7 +92,7 @@ int cycles_main_impl(int argc, char **argv) {
 #endif
 
     openwindow();
-
+    init_fonts();
     srand((unsigned int)times(&t)); /* seed random numbers */
     make_objs();
     defpattern(1, 16, quartertone);
