@@ -88,8 +88,9 @@ void draw_swirl(flipobj *obj);
 void drawflipobj(flipobj *obj);
 
 void main(int argc, char **argv) {
-    parse_args(argc, argv); /* This reads in the files, too */
     init_windows(argv[0]);
+    parse_args(argc, argv); /* This reads in the files, too */
+    
     make_lights();
 
     add_event(ANY, ESCKEY, UP, ui_exit, NULL);
@@ -169,8 +170,7 @@ void redraw_scene(void) {
  * last rotation and drawing the scene over and over.
  */
 void draw_scene(void) {
-    int i;
-
+    printf("draw_scene called\n");
     update_objeulers();
     draw_objects();
 }
@@ -394,8 +394,10 @@ void init_windows(char *title)
     aspect = (float)xdim / (float)ydim;
 
     RGBmode();
-    if (getgdesc(GD_BITS_NORM_DBL_RED) != 0)
+    if (getgdesc(GD_BITS_NORM_DBL_RED) != 0) {
         doublebuffer();
+    }
+        
     gconfig();
 
     zbuffer(TRUE);
