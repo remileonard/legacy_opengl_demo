@@ -1302,7 +1302,9 @@ static void intersect_continent(void)
     flot32 x, y, z;
     static sint32 flag;
 
-    if (feye.w > 1.5)
+    /* feye is still at the planet center before the first scan of the
+       solar system: no collision test (it pushed the eye to -inf) */
+    if (feye.w > 1.5 || feye.w <= 0.0)
         return;
 
     x = feye.x;
@@ -1342,6 +1344,8 @@ INTERSECT_END:
 
         tb = (t_body *)flaggs.star[flaggs.suun_current].next[flaggs.plan_current];
         x = fsqrt(tb->posit.x * tb->posit.x + tb->posit.y * tb->posit.y + tb->posit.z * tb->posit.z);
+        if (x <= 0.0)
+            return;
 
         Counter.eye.x -= (tb->posit.x + 16.0) / x;
         Counter.eye.y -= (tb->posit.y + 16.0) / x;

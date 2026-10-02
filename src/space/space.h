@@ -33,6 +33,20 @@ typedef double flot64;
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
+
+/*
+ * The code relies on the IRIX rand(): 15-bit results (RAND_MAX 32767), e.g.
+ * 0x3f800000 | (rand() << 8) to build a float in [1, 2). glibc and macOS
+ * return 31 bits, which corrupts those floats (crash in
+ * generate_galaxy_stars). Use the IRIX generator on every platform.
+ */
+void space_srand(unsigned int seed);
+int space_rand(void);
+#undef rand
+#undef srand
+#define rand() space_rand()
+#define srand(seed) space_srand(seed)
 
 #define fsqrt(x) ((flot32)sqrt((double)(x)))
 #define fcos(x) ((flot32)cos((double)(x)))

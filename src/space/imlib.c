@@ -27,8 +27,8 @@
 #endif
 typedef short sint16;
 typedef unsigned short uint16;
-typedef long sint32;
-typedef unsigned long uint32;
+typedef int32_t sint32;
+typedef uint32_t uint32;
 typedef float flot32;
 typedef double flot64;
 
@@ -67,7 +67,7 @@ void savescreen(uint32 dx, uint32 dy)
 /***********************************************************************
  *  sizeofimage()  -
  **********************************************************************/
-static void sizeofimage(char *name, long *xsize, long *ysize) {
+static void sizeofimage(char *name, sint32 *xsize, sint32 *ysize) {
     IMAGE *image;
 
     image = iopen(name, "r");
@@ -94,7 +94,7 @@ sint32 imgtolrect(char *name) {
         fprintf(stderr, "longimagedata: can't open image file %s\n", name);
         exit(1);
     }
-    base = (unsigned long *)malloc(image->xsize * image->ysize * sizeof(unsigned long));
+    base = (uint32 *)malloc(image->xsize * image->ysize * sizeof(uint32));
     rbuf = (uint16 *)malloc(image->xsize * sizeof(short));
     gbuf = (uint16 *)malloc(image->xsize * sizeof(short));
     bbuf = (uint16 *)malloc(image->xsize * sizeof(short));
@@ -216,7 +216,7 @@ void lrecttoimg(char *name, sint32 x1, sint32 y1, sint32 x2, sint32 y2, uint32 *
     gbuf = (uint16 *)malloc(xsize * sizeof(short));
     bbuf = (uint16 *)malloc(xsize * sizeof(short));
     abuf = (uint16 *)malloc(xsize * sizeof(short));
-    oimage = iopen(name, "w", RLE(1), 3, xsize, ysize, 4);
+    oimage = iopen(name, "w", VERBATIM(1), 3, xsize, ysize, 4);  /* putrow writes verbatim only */
     if (!oimage) {
         fprintf(stderr, "lrecttoimage: can't open output file\n");
         exit(1);
@@ -230,10 +230,11 @@ void lrecttoimg(char *name, sint32 x1, sint32 y1, sint32 x2, sint32 y2, uint32 *
         lbuf += xsize;
     }
     iclose(oimage);
-    free(lbuf);
+    /* lbuf belongs to the caller (and was advanced above) */
     free(rbuf);
     free(gbuf);
     free(bbuf);
+    free(abuf);
 }
 
 #define CPACKTORGBA(l, r, g, b, a)                                                                                     \
@@ -247,7 +248,7 @@ void lrecttoimg(char *name, sint32 x1, sint32 y1, sint32 x2, sint32 y2, uint32 *
  *  cpacktorgba()  -
  **********************************************************************/
 static void cpacktorgba(uint32 *l, uint16 *r, uint16 *g, uint16 *b, uint16 *a, sint32 n) {
-    unsigned long val;
+    uint32 val;
 
     while (n >= 8) {
         CPACKTORGBA(l[0], r[0], g[0], b[0], a[0]);
