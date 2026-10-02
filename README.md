@@ -96,6 +96,15 @@ A simulation of the Solar System and the Milky Way galaxy. Features:
 - Autopilot mode for automatic navigation
 - Time control for accelerating or decelerating simulation time
 
+### 🗂️ FSN
+SGI's 3D File System Navigator, the file browser of the "It's a UNIX system!" scene in Jurassic Park. It was rebuilt from the original IRIX binary (no source code was ever published) and ported to OpenGL/GLUT. Features:
+- Directories as platforms in a receding tree, files as boxes: height shows size, color shows age
+- Click to fly to a directory or file, with the original zoom animation and spotlight
+- Mouse "joystick" movement, back and reset
+- The original landscapes: grass, indigo, desert, ocean and space
+
+See [src/fsn/README.md](src/fsn/README.md) for how it was rebuilt and the controls.
+
 
 ## Prerequisites
 
@@ -211,6 +220,7 @@ legacy_opengl_demo/
     ├── buttonfly/         # Buttonfly system
     ├── demos/             # Mini demos collection
     ├── distort/           # Distortion effects
+    ├── fsn/               # 3D File System Navigator
     ├── gl_puzzle/         # 3D puzzle game
     ├── ideas/             # SGI Ideas demo
     ├── insect/            # Insect animation demo

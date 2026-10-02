@@ -30,5 +30,9 @@ CubeTris
 	interactive/cubetris.exe
 	.color. .9 .5 .9
 	.highcolor. 1.0 .7 1.0
+FSN
+	interactive/fsn.exe
+	.color. .9 .5 .9
+	.highcolor. 1.0 .7 1.0
 Flight
 	.menu. data/buttonfly/m_flight
