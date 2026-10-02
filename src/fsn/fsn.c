@@ -1356,49 +1356,62 @@ static void draw_directory(FsnDir *d, int picking)
 
 static void draw_directories(int picking)
 {
-    float hw;
+    float hw, wide, gz;
     if (!topdir)
         return;
     if (!picking) {
-        /* sky and ground around the eye */
-        hw = res.skyWidth * ctx.aspect / eye_shrinkage();
+        /*
+         * Sky and ground around the eye. The original draws them fixed in
+         * the world, facing +y, so they leave the view when turning; here
+         * they follow the heading (same picture when looking straight ahead).
+         */
+        hw = res.skyWidth * ctx.aspect;
+        wide = (float)(res.skyDistance * tan(ctx.fov / 20.0 * M_PI / 180.0) * ctx.aspect * 1.2);
+        if (hw < wide)
+            hw = wide;
+        gz = -0.5f - ctx.z;
+        glPushMatrix();
+        glLoadIdentity();
+        glScalef(1.0f / ctx.aspect, 1.0f, 1.0f);
+        rotate_tenths(ctx.tilt, 'x');
         if (res.useGouraud) {
             glShadeModel(GL_SMOOTH);
             glBegin(GL_QUADS);
             cpack(res.bottomSkyColor);
-            glVertex3f(ctx.x - hw, ctx.y + res.skyDistance, -0.5f);
-            glVertex3f(ctx.x + hw, ctx.y + res.skyDistance, -0.5f);
+            glVertex3f(-hw, res.skyDistance, gz);
+            glVertex3f(hw, res.skyDistance, gz);
             cpack(res.topSkyColor);
-            glVertex3f(ctx.x + hw, ctx.y + res.skyDistance, ctx.z + res.skyHeight);
-            glVertex3f(ctx.x - hw, ctx.y + res.skyDistance, ctx.z + res.skyHeight);
+            glVertex3f(hw, res.skyDistance, res.skyHeight);
+            glVertex3f(-hw, res.skyDistance, res.skyHeight);
             glEnd();
             glShadeModel(GL_FLAT);
             glBegin(GL_QUADS);
             cpack(res.topSkyColor);
-            glVertex3f(ctx.x + hw, ctx.y + res.skyDistance, ctx.z + res.skyHeight);
-            glVertex3f(ctx.x + hw, ctx.y + res.skyDistance, ctx.z + 1000.0f);
-            glVertex3f(ctx.x - hw, ctx.y + res.skyDistance, ctx.z + 1000.0f);
-            glVertex3f(ctx.x - hw, ctx.y + res.skyDistance, ctx.z + res.skyHeight);
+            glVertex3f(hw, res.skyDistance, res.skyHeight);
+            glVertex3f(hw, res.skyDistance, 1000.0f);
+            glVertex3f(-hw, res.skyDistance, 1000.0f);
+            glVertex3f(-hw, res.skyDistance, res.skyHeight);
             glEnd();
             glShadeModel(GL_SMOOTH);
             glBegin(GL_QUADS);
             cpack(res.nearGroundColor);
-            glVertex3f(ctx.x - hw, ctx.y - res.groundBack, -0.5f);
-            glVertex3f(ctx.x + hw, ctx.y - res.groundBack, -0.5f);
+            glVertex3f(-hw, -res.groundBack, gz);
+            glVertex3f(hw, -res.groundBack, gz);
             cpack(res.farGroundColor);
-            glVertex3f(ctx.x + hw, ctx.y + res.skyDistance, -0.5f);
-            glVertex3f(ctx.x - hw, ctx.y + res.skyDistance, -0.5f);
+            glVertex3f(hw, res.skyDistance, gz);
+            glVertex3f(-hw, res.skyDistance, gz);
             glEnd();
             glShadeModel(GL_FLAT);
         } else {
             cpack(res.skyColor);
             glBegin(GL_QUADS);
-            glVertex3f(ctx.x - hw, ctx.y + res.skyDistance, -0.5f);
-            glVertex3f(ctx.x + hw, ctx.y + res.skyDistance, -0.5f);
-            glVertex3f(ctx.x + hw, ctx.y + res.skyDistance, ctx.z + 1000.0f);
-            glVertex3f(ctx.x - hw, ctx.y + res.skyDistance, ctx.z + 1000.0f);
+            glVertex3f(-hw, res.skyDistance, gz);
+            glVertex3f(hw, res.skyDistance, gz);
+            glVertex3f(hw, res.skyDistance, 1000.0f);
+            glVertex3f(-hw, res.skyDistance, 1000.0f);
             glEnd();
         }
+        glPopMatrix();
     }
     draw_directory(topdir, picking);
 }
