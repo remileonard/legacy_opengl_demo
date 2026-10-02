@@ -300,13 +300,10 @@ static void display_callback(void) {
 
     switch (Counter.status) {
     case STELL_STAT:
-        if ((flaggs.plan_current < 0) || (Counter.flags & PRBIT_FLAG)) {
-            glClear(GL_COLOR_BUFFER_BIT);
-        } else {
-            glClearColor(Counter.sky_clear_color[0], Counter.sky_clear_color[1], Counter.sky_clear_color[2],
-                         Counter.sky_clear_color[3]);
-            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        }
+        if ((flaggs.plan_current >= 0) && !(Counter.flags & PRBIT_FLAG))
+            glClearColor(Counter.sky_clear_color[0], Counter.sky_clear_color[1],
+                     Counter.sky_clear_color[2], Counter.sky_clear_color[3]);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         break;
 
     case GALAC_STAT:
