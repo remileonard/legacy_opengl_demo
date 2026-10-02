@@ -8,10 +8,10 @@
  *
  * Ported: file system scan, landscape layout, rendering (platforms, files,
  * carpets, lines, labels, sky, spotlights, stroke font), visibility culling,
- * picking, flying (zoom / back / reset), mouse "joystick" movement and the
- * original resources and landscapes.
+ * picking, flying (zoom / back / reset), mouse "joystick" movement, the
+ * overview window and the original resources and landscapes.
  * Not ported: Motif panels, FAM monitoring, the database cache, file typing
- * icons, warp mode, overview window, marks and search.
+ * icons, warp mode, marks and search.
  *
  * Function names, resource names and default values follow the original
  * binary. See README.md in this directory.
@@ -101,6 +101,7 @@ typedef struct Resources {
     float colorShadowSaturationFactor, colorShadowValueFactor;
     Cpack skyColor, topSkyColor, bottomSkyColor;
     Cpack groundColor, farGroundColor, nearGroundColor;
+    Cpack overviewBackgroundColor;
     Cpack dirColor, pruneColor, selLineColor, unselLineColor;
     Cpack spotlightColor;
     Cpack fileColor[7];
@@ -193,6 +194,7 @@ static void set_resources(const char *landscape)
     res.spotlightColor = parse_color("#fffee2");
     res.topSkyColor = res.bottomSkyColor = UNSET_COLOR;
     res.farGroundColor = res.nearGroundColor = UNSET_COLOR;
+    res.overviewBackgroundColor = UNSET_COLOR;
     for (i = 0; i < 7; i++)
         res.fileColor[i] = parse_color(file_colors[i]);
     for (i = 0; i < 6; i++)
@@ -206,6 +208,7 @@ static void set_resources(const char *landscape)
         res.nearGroundColor = parse_color("#0f4f1a");
         res.topSkyColor = parse_color("#0087d5");
         res.bottomSkyColor = parse_color("#91fff0");
+        res.overviewBackgroundColor = parse_color("#3a7b4e");
         res.pruneColor = parse_color("#62706a");
         res.unselLineColor = parse_color("#7bc1a7");
     } else if (strcmp(landscape, "indigo") == 0) {
@@ -222,6 +225,7 @@ static void set_resources(const char *landscape)
         res.nearGroundColor = parse_color("#d5b36b");
         res.topSkyColor = parse_color("#3916ff");
         res.bottomSkyColor = parse_color("#da756c");
+        res.overviewBackgroundColor = parse_color("#705f38");
         res.pruneColor = parse_color("#989285");
     } else if (strcmp(landscape, "ocean") == 0) {
         res.useGouraud = 1;
@@ -231,6 +235,7 @@ static void set_resources(const char *landscape)
         res.nearGroundColor = parse_color("#002045");
         res.topSkyColor = parse_color("#00005c");
         res.bottomSkyColor = parse_color("#820037");
+        res.overviewBackgroundColor = parse_color("#001835");
         res.pruneColor = parse_color("#45494f");
         res.unselLineColor = parse_color("#7492b4");
     } else if (strcmp(landscape, "space") == 0) {
@@ -248,6 +253,8 @@ static void set_resources(const char *landscape)
         res.farGroundColor = res.groundColor;
     if (res.nearGroundColor == UNSET_COLOR)
         res.nearGroundColor = res.groundColor;
+    if (res.overviewBackgroundColor == UNSET_COLOR)
+        res.overviewBackgroundColor = res.groundColor;
     res.zoomTilt = res.initialTilt;
     res.zoomFileTilt = res.initialTilt;
 }
@@ -1993,7 +2000,7 @@ static void draw_messages(void)
         glColor3ub(230, 230, 230);
         bitmap_text(8, 26, "left: fly to   shift+left: select   middle or ctrl+left drag: move "
                     "(shift: height, ctrl: dive)   arrows: turn/tilt   b: back   r: reset   "
-                    "h: help   esc: quit");
+                    "o: overview   h: help   esc: quit");
     }
 
     glEnable(GL_DEPTH_TEST);
@@ -2001,6 +2008,315 @@ static void draw_messages(void)
     glMatrixMode(GL_PROJECTION);
     glPopMatrix();
     glMatrixMode(GL_MODELVIEW);
+}
+
+/* ------------------------------------------------------------------------ */
+/* Overview window (top view of the whole landscape)                        */
+/* ------------------------------------------------------------------------ */
+
+#define MAIN_X 40
+#define MAIN_Y 40
+#define MAIN_W 800
+#define MAIN_H 600
+
+static int main_win, overview_win;
+static int overviewActive = 1;   /* initialOverview */
+static int ov_w = 1, ov_h = 1;
+static int ov_button;            /* button held in the overview, plus one */
+static int ov_shift;
+
+/* drawOverviewDirectory: platforms as rectangles, lines to the children */
+static void drawOverviewDirectory(FsnDir *d, int picking)
+{
+    int i;
+    float half, xs;
+    if (!d->laidout)
+        return;
+    glLoadName(d->index);
+    cpack(dir_box(d)->c[0]);
+    half = d->width / 2.0f;
+    xs = half * d->scale;
+    glRectf(d->x - xs, d->y - half, d->x + xs, d->y + half);
+    for (i = 0; i < d->ndirs; i++) {
+        FsnDir *c = d->dirs[i];
+        if (!c->laidout)
+            continue;
+        if (picking) {
+            drawOverviewDirectory(c, picking);
+            glLoadName(c->index);
+        }
+        cpack(c->selected ? res.selLineColor : res.unselLineColor);
+        glBegin(GL_LINES);
+        glVertex2f(d->x + c->line_x * d->scale, d->y + c->line_y);
+        glVertex2f(c->x, c->y - c->width / 2.0f);
+        glEnd();
+        if (!picking)
+            drawOverviewDirectory(c, picking);
+    }
+}
+
+static void overview_ortho(void)
+{
+    gluOrtho2D(minx, maxx, miny, maxy);
+}
+
+/* highlightOverviewDir and drawOverviewOverlayCursor */
+static void drawOverviewOverlay(void)
+{
+    float px = (float)ov_w / (maxx - minx);
+    float py = (float)ov_h / (maxy - miny);
+    if (hl_dir) {
+        float half = hl_dir->width / 2.0f, xs = half * hl_dir->scale;
+        glColor3ub(255, 255, 255);
+        glLineWidth(2.0f);
+        glBegin(GL_LINE_LOOP);
+        glVertex2f(hl_dir->x - xs, hl_dir->y - half);
+        glVertex2f(hl_dir->x + xs, hl_dir->y - half);
+        glVertex2f(hl_dir->x + xs, hl_dir->y + half);
+        glVertex2f(hl_dir->x - xs, hl_dir->y + half);
+        glEnd();
+    }
+    /* cross where the view is looking */
+    glPushMatrix();
+    glTranslatef(ctx.x - ctx.sinh * ctx.sint * ctx.z, ctx.y - ctx.cosh * ctx.sint * ctx.z, 0.0f);
+    glScalef(1.0f / px, 1.0f / py, 1.0f);
+    glColor3ub(255, 255, 255);
+    glLineWidth(3.0f);
+    glBegin(GL_LINES);
+    glVertex2i(-8, -8); glVertex2i(8, 8);
+    glVertex2i(8, -8); glVertex2i(-8, 8);
+    glEnd();
+    glLineWidth(1.0f);
+    glPopMatrix();
+}
+
+static void drawOverview(void)
+{
+    Cpack bg = res.overviewBackgroundColor;
+    glClearColor((bg & 0xff) / 255.0f, ((bg >> 8) & 0xff) / 255.0f,
+                 ((bg >> 16) & 0xff) / 255.0f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT);
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    overview_ortho();
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+    if (topdir) {
+        glInitNames();
+        glPushName(0);
+        drawOverviewDirectory(topdir, 0);
+        drawOverviewOverlay();
+    }
+    glutSwapBuffers();
+}
+
+static void overview_reshape(int w, int h)
+{
+    ov_w = w > 0 ? w : 1;
+    ov_h = h > 0 ? h : 1;
+    glViewport(0, 0, ov_w, ov_h);
+}
+
+static void post_redisplay_all(void)
+{
+    if (main_win)
+        glutPostWindowRedisplay(main_win);
+    if (overview_win && overviewActive)
+        glutPostWindowRedisplay(overview_win);
+}
+
+/* overviewPickPointer: directory under the cursor in the overview */
+static FsnDir *overviewPickPointer(int mx, int my)
+{
+    GLint vp[4];
+    int hits, i, k;
+    if (!topdir)
+        return NULL;
+    ensure_selbuf();
+    glGetIntegerv(GL_VIEWPORT, vp);
+    glSelectBuffer(selbuf_size, selbuf);
+    glRenderMode(GL_SELECT);
+    glInitNames();
+    glPushName(0);
+    glMatrixMode(GL_PROJECTION);
+    glPushMatrix();
+    glLoadIdentity();
+    gluPickMatrix((GLdouble)mx, (GLdouble)(vp[3] - my), 2.0, 2.0, vp);
+    overview_ortho();
+    glMatrixMode(GL_MODELVIEW);
+    glPushMatrix();
+    glLoadIdentity();
+    drawOverviewDirectory(topdir, 1);
+    glPopMatrix();
+    glMatrixMode(GL_PROJECTION);
+    glPopMatrix();
+    glMatrixMode(GL_MODELVIEW);
+    hits = glRenderMode(GL_RENDER);
+    for (i = 0, k = 0; i < hits; i++) {
+        GLuint n = selbuf[k];
+        if (n == 1 && selbuf[k + 3] < (GLuint)num_dirs)
+            return dir_index[selbuf[k + 3]];
+        k += 3 + n;
+    }
+    return NULL;
+}
+
+/* overviewmove: puts the point the view is looking at under the cursor */
+static void overviewmove(int mx, int my)
+{
+    int px = mx, py = ov_h - my - 1;
+    float wx, wy;
+    if (px < 0)
+        px = 0;
+    else if (px >= ov_w)
+        px = ov_w - 1;
+    if (py < 0)
+        py = 0;
+    else if (py >= ov_h)
+        py = ov_h - 1;
+    wx = (float)px / (float)ov_w * (maxx - minx) + minx;
+    wy = (float)py / (float)ov_h * (maxy - miny) + miny;
+    pushzoom();
+    zoomto(wx + ctx.sinh * ctx.sint * ctx.z, wy + ctx.cosh * ctx.sint * ctx.z, ctx.z,
+           ctx.rot, ctx.tilt, NULL);
+}
+
+/* overviewzoom: flies to the directory under the cursor */
+static void overviewzoom(int mx, int my)
+{
+    FsnDir *d = overviewPickPointer(mx, my);
+    if (!d) {
+        overviewmove(mx, my);
+        return;
+    }
+    pushzoom();
+    select_directory(d);
+    zoomto(d->x - ctx.sinh * (d->width / 2.0f + res.zoomBack),
+           d->y - ctx.cosh * (d->width / 2.0f + res.zoomBack),
+           res.zoomBottom + d->height, ctx.rot, ctx.tilt, NULL);
+}
+
+/* overviewselect: selects the directory under the cursor */
+static void overviewselect(int mx, int my)
+{
+    FsnDir *d = overviewPickPointer(mx, my);
+    if (!d || d == ctx.seldir)
+        return;
+    pushzoom();
+    select_directory(d);
+}
+
+static void overview_action(int x, int y)
+{
+    if (ov_button == GLUT_MIDDLE_BUTTON + 1)
+        overviewmove(x, y);
+    else if (ov_button == GLUT_LEFT_BUTTON + 1 && ov_shift)
+        overviewselect(x, y);
+    else if (ov_button == GLUT_LEFT_BUTTON + 1)
+        overviewzoom(x, y);
+    post_redisplay_all();
+}
+
+static void overview_mouse(int button, int state, int x, int y)
+{
+    if (state == GLUT_DOWN) {
+        if (button != GLUT_LEFT_BUTTON && button != GLUT_MIDDLE_BUTTON)
+            return;
+        ov_button = button + 1;
+        ov_shift = (glutGetModifiers() & GLUT_ACTIVE_SHIFT) != 0;
+        overview_action(x, y);
+    } else if (button + 1 == ov_button) {
+        ov_button = 0;
+    }
+}
+
+static void overview_motion(int x, int y)
+{
+    if (ov_button)
+        overview_action(x, y);
+}
+
+/* overviewLocateHighlight: the directory under the cursor is outlined in both views */
+static void overview_passive(int x, int y)
+{
+    FsnDir *d = overviewPickPointer(x, y);
+    if (d != hl_dir || hl_file) {
+        hl_dir = d;
+        hl_file = NULL;
+        post_redisplay_all();
+    }
+}
+
+static void overview_close(void)
+{
+    overview_win = 0;
+    overviewActive = 0;
+}
+
+static void main_close(void)
+{
+    glutLeaveMainLoop();
+}
+
+static void keyboard(unsigned char key, int x, int y);
+static void special(int key, int x, int y);
+
+static void createOverview(void)
+{
+    int w = (int)((maxx - minx) * 3.0f), h = (int)(maxy - miny);
+    int cur = glutGetWindow();
+    /* the original sizes it from the landscape; keep it on screen */
+    if (w > 480) {
+        h = h * 480 / w;
+        w = 480;
+    }
+    if (h > 480) {
+        w = w * 480 / h;
+        h = 480;
+    }
+    if (w < 160)
+        w = 160;
+    if (h < 160)
+        h = 160;
+    /* next to the main window */
+    glutInitWindowPosition(MAIN_X + MAIN_W + 16, MAIN_Y);
+    glutInitWindowSize(w, h);
+    overview_win = glutCreateWindow("fsn overview");
+    glDisable(GL_DEPTH_TEST);
+    glShadeModel(GL_FLAT);
+    glutDisplayFunc(drawOverview);
+    glutReshapeFunc(overview_reshape);
+    glutMouseFunc(overview_mouse);
+    glutMotionFunc(overview_motion);
+    glutPassiveMotionFunc(overview_passive);
+    glutKeyboardFunc(keyboard);
+    glutSpecialFunc(special);
+    glutCloseFunc(overview_close);
+    if (cur)
+        glutSetWindow(cur);
+}
+
+/* showOverview / hideOverview */
+static void toggleOverview(void)
+{
+    int cur = glutGetWindow();
+    if (overviewActive) {
+        overviewActive = 0;
+        if (overview_win) {
+            glutSetWindow(overview_win);
+            glutHideWindow();
+        }
+    } else {
+        overviewActive = 1;
+        if (!overview_win) {
+            createOverview();
+        } else {
+            glutSetWindow(overview_win);
+            glutShowWindow();
+        }
+    }
+    if (cur)
+        glutSetWindow(cur);
 }
 
 /* ------------------------------------------------------------------------ */
@@ -2030,6 +2346,9 @@ static void draw_scene(void)
                  ((bg >> 16) & 0xff) / 255.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    do_perspective();
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
     glPushMatrix();
@@ -2047,6 +2366,10 @@ static void draw_scene(void)
     last_frame = t;
     if (ctx.frame_us > 1000000)
         ctx.frame_us = 1000000;
+
+    /* the overview follows the view */
+    if (overview_win && overviewActive)
+        glutPostWindowRedisplay(overview_win);
 }
 
 /* ------------------------------------------------------------------------ */
@@ -2067,7 +2390,7 @@ static void idle(void)
 {
     if (workproc && workproc(workproc_data))
         set_workproc(NULL, NULL);
-    glutPostRedisplay();
+    post_redisplay_all();
 }
 
 static void display(void)
@@ -2187,12 +2510,12 @@ static void passive_motion(int x, int y)
 static void relayout(void)
 {
     layout_db();
-    glutPostRedisplay();
+    post_redisplay_all();
 }
 
 enum {
     MENU_BACK = 1, MENU_RESET, MENU_HEIGHT_NONE, MENU_HEIGHT_LINEAR,
-    MENU_HEIGHT_EXAGGERATED, MENU_SHRINK, MENU_HELP, MENU_QUIT,
+    MENU_HEIGHT_EXAGGERATED, MENU_SHRINK, MENU_HELP, MENU_OVERVIEW, MENU_QUIT,
     MENU_LANDSCAPE = 100
 };
 
@@ -2214,13 +2537,14 @@ static void menu_cb(int value)
     case MENU_HEIGHT_EXAGGERATED: displayHeight = 2; relayout(); break;
     case MENU_SHRINK: res.shrinkOnZoom = !res.shrinkOnZoom; break;
     case MENU_HELP: show_help = !show_help; break;
+    case MENU_OVERVIEW: toggleOverview(); break;
     case MENU_QUIT: glutLeaveMainLoop(); return;
     default:
         if (value >= MENU_LANDSCAPE && value < MENU_LANDSCAPE + NUM_LANDSCAPES)
             set_landscape(value - MENU_LANDSCAPE);
         break;
     }
-    glutPostRedisplay();
+    post_redisplay_all();
 }
 
 static void keyboard(unsigned char key, int x, int y)
@@ -2235,14 +2559,15 @@ static void keyboard(unsigned char key, int x, int y)
     case 'b': popzoom(); break;
     case 'r': reset_eye(); break;
     case 'h': show_help = !show_help; break;
+    case 'o': toggleOverview(); break;
     case 'n': displayHeight = 0; relayout(); break;
     case 'l': displayHeight = 1; relayout(); break;
     case 'e': displayHeight = 2; relayout(); break;
-    case '+': if (ctx.fov > 300) ctx.fov -= 50; reshape(ctx.w, ctx.h); break;
-    case '-': if (ctx.fov < 1500) ctx.fov += 50; reshape(ctx.w, ctx.h); break;
+    case '+': if (ctx.fov > 300) ctx.fov -= 50; break;
+    case '-': if (ctx.fov < 1500) ctx.fov += 50; break;
     default: return;
     }
-    glutPostRedisplay();
+    post_redisplay_all();
 }
 
 static void special(int key, int x, int y)
@@ -2258,7 +2583,7 @@ static void special(int key, int x, int y)
     case GLUT_KEY_PAGE_DOWN: ctx.z /= 1.15f; if (ctx.z < 0.03f) ctx.z = 0.03f; break;
     default: return;
     }
-    glutPostRedisplay();
+    post_redisplay_all();
 }
 
 static void create_menu(void)
@@ -2277,6 +2602,7 @@ static void create_menu(void)
     glutAddSubMenu("Height", height);
     glutAddSubMenu("Landscape", landscapes);
     glutAddMenuEntry("Toggle shrink on zoom", MENU_SHRINK);
+    glutAddMenuEntry("Toggle overview (o)", MENU_OVERVIEW);
     glutAddMenuEntry("Toggle help (h)", MENU_HELP);
     glutAddMenuEntry("Quit (esc)", MENU_QUIT);
     glutAttachMenu(GLUT_RIGHT_BUTTON);
@@ -2332,9 +2658,11 @@ int main(int argc, char **argv)
     calc_v_angle();
 
     glutInitDisplayMode(GLUT_RGB | GLUT_DOUBLE | GLUT_DEPTH);
-    glutInitWindowSize(800, 600);
-    glutCreateWindow("fsn - 3D File System Navigator");
-    glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE, GLUT_ACTION_GLUTMAINLOOP_RETURNS);
+    glutInitWindowPosition(MAIN_X, MAIN_Y);
+    glutInitWindowSize(MAIN_W, MAIN_H);
+    main_win = glutCreateWindow("fsn - 3D File System Navigator");
+    glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE, GLUT_ACTION_CONTINUE_EXECUTION);
+    glutCloseFunc(main_close);
 
     makeColorBoxes();
     layout_db();
@@ -2352,6 +2680,8 @@ int main(int argc, char **argv)
     glutKeyboardFunc(keyboard);
     glutSpecialFunc(special);
     create_menu();
+    if (overviewActive)
+        createOverview();
 
     glutMainLoop();
     return 0;

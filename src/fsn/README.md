@@ -55,13 +55,17 @@ calls are mapped to OpenGL 1.x (`pick`/`gselect` become `GL_SELECT`,
   10-position history for "back".
 - Mouse "joystick" movement (`mousemark`, `mousemove`, `mousemovevert`,
   `mousemovemvert`).
+- The overview window (`drawOverview`, `drawOverviewDirectory`,
+  `overviewmove`, `overviewzoom`, `overviewselect`): a top view of the whole
+  landscape with a cross where the view is looking. It opens at start-up, like
+  the original (`initialOverview`).
 - The landscapes `grass`, `indigo`, `desert`, `ocean` and `space`.
 
 Not ported:
 - the Motif control panel and dialogs (replaced by a GLUT menu and keys);
 - FAM monitoring and the compressed database cache (`~/.FSN_*`);
 - file typing icons (they need IRIX's `/usr/lib/filetype` rules);
-- warp mode, the overview window, marks and search.
+- warp mode, marks and search.
 
 ## Usage
 
@@ -84,9 +88,19 @@ Without a directory, fsn shows your home directory.
 | `b` | back to the previous position |
 | `r` | reset the view |
 | `n` / `l` / `e` | no height / linear height / exaggerated height |
+| `o` | show or hide the overview |
 | `h` | show or hide the help line |
 | Right button | menu (landscape, height, shrink on zoom, ...) |
 | `Esc` / `q` | quit |
+
+In the overview window:
+
+| Input | Action |
+| --- | --- |
+| Left click or drag | fly to the directory under the cursor (or move there if there is none) |
+| Shift + left click or drag | select the directory under the cursor |
+| Middle click or drag | move the view so that it looks at that point |
+| Pointer | outline the directory under the cursor in both windows |
 
 Colors give the age of a file: red is less than a week old, then orange,
 yellow, teal, blue and purple, up to a dark raspberry color for files older than a year.

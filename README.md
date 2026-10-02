@@ -101,6 +101,7 @@ SGI's 3D File System Navigator, the file browser of the "It's a UNIX system!" sc
 - Directories as platforms in a receding tree, files as boxes: height shows size, color shows age
 - Click to fly to a directory or file, with the original zoom animation and spotlight
 - Mouse "joystick" movement, back and reset
+- Overview window: a top view of the whole tree to jump anywhere
 - The original landscapes: grass, indigo, desert, ocean and space
 
 See [src/fsn/README.md](src/fsn/README.md) for how it was rebuilt and the controls.
