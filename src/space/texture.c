@@ -31,7 +31,7 @@ void spTevDef(void)
 #endif
 
 #ifdef SP_OPEN_GL
-   glTexEnvf(GL_TEXTURE_ENV_MODE,GL_TEXTURE_ENV_MODE,GL_MODULATE);
+   glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 #endif
 }
 
@@ -40,9 +40,10 @@ void spTevDef(void)
 **********************************************************************/
 uint32 spTexDef(uint32 comp,uint32 dx,uint32 dy,void *arr,uint32 flag)
 {
-   static uint32 texid = 1;
+   
 
 #ifdef SP_IRIS_GL
+   static uint32 texid = 1;
    flot32 texps[8];
 
    texps[0] = TX_MAGFILTER ;
@@ -58,43 +59,43 @@ uint32 spTexDef(uint32 comp,uint32 dx,uint32 dy,void *arr,uint32 flag)
 #endif
 
 #ifdef SP_OPEN_GL
-   uint32 format,i,*lptr,r,g,b,a;
+   GLuint texid;
+   GLenum format = GL_RGBA;
+   uint32 i,*lptr,r,g,b,a;
    uint16 *sptr;
-
-   texid = glGenLists(1);
-   glNewList(texid,GL_COMPILE) ;
-
-   glTexParameterf(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
-   glTexParameterf(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
-   glTexParameterf(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_CLAMP);
-   glTexParameterf(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T,GL_CLAMP);
 
    switch (comp) {
       case 1 : format = GL_LUMINANCE;
                break;
-
       case 2 : format = GL_LUMINANCE_ALPHA;
                for (sptr=arr,i=dx*dy; i>0; sptr++,i--) {
                  r = (*sptr     ) & 0xff;
                  a = (*sptr >> 8) & 0xff;
-                 *sptr = (r<<8) | a; 
-                 }
+                 *sptr = (r<<8) | a;
+               }
                break;
-
       case 4 : format = GL_RGBA;
                for (lptr=arr,i=dx*dy; i>0; lptr++,i--) {
                  r = (*lptr      ) & 0xff;
                  g = (*lptr >>  8) & 0xff;
                  b = (*lptr >> 16) & 0xff;
                  a = (*lptr >> 24) & 0xff;
-                 *lptr = (r<<24) | (g<<16) | (b<<8) | a; 
-                 }
+                 *lptr = (r<<24) | (g<<16) | (b<<8) | a;
+               }
                break;
-      }
-   glTexImage2D(GL_TEXTURE_2D,0,comp,dx,dy,0,format,GL_UNSIGNED_BYTE,arr);
+   }
 
-   glEndList() ;
-   return(texid);
+   glGenTextures(1, &texid);
+   glBindTexture(GL_TEXTURE_2D, texid);
+   glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);   // matches IRIS GL TX_REPEAT
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+   glTexImage2D(GL_TEXTURE_2D, 0, comp, dx, dy, 0, format, GL_UNSIGNED_BYTE, arr);
+   glBindTexture(GL_TEXTURE_2D, 0);
+
+   return texid;
 #endif
 }
 
@@ -104,11 +105,6 @@ uint32 spTexDef(uint32 comp,uint32 dx,uint32 dy,void *arr,uint32 flag)
 void spFlipTex(uint32 flag,uint32 obj)
 
 {
-   glEnable(GL_TEXTURE_2D);
-   glCallList(obj) ;
-   if (!(Counter.flags & TEXTR_FLAG))
-     return;
-
 #ifdef SP_IRIS_GL
    if (flag) {
      texbind(0,obj);
@@ -121,11 +117,14 @@ void spFlipTex(uint32 flag,uint32 obj)
 #endif
 
 #ifdef SP_OPEN_GL
-   if (flag) {
+   if (flag && (Counter.flags & TEXTR_FLAG)) {
      glEnable(GL_TEXTURE_2D);
-     glCallList(obj) ;
-     }
-   else glDisable(GL_TEXTURE_2D);
+     glBindTexture(GL_TEXTURE_2D, obj);
+   }
+   else {
+     glBindTexture(GL_TEXTURE_2D, 0);
+     glDisable(GL_TEXTURE_2D);
+   }
 #endif
 }
 

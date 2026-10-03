@@ -636,7 +636,10 @@ static void generate_shades(P5 *d, sint32 triflag)
                     }
                 }
 
-                p00->cpack1 = (r << 24) | (g << 16) | (b << 8) | 0xff;
+                if (r > 255) r = 255;
+                if (g > 255) g = 255;
+                if (b > 255) b = 255;
+                p00->cpack1 = 0xff000000 | (b << 16) | (g << 8) | r;
             }
 
             if (((triflag & LOWER_TRI) && (q > 1)) || ((triflag & UPPER_TRI) && (q <= 1))) {
@@ -690,7 +693,10 @@ static void generate_shades(P5 *d, sint32 triflag)
                     }
                 }
 
-                p00->cpack2 = (r << 24) | (g << 16) | (b << 8) | 0xff;
+                if (r > 255) r = 255;
+                if (g > 255) g = 255;
+                if (b > 255) b = 255;
+                p00->cpack2 = 0xff000000 | (b << 16) | (g << 8) | r;
             }
         }
     }

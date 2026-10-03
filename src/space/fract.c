@@ -179,10 +179,11 @@ static uint32 convert(P4 *p)
         i = t;
         i *= 4 * planet->ptr->lxsize;
         i += 4 * (sint32)s;
-        q = *(sint32 *)&planet->land[i];
-        data = (q & 0x00ffffff) | 0xff000000;
-        i = (q >> 24) & 0x000000ff;
-        p->w = 1.0 + planet->ptr->scale * (flot32)i;
+        {
+            unsigned char *b = (unsigned char *)&planet->land[i];   // file layout: elev, B, G, R
+            data = 0xff000000 | (b[1] << 16) | (b[2] << 8) | b[3];
+            p->w = 1.0 + planet->ptr->scale * (flot32)b[0];
+        }
         return (data);
         break;
     case FM_SINU_1B:
@@ -208,10 +209,11 @@ static uint32 convert(P4 *p)
         i = t;
         i *= 4 * planet->ptr->lxsize;
         i += 4 * (sint32)s;
-        q = *(sint32 *)&planet->land[i];
-        data = (q & 0x00ffffff) | 0xff000000;
-        i = (q >> 24) & 0x000000ff;
-        p->w = 1.0 + planet->ptr->scale * (flot32)i;
+        {
+            unsigned char *b = (unsigned char *)&planet->land[i];   // file layout: elev, B, G, R
+            data = 0xff000000 | (b[1] << 16) | (b[2] << 8) | b[3];
+            p->w = 1.0 + planet->ptr->scale * (flot32)b[0];
+        }
         return (data);
         break;
     default:
@@ -991,7 +993,10 @@ static void generate_shades(P5 *d, sint32 triflag)
                     }
                 }
 
-                p00->cpack1 = (r << 24) | (g << 16) | (b << 8) | 0xff;
+                if (r > 255) r = 255;
+                if (g > 255) g = 255;
+                if (b > 255) b = 255;
+                p00->cpack1 = 0xff000000 | (b << 16) | (g << 8) | r;
             }
 
             if (((triflag & LOWER_TRI) && (q > 1)) || ((triflag & UPPER_TRI) && (q <= 1))) {
@@ -1045,7 +1050,10 @@ static void generate_shades(P5 *d, sint32 triflag)
                     }
                 }
 
-                p00->cpack2 = (r << 24) | (g << 16) | (b << 8) | 0xff;
+                if (r > 255) r = 255;
+                if (g > 255) g = 255;
+                if (b > 255) b = 255;
+                p00->cpack2 = 0xff000000 | (b << 16) | (g << 8) | r;
             }
         }
     }
@@ -1302,7 +1310,9 @@ static void intersect_continent(void)
     flot32 x, y, z;
     static sint32 flag;
 
-    if (feye.w > 1.5)
+    /* feye is still at the planet center before the first scan of the
+       solar system: no collision test (it pushed the eye to -inf) */
+    if (feye.w > 1.5 || feye.w <= 0.0)
         return;
 
     x = feye.x;
@@ -1342,6 +1352,8 @@ INTERSECT_END:
 
         tb = (t_body *)flaggs.star[flaggs.suun_current].next[flaggs.plan_current];
         x = fsqrt(tb->posit.x * tb->posit.x + tb->posit.y * tb->posit.y + tb->posit.z * tb->posit.z);
+        if (x <= 0.0)
+            return;
 
         Counter.eye.x -= (tb->posit.x + 16.0) / x;
         Counter.eye.y -= (tb->posit.y + 16.0) / x;

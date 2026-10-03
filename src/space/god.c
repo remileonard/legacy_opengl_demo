@@ -1129,6 +1129,24 @@ static flot64 newton(flot64 orb, flot64 mas)
 }
 
 /**********************************************************************
+ *  space_srand() / space_rand()  -  rand() of IRIX libc (15 bits)
+ **********************************************************************/
+static unsigned long space_rand_next = 1;
+
+void space_srand(unsigned int seed)
+
+{
+    space_rand_next = seed;
+}
+
+int space_rand(void)
+
+{
+    space_rand_next = (space_rand_next * 1103515245UL + 12345UL) & 0xffffffffUL;
+    return (int)((space_rand_next >> 16) & 0x7fff);
+}
+
+/**********************************************************************
  *  float_rand()  -
  **********************************************************************/
 flot32 float_rand(void)

@@ -4,13 +4,20 @@
  */
 #include "image_compat.h"
 #include <stdarg.h>
+#include <stdint.h>
 
 /* Swap bytes for big-endian/little-endian conversion */
 static unsigned short swapshort(unsigned short val) {
     return ((val >> 8) | (val << 8));
 }
 
-static unsigned long swaplong(unsigned long val) {
+/* SGI images are big-endian: swap on little-endian hosts (x86, ARM) */
+static int host_is_little(void) {
+    const unsigned short one = 1;
+    return *(const unsigned char *)&one == 1;
+}
+
+static uint32_t swaplong(uint32_t val) {
     return ((val >> 24) | ((val >> 8) & 0xFF00) | 
             ((val << 8) & 0xFF0000) | (val << 24));
 }
@@ -19,37 +26,29 @@ static unsigned long swaplong(unsigned long val) {
 static unsigned short readshort(FILE *fp) {
     unsigned short val;
     fread(&val, 2, 1, fp);
-#ifdef _WIN32
-    return swapshort(val);  /* Windows is little-endian */
-#else
-    return val;
-#endif
+    return host_is_little() ? swapshort(val) : val;
 }
 
 /* Write short in big-endian format */
 static void writeshort(FILE *fp, unsigned short val) {
-#ifdef _WIN32
-    val = swapshort(val);
-#endif
+    if (host_is_little())
+        val = swapshort(val);
     fwrite(&val, 2, 1, fp);
 }
 
 /* Read long in big-endian format */
 static unsigned long readlong(FILE *fp) {
-    unsigned long val;
+    uint32_t val = 0;
     fread(&val, 4, 1, fp);
-#ifdef _WIN32
-    return swaplong(val);
-#endif
-    return val;
+    return host_is_little() ? swaplong(val) : val;
 }
 
 /* Write long in big-endian format */
 static void writelong(FILE *fp, unsigned long val) {
-#ifdef _WIN32
-    val = swaplong(val);
-#endif
-    fwrite(&val, 4, 1, fp);
+    uint32_t v = (uint32_t)val;
+    if (host_is_little())
+        v = swaplong(v);
+    fwrite(&v, 4, 1, fp);
 }
 
 /* Open an SGI RGB image file */
@@ -209,7 +208,7 @@ int getrow(IMAGE *image, unsigned short *buffer, unsigned int y, unsigned int z)
     }
 
     /* Calculate offset for this row */
-    offset = 512 + (y * image->zsize + z) * image->xsize;
+    offset = 512 + ((long)z * image->ysize + y) * image->xsize;  /* SGI verbatim: plane by plane */
     fseek(image->file, offset, SEEK_SET);
 
     /* Read as bytes and convert to shorts */
@@ -240,7 +239,7 @@ int putrow(IMAGE *image, unsigned short *buffer, unsigned int y, unsigned int z)
     }
 
     /* Calculate offset for this row */
-    offset = 512 + (y * image->zsize + z) * image->xsize;
+    offset = 512 + ((long)z * image->ysize + y) * image->xsize;  /* SGI verbatim: plane by plane */
     fseek(image->file, offset, SEEK_SET);
 
     /* Convert shorts to bytes and write */

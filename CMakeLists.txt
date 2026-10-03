@@ -44,6 +44,7 @@ add_subdirectory(src/flip)
 add_subdirectory(src/space)
 add_subdirectory(src/flight)
 add_subdirectory(src/iris)
+add_subdirectory(src/fsn)
 
 set (BUTTON_FLY
     buttonfly
@@ -54,6 +55,7 @@ set(LEGACY_INTERACTIVE
     enterprise
     flight
     flip
+    fsn
     gl_puzzle
     insect
     maze
