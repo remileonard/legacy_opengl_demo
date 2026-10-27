@@ -251,7 +251,7 @@ static void read_gset(Reader *r, PfbGSet *g)
     g->linewidth = rd_float(r);
     g->pointsize = rd_float(r);
     rd_int(r);  /* draw bin */
-    rd_int(r);  /* isect mask */
+    g->isectmask = rd_u32(r);
     rd_int(r);  /* highlight */
     rd_int(r);
     rd_floats(r, g->bbox, 6);
@@ -266,6 +266,9 @@ static void read_node(Reader *r, PfbNode *nd)
     for (i = 0; i < 16; i++)
         nd->matrix[i] = (i % 5) == 0;
     nd->ref = -1;
+    nd->userdata = -1;
+    for (i = 0; i < 4; i++)
+        nd->travmask[i] = 0xffffffffU;
     if (w && n > 0) {
         nd->type = w[0];
         switch (nd->type) {
@@ -343,6 +346,11 @@ static void read_node(Reader *r, PfbNode *nd)
                 for (i = 0; i < nd->nchildren; i++)
                     nd->children[i] = w[p++];
             }
+        }
+        if (p + 5 <= n) {
+            for (i = 0; i < 4; i++)
+                nd->travmask[i] = (unsigned int)w[p + i];
+            nd->userdata = w[p + 4];
         }
     }
     free(w);
@@ -509,6 +517,26 @@ PfbFile *pfb_load(const char *path)
             for (i = 0; i < count && !r.error; i++)
                 read_node(&r, &f->node[base + i]);
             break;
+        case 11:
+            base = f->nud;
+            f->ud = (unsigned int **)realloc(f->ud, sizeof(unsigned int *) * (base + count));
+            f->udsize = (int *)realloc(f->udsize, sizeof(int) * (base + count));
+            f->nud += count;
+            for (i = 0; i < count; i++) {
+                int len = rd_int(&r), k;
+                f->ud[base + i] = NULL;
+                f->udsize[base + i] = 0;
+                if (len < 0 || r.p + len > r.end) {
+                    r.error = 1;
+                    break;
+                }
+                f->ud[base + i] = (unsigned int *)calloc(1, len + 4);
+                for (k = 0; k + 4 <= len; k += 4)
+                    f->ud[base + i][k / 4] = (unsigned int)rd_u32(&r);
+                rd_skip(&r, len - k);
+                f->udsize[base + i] = len;
+            }
+            break;
         case 14:
             base = f->nmorph;
             f->morph = (int **)realloc(f->morph, sizeof(int *) * (base + count));
@@ -555,6 +583,10 @@ void pfb_free(PfbFile *f)
     }
     for (i = 0; i < f->nmorph; i++)
         free(f->morph[i]);
+    for (i = 0; i < f->nud; i++)
+        free(f->ud[i]);
+    free(f->ud);
+    free(f->udsize);
     free(f->morph);
     free(f->morph_len);
     free(f->mtl);

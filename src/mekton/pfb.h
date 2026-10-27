@@ -80,6 +80,7 @@ typedef struct {
     int flatshade, wireframe;
     int gstate;
     float linewidth, pointsize;
+    unsigned int isectmask;
     float bbox[6];
 } PfbGSet;
 
@@ -90,6 +91,8 @@ typedef struct {
     int ngsets, *gsets;
     float matrix[16];
     int ref;
+    unsigned int travmask[4];
+    int userdata;      /* index of a user data block, or -1 */
     /* switch */
     int switch_val;
     /* sequence */
@@ -99,7 +102,7 @@ typedef struct {
     float seq_speed;
 } PfbNode;
 
-typedef struct {
+typedef struct PfbFile {
     int nmtl, ntex, ntenv, ngstate, ngset, nnode;
     PfbMtl *mtl;
     PfbTex *tex;
@@ -112,6 +115,9 @@ typedef struct {
     int nmorph;
     int **morph;       /* raw pfMorph records */
     int *morph_len;
+    int nud;
+    unsigned int **ud; /* user data blocks, 32-bit words in host order */
+    int *udsize;       /* in bytes */
 } PfbFile;
 
 PfbFile *pfb_load(const char *path);
