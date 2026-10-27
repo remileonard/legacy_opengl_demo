@@ -45,6 +45,7 @@ add_subdirectory(src/space)
 add_subdirectory(src/flight)
 add_subdirectory(src/iris)
 add_subdirectory(src/fsn)
+add_subdirectory(src/mekton)
 
 set (BUTTON_FLY
     buttonfly
@@ -59,6 +60,7 @@ set(LEGACY_INTERACTIVE
     gl_puzzle
     insect
     maze
+    mekton_view
     objviewer
     road
     smooth
