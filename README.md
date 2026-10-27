@@ -106,8 +106,8 @@ SGI's 3D File System Navigator, the file browser of the "It's a UNIX system!" sc
 
 See [src/fsn/README.md](src/fsn/README.md) for how it was rebuilt and the controls.
 
-### 🤖 Mekton viewer
-A viewer for the scenes of Mekton, SGI's 1996 mech combat demo built on IRIS Performer. The undocumented Performer binary format (`.pfb`) was rebuilt from the loader inside the IRIX executable. Features:
+### 🤖 Mekton
+SGI's 1996 mech combat demo built on IRIS Performer, rebuilt from the IRIX executable: `mekton` is the game (mechs, flight, plasma guns, cameras, HUD, instrument panel and radars), `mekton_view` a viewer for its scenes. The undocumented Performer binary format (`.pfb`) was rebuilt from the loader inside the executable. Viewer features:
 - Mechs, arenas, colony and city scenes with their textures and materials
 - Animated sequences (explosions) and the scrolling waterfall
 - Orbit, zoom, pan, wireframe, texture and lighting toggles
@@ -233,7 +233,7 @@ legacy_opengl_demo/
     ├── gl_puzzle/         # 3D puzzle game
     ├── ideas/             # SGI Ideas demo
     ├── insect/            # Insect animation demo
-    ├── mekton/            # Mekton scene viewer (IRIS Performer .pfb loader)
+    ├── mekton/            # Mekton game and scene viewer (IRIS Performer .pfb loader)
     ├── libtk/             # TK toolkit (X11/GLX to GLUT port)
     ├── roller_coaster/    # Roller coaster simulation
     └── smooth/            # Model viewer

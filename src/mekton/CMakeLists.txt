@@ -13,8 +13,8 @@ target_include_directories(mekton_view PRIVATE ${OPENGL_INCLUDE_DIRS} ${GLUT_INC
 target_compile_options(mekton_view PRIVATE ${OPENGL_CFLAGS} ${GLUT_CFLAGS})
 target_link_options(mekton_view PRIVATE ${OPENGL_LDFLAGS} ${GLUT_LDFLAGS})
 
-set(MEKTON_SOURCES mek_main.c mek_stubs.c mek_math.c mek_db.c mek_dynamics.c mek_anim.c
-    mek_colony.c mek_camera.c pf.c pfb.c mekton.h pf.h pfb.h)
+set(MEKTON_SOURCES mek_main.c mek_hud.c mek_stubs.c mek_math.c mek_db.c mek_dynamics.c mek_anim.c
+    mek_colony.c mek_camera.c mek_weapons.c mek_world.c pf.c pfb.c mekton.h pf.h pfb.h)
 if(NOT WIN32)
     add_executable(mekton ${MEKTON_SOURCES})
 else()

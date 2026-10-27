@@ -282,6 +282,8 @@ typedef struct pfHit {
     pfGeoSet *gset;
     int prim, tri;
     pfMatrix xform;
+    int pathlen;
+    pfNode *path[16];      /* nodes from the root of the intersection */
 } pfHit;
 
 typedef struct pfSegSet {
@@ -317,9 +319,12 @@ typedef struct pfSegSet {
 #define PFQHIT_GSET 9
 #define PFQHIT_NODE 10
 #define PFQHIT_XFORM 22
+#define PFQHIT_PATH 23
 
 int pfNodeIsectSegs(pfNode *n, pfSegSet *segset, pfHit **hits[]);
 int pfQueryHit(const pfHit *h, unsigned int which, void *dst);
+/* node i of a hit path (PFQHIT_PATH) */
+void *pfGet(void *path, int i);
 
 /* --- lights ------------------------------------------------------------- */
 

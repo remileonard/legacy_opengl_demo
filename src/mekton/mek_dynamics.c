@@ -94,7 +94,8 @@ void init_mek(Mek *m, int type)
     switch_dead(m);
     m->flags = 0;
     m->hit_by = -1;
-    m->f264 = m->f252 = m->f256 = m->f260 = 0;
+    pfSetVec3(m->aim, 0, 0, 0);
+    m->heat = 0;
     m->f276 = m->f280 = 1;
     m->team = (unsigned char)user_team;
     m->s124 = 4;

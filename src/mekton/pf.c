@@ -1232,7 +1232,7 @@ static void draw_node(pfNode *n, int depth)
         }
         break;
     case PFNODE_SEQUENCE:
-        if (n->seqmode != PFSEQ_STOP || n->nchildren)
+        if (n->seqmode != PFSEQ_STOP)
             if (n->frame >= 0 && n->frame < n->nchildren)
                 draw_node(n->children[n->frame], depth + 1);
         break;
@@ -1326,6 +1326,8 @@ static void build_tris(pfGeoSet *g)
 
 typedef struct {
     pfSegSet *ss;
+    int depth;
+    pfNode *path[16];
     pfHit hit[PFIS_MAX_SEGS];
     float best[PFIS_MAX_SEGS];
 } IsectState;
@@ -1385,6 +1387,8 @@ static void isect_gset(IsectState *st, pfNode *geode, pfGeoSet *g, pfMatrix m, i
             st->hit[s].gset = g;
             st->hit[s].tri = t;
             pfMakeIdentMat(st->hit[s].xform);
+            st->hit[s].pathlen = st->depth < 16 ? st->depth : 16;
+            memcpy(st->hit[s].path, st->path, sizeof(pfNode *) * st->hit[s].pathlen);
         }
     }
 }
@@ -1395,6 +1399,9 @@ static void isect_node(IsectState *st, pfNode *n, pfMatrix m, int depth)
     int i;
     if (!n || depth > 64 || !(n->travmask[PFTRAV_ISECT] & st->ss->isectMask))
         return;
+    if (depth < 16)
+        st->path[depth] = n;
+    st->depth = depth + 1;
     if (n->type == PFNODE_DCS || n->type == PFNODE_SCS) {
         pfMultMat(mm, n->mat, m);
         m = mm;
@@ -1415,6 +1422,7 @@ static void isect_node(IsectState *st, pfNode *n, pfMatrix m, int depth)
         for (i = 0; i < n->nchildren; i++)
             isect_node(st, n->children[i], m, depth + 1);
     }
+    st->depth = depth;
 }
 
 int pfNodeIsectSegs(pfNode *n, pfSegSet *ss, pfHit **hits[])
@@ -1452,9 +1460,16 @@ int pfQueryHit(const pfHit *h, unsigned int which, void *dst)
     case PFQHIT_GSET: *(pfGeoSet **)dst = h->gset; break;
     case PFQHIT_NODE: *(pfNode **)dst = h->node; break;
     case PFQHIT_XFORM: memcpy(dst, h->xform, sizeof(pfMatrix)); break;
+    case PFQHIT_PATH: *(const pfHit **)dst = h; break;
     default: return 0;
     }
     return 1;
+}
+
+void *pfGet(void *path, int i)
+{
+    const pfHit *h = (const pfHit *)path;
+    return h && i >= 0 && i < h->pathlen ? h->path[i] : NULL;
 }
 
 /* --- loader ------------------------------------------------------------- */

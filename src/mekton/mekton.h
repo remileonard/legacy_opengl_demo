@@ -84,10 +84,10 @@ typedef struct Mek {
     unsigned char anim;     /* 88: animation state */
     unsigned char anim89;
     float frame;            /* 92: animation frame */
-    int id;                 /* 96 */
+    int score;              /* 96 */
     char name[16];          /* 100 */
     int type;               /* 116 */
-    int i120;
+    int net_id;             /* 120 */
     short s124;             /* 124 */
     unsigned char can_fly;  /* 126 */
     unsigned char flying;   /* 127: Ex-Centinel transformed */
@@ -110,7 +110,8 @@ typedef struct Mek {
     pfVec3 cpos2;           /* 216 */
     pfVec3 vmin;            /* 228: velocity limits from the animation */
     pfVec3 vmax;            /* 240 */
-    float f252, f256, f260, f264;
+    pfVec3 aim;             /* 252: aim of the guns, heading and pitch */
+    float heat;             /* 264: of the guns, they stop at 1 */
     int i268;
     int flags;              /* 272 */
     float f276, f280;
@@ -133,26 +134,98 @@ typedef struct Input {
     int stick_buttons;      /* 100 */
 } Input;
 
-/* channel data passed to the draw callback */
+/* channel data passed to the draw callback (pass_insrument_data) */
 typedef struct ChanData {
     int i0;
     int pipe;               /* 4 */
     int state;              /* 8 */
-    int i12;
+    int status;             /* 12: of my mech */
     float colony_angle;     /* 16 */
     pfVec3 eye;             /* 20 */
-    float f32;
+    struct Mek *mek;        /* 32 */
     short comm;             /* 36 */
     short shadow;           /* 38 */
     short master;           /* 40 */
     short slave;            /* 42 */
-    int master_state;       /* 44 */
-    float f48[19];
+    int master_state;       /* 44: 0 waiting, 1 countdown, 2 playing, 3 over */
+    float tps;              /* 48 */
+    pfVec3 pos;             /* 52 */
+    pfVec3 vel;             /* 64 */
+    pfVec3 cpos;            /* 76 */
+    pfVec3 cpos2;           /* 88 */
+    pfVec3 hpr;             /* 100 */
+    pfVec3 chpr;            /* 112 */
     float fov_changed;      /* 124 */
-    int intro_frame;        /* 128 */
-    float pad[200];
+    int time;               /* 128: game time in seconds */
+    int help;               /* 132 */
+    int hud;                /* 136: 3 full .. 0 off */
+    float climb;            /* 140: speed bars, actual and wanted */
+    float want_climb_bar;   /* 144 */
+    float climb_bar;        /* 148 */
+    float fwd;              /* 152 */
+    float want_fwd_bar;     /* 156 */
+    float fwd_bar;          /* 160 */
+    float side;             /* 164 */
+    float want_side_bar;    /* 168 */
+    float side_bar;         /* 172 */
+    float aim_x, aim_y;     /* 176, 180: on the screen */
+    float f184;
+    float throttle;         /* 188 */
+    float heat;             /* 192 */
+    int damage;             /* 196: flags of the mech */
+    float armor;            /* 200 */
+    float thrust;           /* 204 */
+    int radar;              /* 208: 0 both, 1 horizontal, 2 vertical */
+    float radar_zoom;       /* 212 */
+    int nmeks;              /* 216 */
+    pfVec2 vpos[MAX_MEKTONS];   /* 220: world y z */
+    pfVec2 hpos[MAX_MEKTONS];   /* 348: colony x y */
+    unsigned char team[MAX_MEKTONS];    /* 476 */
+    char name[MAX_MEKTONS][16]; /* 492 */
+    int score[MAX_MEKTONS];     /* 748 */
+    pfVec2 spos[MAX_MEKTONS];   /* 812: on the screen, x -100000 if not seen */
+    struct MsgList *msgs;   /* 940 */
     int fade;               /* 944 */
 } ChanData;
+
+typedef struct Plasma {
+    int id;                 /* 0 */
+    short s4;
+    short turret;           /* 6: shot by a turret or another player */
+    int state;              /* 8: 0 flying, 1 hit, 2 done */
+    float damage;           /* 12 */
+    pfVec3 pos;             /* 16 */
+    pfVec3 hpr;             /* 28 */
+    int owner;              /* 40 */
+    int ttl;                /* 44 */
+    pfVec3 vel;             /* 48 */
+    pfVec3 old_pos;         /* 72 */
+    unsigned int hit_mask;  /* 96 */
+    pfVec3 hit_pt;          /* 100 */
+    Obj *obj;               /* 112 */
+} Plasma;
+
+typedef struct Explosion {
+    pfVec3 pos;             /* 0 */
+    float scale;            /* 24 */
+    short type;             /* 28 */
+    short tied;             /* 30 */
+    pfVec3 offset;          /* 36 */
+    Obj *obj;               /* 52 */
+    pfSequence *seq;        /* 56 */
+    struct Mek *mek;        /* 60 */
+    struct Explosion *prev, *next;
+} Explosion;
+
+/* a hit message: a shot of shooter met the mech target */
+typedef struct HitMsg {
+    int shooter;
+    int target;
+    short s12;
+    short turret;
+    float damage;
+    pfVec3 pos, pt;
+} HitMsg;
 
 /* globals of the original executable */
 extern Mek *mektons[MAX_MEKTONS];
@@ -178,6 +251,9 @@ extern pfScene *scene;
 extern float fov;           /* sd->f184 */
 extern float chan_fov;      /* sd->f444 */
 extern int win_w, win_h;
+extern int center_x, center_y;          /* sd->i620, i624 */
+extern int chan_x, chan_y, chan_w, chan_h;
+extern float time_limit;
 extern int quit_game;
 
 /* objects loaded by init_db */
@@ -295,15 +371,35 @@ void update_explosions(void);
 void update_plasma_objs(void);
 void switch_dead(Mek *m);
 void destroy_mek(Mek *m);
+void fire_plasma(void);
+Plasma *get_plasma(int mine);
+void update_plasma_pos(Plasma *p, float dt, int stop);
+Mek *find_mek_by_cid(unsigned int cid);
+void hit_mek(Mek *m, const HitMsg *h);
+Explosion *start_explosion(int type, const pfVec3 pos, float scale);
+void tie_explosion(Explosion *e, int tied, Mek *m, const pfVec3 pos);
+extern Plasma *plasma[];
+extern int number_plasma, my_plasma, plasma_id;
+
+/* mek_comm.c */
+extern int my_id;
+void send_plasma(Plasma *p);
+void send_hit(Mek *m, Plasma *p);
+void send_damage(int who, int what);
 
 /* mek_hud.c */
 void init_instruments(void);
 void mek_post_draw(void);
-void draw_loading(void);
 void toggle_help(void);
 void toggle_hud(void);
 void toggle_radar(void);
 void init_message_lists(void);
+void add_message(const char *from, const char *text);
+void hud_layout(int w, int h);
+void pass_insrument_data(void);
+extern char team_names[3][22];
+
+/* mek_stubs.c */
 void init_game_time(void);
 void update_game_time(void);
 void init_time(int n);

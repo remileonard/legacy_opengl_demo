@@ -60,6 +60,7 @@ set(LEGACY_INTERACTIVE
     gl_puzzle
     insect
     maze
+    mekton
     mekton_view
     objviewer
     road

@@ -171,11 +171,151 @@ static void init_stars(void)
     pfGSetPntSize(stars, 2);
 }
 
-void draw_gas_giant(void);
+/*
+ * The gas giant is a square of 30000 units in the plane y 10000 of the
+ * colony. Its middle, x from -500 to 500 at the hull, is hidden: each
+ * row is cut where the line from the eye through the hull meets it.
+ */
+#define GG_ROWS 13
+static pfVec3 gg_left[GG_ROWS] = {
+    { -5137.28f, 10000, 15000 }, { -7452.64f, 10000, 12500 },
+    { -9768, 10000, 10000 }, { -10627.8f, 10000, 7500 },
+    { -11487.7f, 10000, 5000 }, { -11725.3f, 10000, 2500 },
+    { -11962.9f, 10000, 0 }, { -11725.3f, 10000, -2500 },
+    { -11487.7f, 10000, -5000 }, { -10627.8f, 10000, -7500 },
+    { -9768, 10000, -10000 }, { -7452.64f, 10000, -12500 },
+    { -5137.28f, 10000, -15000 }
+};
+static pfVec3 gg_right[GG_ROWS] = {
+    { 5780.3f, 10000, 15000 }, { 8860.13f, 10000, 12500 },
+    { 11940, 10000, 10000 }, { 13470, 10000, 7500 },
+    { 15000, 10000, 5000 }, { 15000, 10000, 2500 },
+    { 15000, 10000, 0 }, { 15000, 10000, -2500 },
+    { 15000, 10000, -5000 }, { 13470, 10000, -7500 },
+    { 11940, 10000, -10000 }, { 8860.13f, 10000, -12500 },
+    { 5780.3f, 10000, -15000 }
+};
+static pfVec3 gg_left_cut[GG_ROWS], gg_right_cut[GG_ROWS];
+static pfVec2 gg_left_tc[GG_ROWS], gg_right_tc[GG_ROWS];
+static pfVec2 gg_left_cut_tc[GG_ROWS], gg_right_cut_tc[GG_ROWS];
+static pfTexture *gas_giant_tex;
+
+static float gg_tc(float v)
+{
+    return (v + 15000) / 30000;
+}
+
+static void init_gas_giant(void)
+{
+    int i;
+    gas_giant_tex = pfNewTex(NULL);
+    pfLoadTexFile(gas_giant_tex, "gas_giant.rgb");
+    for (i = 0; i < GG_ROWS; i++) {
+        pfCopyVec3(gg_left_cut[i], gg_left[i]);
+        pfCopyVec3(gg_right_cut[i], gg_right[i]);
+        gg_left_tc[i][0] = gg_tc(gg_left[i][0]);
+        gg_right_tc[i][0] = gg_tc(gg_right[i][0]);
+        gg_left_tc[i][1] = gg_right_tc[i][1] = gg_tc(gg_left[i][2]);
+        gg_left_cut_tc[i][1] = gg_right_cut_tc[i][1] = gg_tc(gg_left[i][2]);
+    }
+}
+
+/* where the line from p along d leaves the hull, in the y z plane */
+static void gg_isect_circ(const pfVec2 p, const pfVec2 d, pfVec2 out)
+{
+    float a = d[1] * d[1] + d[0] * d[0];
+    float b = (p[1] * d[1] + d[0] * p[0]) * -2;
+    float c = p[1] * p[1] + p[0] * p[0] - 24502500.0f;
+    float t0, t1, r;
+    if (b * b < 4 * a * c) {
+        out[0] = -1000000;
+        return;
+    }
+    r = pfSqrt(b * b - 4 * a * c);
+    t0 = (b + r) / (a + a);
+    t1 = (b - r) / (a + a);
+    if (t0 < t1)
+        t0 = t1;
+    out[0] = d[0] * t0 + p[0];
+    out[1] = d[1] * t0 + p[1];
+}
+
+/* a strip between the rows of out and those of cut, where cut is inside */
+static void gg_strip(pfVec3 *out, pfVec2 *out_tc,
+                     pfVec3 *cut, pfVec2 *cut_tc, int left)
+{
+    int i = 0;
+#define GG_INSIDE(k) (left ? out[k][0] < cut[k][0] : cut[k][0] < out[k][0])
+    glBegin(GL_TRIANGLE_STRIP);
+    while (i < GG_ROWS && !GG_INSIDE(i))
+        i++;
+    if (i < GG_ROWS) {
+        if (i) {
+            glTexCoord2fv(out_tc[i - 1]);
+            glVertex3fv(out[i - 1]);
+        }
+        do {
+            glTexCoord2fv(cut_tc[i]);
+            glVertex3fv(cut[i]);
+            glTexCoord2fv(out_tc[i]);
+            glVertex3fv(out[i]);
+            i++;
+        } while (i < GG_ROWS && GG_INSIDE(i));
+        if (i < GG_ROWS) {
+            glTexCoord2fv(out_tc[i]);
+            glVertex3fv(out[i]);
+        }
+    }
+    glEnd();
+#undef GG_INSIDE
+}
+
+void draw_gas_giant(void)
+{
+    pfMatrix m;
+    pfVec3 eye;
+    pfVec2 p, d, hit;
+    int i;
+
+    identify_matrix(m);
+    matrix_rotate(m, -cd_app->colony_angle, 'x');
+    pfXformVec3(eye, cd_app->eye, m);
+    p[0] = eye[1];
+    p[1] = eye[2];
+    for (i = 0; i < GG_ROWS; i++) {
+        d[0] = gg_left[i][1] - p[0];
+        d[1] = gg_left[i][2] - p[1];
+        gg_isect_circ(p, d, hit);
+        if (hit[0] <= p[0]) {
+            gg_left_cut[i][0] = -100000;
+            gg_right_cut[i][0] = 100000;
+            continue;
+        }
+        /* the hull edges x -500 and 500 seen on the plane */
+        gg_left_cut[i][0] = (-500 - eye[0]) * ((10000 - p[0]) / (hit[0] - p[0])) + eye[0];
+        if (-500 < gg_left_cut[i][0])
+            gg_left_cut[i][0] = -500;
+        gg_left_cut_tc[i][0] = gg_tc(gg_left_cut[i][0]);
+        gg_right_cut[i][0] = (500 - eye[0]) * ((10000 - p[0]) / (hit[0] - p[0])) + eye[0];
+        if (gg_right_cut[i][0] < 500)
+            gg_right_cut[i][0] = 500;
+        gg_right_cut_tc[i][0] = gg_tc(gg_right_cut[i][0]);
+    }
+    pfApplyTex(gas_giant_tex);
+    if (pfGetEnable(PFEN_TEXTURE))
+        glEnable(GL_TEXTURE_2D);
+    glColor3f(1, 1, 1);
+    glDisable(GL_CULL_FACE);
+    gg_strip(gg_left, gg_left_tc, gg_left_cut, gg_left_cut_tc, 1);
+    gg_strip(gg_right, gg_right_tc, gg_right_cut, gg_right_cut_tc, 0);
+    glDisable(GL_TEXTURE_2D);
+    glEnable(GL_CULL_FACE);
+}
 
 void init_background(void)
 {
     init_stars();
+    init_gas_giant();
 }
 
 /* the stars (and the gas giant) seen through the windows of the colony */

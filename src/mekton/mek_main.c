@@ -37,8 +37,8 @@ int use_stick;
 float game_time, intro_start_time;
 pfScene *scene;
 float fov = 80, chan_fov = 80;
-int win_w = 1024, win_h = 768;
-int center_x = 512, center_y = 384;
+int win_w = 960, win_h = 768;
+float time_limit;
 int quit_game;
 extern float g_acc;
 
@@ -101,7 +101,7 @@ void mek_start(void)
     start_turrets();
     cd_app->state = STATE_INTRO;
     intro_start_time = 0;
-    cd_app->intro_frame = 0;
+    cd_app->time = 0;
     intro_frames = 0;
     init_time(20);
     init_game_time();
@@ -181,8 +181,8 @@ static void set_view(void)
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
     /* Performer's field of view is horizontal */
-    vfov = 2 * atan(tan(PF_DEG2RAD(chan_fov) / 2) * win_h / (double)win_w);
-    gluPerspective(PF_RAD2DEG(vfov), (double)win_w / win_h, 1.0, 20100.0);
+    vfov = 2 * atan(tan(PF_DEG2RAD(chan_fov) / 2) * chan_h / (double)chan_w);
+    gluPerspective(PF_RAD2DEG(vfov), (double)chan_w / chan_h, 1.0, 20100.0);
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
     /* Performer looks along +Y with +Z up */
@@ -197,6 +197,7 @@ static void display(void)
     glViewport(0, 0, win_w, win_h);
     glClearColor(0, 0, 0, 1);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glViewport(chan_x, chan_y, chan_w, chan_h);
     if (cd_app->state == STATE_PLAY) {
         float amb[4] = { 0.05f, 0.05f, 0.05f, 1 };
         set_view();
@@ -222,8 +223,7 @@ static void reshape(int w, int h)
 {
     win_w = w;
     win_h = h > 0 ? h : 1;
-    center_x = w / 2;
-    center_y = h / 2;
+    hud_layout(win_w, win_h);
 }
 
 /* --- input -------------------------------------------------------------- */
@@ -392,11 +392,14 @@ int main(int argc, char **argv)
     int i;
 
     glutInit(&argc, argv);
+    hud_layout(win_w, win_h);
     for (i = 1; i < argc; i++) {
         if (strcmp(argv[i], "-ex") == 0)
             user_mek_type = EX_CENTINEL;
         else if (strcmp(argv[i], "-pos") == 0 && i + 1 < argc)
             start_pos = atoi(argv[++i]);
+        else if (strcmp(argv[i], "-time") == 0 && i + 1 < argc)
+            time_limit = 60 * (float)atof(argv[++i]);
         else if (strcmp(argv[i], "-name") == 0 && i + 1 < argc)
             strncpy(user_name, argv[++i], 15);
         else
