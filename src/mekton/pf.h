@@ -19,6 +19,7 @@ typedef float pfMatrix[4][4];
 typedef struct { pfVec3 xyz, hpr; } pfCoord;
 typedef struct { pfVec3 pos, dir; float length; } pfSeg;
 
+#undef PF_MAX /* winsock defines a protocol family PF_MAX */
 #define PF_MAX(a, b) ((a) > (b) ? (a) : (b))
 #define PF_MIN(a, b) ((a) < (b) ? (a) : (b))
 #define PF_ABS(a) ((a) < 0 ? -(a) : (a))
