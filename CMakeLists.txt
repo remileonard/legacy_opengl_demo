@@ -52,6 +52,7 @@ set (BUTTON_FLY
     buttonfly
 )
 set(LEGACY_INTERACTIVE
+    cimpact
     cimpact_view
     cycles
     distort

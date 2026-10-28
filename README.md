@@ -115,13 +115,16 @@ SGI's 1996 mech combat demo built on IRIS Performer, rebuilt from the IRIX execu
 See [src/mekton/README.md](src/mekton/README.md) for the file format and the controls. The Mekton data files are not included.
 
 
-### ✈️ Certain Impact viewer
-A viewer for the models and the terrain of Certain Impact!, Paradigm Simulation's 1996 World War I air combat demo built on Vega and IRIS Performer. Vega's undocumented "fast" format (`.fst`) was rebuilt from the loader inside the IRIX executable. Features:
-- Biplanes, blimp, trains, boats, bridges, balloons, cockpit and the 17 km terrain with their textures and materials
-- Animated sequences (smoke trails, explosions, wakes) and billboards (trees, explosions)
-- Orbit, zoom, pan, wireframe, texture and lighting toggles
+### ✈️ Certain Impact
+Paradigm Simulation's 1996 World War I air combat game built on Vega and IRIS Performer, rebuilt from the IRIX executable: `cimpact` is the game, `cimpact_view` a viewer for its models and terrain. Vega's undocumented "fast" format (`.fst`) was rebuilt from the loader inside the executable, and a small compatibility layer stands for the parts of Vega the game uses (application definition file, objects and scenes, intersections, paths, DIS appearances). Game features:
+- Six biplanes (Fokker D VII, Fokker Dr I, Albatros D III, Sopwith, Fe2b, American Standard) with the original flight model: taxiing, take-off, stalls, landings
+- German or Allied side: protect or stop the supply train, destroy the blockades, the bridge, the ships, the blimp
+- Battle regions with enemy fighters, flak cannons and fuel, ammo and repair balloons
+- Machine guns with tracers, bombs, explosions, damaged buildings
+- Cockpit with working instruments and map, follow, train and dying views
+- Selection screen, intro and instruction pages, three skill levels
 
-See [src/cimpact/README.md](src/cimpact/README.md) for the file format and the controls. The Certain Impact data files are not included.
+See [src/cimpact/README.md](src/cimpact/README.md) for the controls, the data layout and the file format. The Certain Impact data files are not included.
 
 
 ## Prerequisites
@@ -243,7 +246,7 @@ legacy_opengl_demo/
     ├── ideas/             # SGI Ideas demo
     ├── insect/            # Insect animation demo
     ├── mekton/            # Mekton game and scene viewer (IRIS Performer .pfb loader)
-    ├── cimpact/           # Certain Impact model viewer (Vega .fst loader)
+    ├── cimpact/           # Certain Impact game and model viewer (Vega .fst loader)
     ├── libtk/             # TK toolkit (X11/GLX to GLUT port)
     ├── roller_coaster/    # Roller coaster simulation
     └── smooth/            # Model viewer

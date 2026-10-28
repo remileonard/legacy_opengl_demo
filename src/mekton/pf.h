@@ -328,6 +328,8 @@ typedef struct pfSegSet {
 #define PFQHIT_PATH 23
 
 int pfNodeIsectSegs(pfNode *n, pfSegSet *segset, pfHit **hits[]);
+/* triangles of a geoset (index triples into the coordinates) */
+int pfGetGSetTris(pfGeoSet *g, const int **tris);
 int pfQueryHit(const pfHit *h, unsigned int which, void *dst);
 /* node i of a hit path (PFQHIT_PATH) */
 void *pfGet(void *path, int i);

@@ -1,13 +1,89 @@
-# cimpact_view - viewer for the Certain Impact models
+# Certain Impact
 
 Certain Impact! is a World War I air combat demo written by Paradigm
 Simulation in 1996 with its Vega and AudioWorks toolkits, on top of IRIS
-Performer. Its models (biplanes, blimp, trains, boats, bridges, balloons,
-cockpit, explosions) and its terrain are stored in Vega's "fast" format,
-`.fst`. `cimpact_view` loads and draws them with OpenGL 1.x and GLUT, using
-the Performer layer written for Mekton (`src/mekton/pf.c`).
+Performer. This directory holds a port of the game (`cimpact`) and a viewer
+for its models (`cimpact_view`), both with OpenGL 1.x and GLUT, using the
+Performer layer written for Mekton (`src/mekton/pf.c`).
 
-## The .fst format
+## The game
+
+The game was rebuilt from the IRIX executable `cimpact_ogl`, whose C++
+classes kept their names: `mardi` (the application), `vgAirPlane` (the
+flight model of the player), `vgEnemyAirPlane`, `vgBattleRegion`,
+`vgBalloon`, `vgCannon`, `vgShip`, `vgBridge`, `vgBunker`, `vgTrain`,
+`vgBlimp`, `vgMachGunPair`, `vgBombs`, `vgCockPit`, `vgSelections`... Their
+logic is in `ci_main.c`, `ci_plane.c` and `ci_world.c`.
+
+`vg.c` is a small compatibility layer for the parts of Vega the game uses:
+the application definition file (`cimpact.adf`: objects, files, positions,
+isect classes, DIS appearance mappings, scenes, environment), copies of
+objects, parts, intersections against the scenes (segments with class
+masks, ground height, pitch and roll), the paths of the ships and of the
+train (`vgPath`: lines, fillets, speeds, delays) and a stroke font.
+`jpeg.c` decodes the intro pages.
+
+### Playing
+
+Pick an airplane and a skill level in the hangar with the mouse, then click
+*Start Game* (or press F9). German airplanes start from the German airfield
+and must protect the supply train: the Allied blockades along the railway
+destroy the cars that reach them. Allied airplanes start from the British
+airfield and must stop the train, for instance by bombing the bridge.
+Ships, the blimp, houses, crates and artillery are targets too; enemy
+fighters and flak defend the battle regions, where balloons give fuel,
+ammunition and bombs, or repairs when you fly into them. The score
+counts in Cadet and doubles in Ace; the Invincible level does not count.
+
+The airplane rolls on the ground until it is fast enough: pull the stick
+(move the mouse down) to take off. A too slow airplane stalls; landing
+needs a gentle descent with the wings level. After a crash the game starts
+again.
+
+| Input | Action |
+| --- | --- |
+| Mouse position | stick (in the cockpit view, the middle of the upper part of the screen is neutral) |
+| Left button, `a`, Page Up | throttle up |
+| Right button, `z`, Page Down | throttle down |
+| Middle button, left + right buttons, `x`, Enter | machine guns |
+| Space | drop a bomb |
+| F1 | cockpit, follow and train views |
+| F2 | distance of the follow view |
+| F3, `m` | map on/off |
+| F9 | back to the hangar / start |
+| Esc | quit |
+
+The original also used a flight box (joystick) and played its sounds with
+AudioWorks; the port has no sound and no network (DIS) support.
+
+### Data
+
+```
+cimpact [-noinstruct] [data directory] [file.adf]
+```
+
+The default data directory is `data/cimpact`. The game looks for its files
+in that directory and in its `bin`, `models_ogl`, `contours_ogl`, `img`,
+`visual_data/...` and `data/visual_data/...` subdirectories, so the
+original distribution can be used as is:
+
+```
+data/cimpact/bin/cimpact.adf, trainPath, AlliedShipPath1, ... (from Certain/bin)
+data/cimpact/models_ogl/*.fst                                (from Certain/data/visual_data)
+data/cimpact/contours_ogl/*.fst
+data/cimpact/img/*.jpg
+```
+
+Compressed `.fst.Z` or `.fst.gz` files are read through `gzip` when it is
+installed; on Windows, decompress them first.
+
+## The viewer
+
+The models (biplanes, blimp, trains, boats, bridges, balloons, cockpit,
+explosions) and the terrain are stored in Vega's "fast" format, `.fst`.
+`cimpact_view` loads and draws them.
+
+### The .fst format
 
 The format was never documented. It was rebuilt from `vgLoadFast` and the
 `vgFast*::Read` methods linked into the IRIX `cimpact_ogl` executable.
@@ -45,7 +121,7 @@ Group-like nodes start with their name and bounding sphere and end with
 their children. Inherited geostate modes take the defaults of Vega's global
 state (lighting and texturing on, back faces culled).
 
-## Usage
+### Usage
 
 ```
 cimpact_view [data directory | model.fst ...]

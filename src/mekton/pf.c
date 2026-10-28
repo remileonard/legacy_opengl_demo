@@ -1346,6 +1346,15 @@ static void build_tris(pfGeoSet *g)
     }
 }
 
+/* triangles of a geoset as vertex index triples, built on first use */
+int pfGetGSetTris(pfGeoSet *g, const int **tris)
+{
+    if (!g->tris)
+        build_tris(g);
+    *tris = g->tris;
+    return g->ntris;
+}
+
 typedef struct {
     pfSegSet *ss;
     int depth;
