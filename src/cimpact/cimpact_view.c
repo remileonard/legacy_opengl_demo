@@ -146,6 +146,20 @@ static void scan_dir(const char *dir)
     qsort(files + first, nfiles - first, sizeof(char *), cmp_str);
 }
 
+/* the models and the terrain of a data directory or of the original distribution */
+static void scan_data(const char *dir)
+{
+    static const char *sub[] = { "", "/visual_data", "/data/visual_data" };
+    char p[4096];
+    int k;
+    for (k = 0; k < 3 && nfiles == 0; k++) {
+        sprintf(p, "%.4000s%s/models_ogl", dir, sub[k]);
+        scan_dir(p);
+        sprintf(p, "%.4000s%s/contours_ogl", dir, sub[k]);
+        scan_dir(p);
+    }
+}
+
 static void reset_view(void)
 {
     yaw = 30;
@@ -329,18 +343,15 @@ int main(int argc, char **argv)
         if (is_fst(argv[i])) {
             add_file(argv[i]);
         } else {
-            char p[4096];
-            sprintf(p, "%.4000s/models_ogl", argv[i]);
-            scan_dir(p);
-            sprintf(p, "%.4000s/contours_ogl", argv[i]);
-            scan_dir(p);
+            scan_data(argv[i]);
             if (nfiles == 0)
                 scan_dir(argv[i]);
         }
     }
     if (argc < 2) {
-        scan_dir("data/cimpact/models_ogl");
-        scan_dir("data/cimpact/contours_ogl");
+        scan_data("data/cimpact");
+        if (nfiles == 0)
+            scan_data("Certain");
     }
     glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_DEPTH);
     glutInitWindowSize(win_w, win_h);

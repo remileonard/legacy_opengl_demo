@@ -1236,8 +1236,20 @@ int main(int argc, char **argv)
         else
             dir = argv[i];
     }
-    if (dir)
+    if (dir) {
         vgDataDir(dir);
+    } else {
+        /* the default directory, or the original distribution next to the program */
+        static const char *dirs[] = { "data/cimpact", "Certain", "." };
+        char path[2048];
+        for (i = 0; i < 3; i++) {
+            vgDataDir(dirs[i]);
+            if (vgFindFile(adf, path, sizeof(path)))
+                break;
+        }
+        if (i == 3)
+            vgDataDir(dirs[0]);
+    }
     srand(12345);
     glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_DEPTH);
     glutInitWindowSize(win_w, win_h);

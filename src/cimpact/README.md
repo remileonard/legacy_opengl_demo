@@ -62,7 +62,8 @@ AudioWorks; the port has no sound and no network (DIS) support.
 cimpact [-noinstruct] [data directory] [file.adf]
 ```
 
-The default data directory is `data/cimpact`. The game looks for its files
+The default data directory is `data/cimpact`, or `Certain` when the
+original distribution is next to the program. The game looks for its files
 in that directory and in its `bin`, `models_ogl`, `contours_ogl`, `img`,
 `visual_data/...` and `data/visual_data/...` subdirectories, so the
 directory of the original distribution (`Certain`) can be given as is, or
@@ -129,8 +130,9 @@ cimpact_view [data directory | model.fst ...]
 ```
 
 With a directory, the viewer loads every `.fst`, `.fst.Z` or `.fst.gz` of
-`<dir>/models_ogl` and `<dir>/contours_ogl` (`.gz` files need `gzip`).
-The default directory is `data/cimpact`.
+`<dir>/models_ogl` and `<dir>/contours_ogl`, or of the same directories in
+`<dir>/data/visual_data` for the original distribution (`.gz` files need
+`gzip`). The default directory is `data/cimpact`, then `Certain`.
 
 | Input | Action |
 | --- | --- |
