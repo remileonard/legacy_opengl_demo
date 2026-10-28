@@ -564,19 +564,61 @@ void vgRemSceneObj(vgScene *s, vgObject *o)
 
 void vgClearScene(vgScene *s) { s->nobjs = 0; }
 
+typedef struct {
+    vgObject *obj;
+    float d2;
+} DrawItem;
+
+static int far_first(const void *a, const void *b)
+{
+    float da = ((const DrawItem *)a)->d2, db = ((const DrawItem *)b)->d2;
+    return da < db ? 1 : da > db ? -1 : 0;
+}
+
+static void draw_obj(vgObject *o, double t, int pass)
+{
+    glPushMatrix();
+    glMultMatrixf(&o->mat[0][0]);
+    pfDrawScenePass(vgObjModel(o), t, pass);
+    glPopMatrix();
+}
+
+/*
+ * The opaque geometry of every object first, then the transparent geometry
+ * from the farthest object to the nearest, like the bins of Performer: a
+ * transparent part drawn before an object behind it would hide it.
+ */
 void vgDrawScene(vgScene *s, double t)
 {
-    int i;
+    static DrawItem *items;
+    static int maxitems;
+    float mv[16], eye[3];
+    int i, n = 0;
     pfFrameTime(t);
+    if (s->nobjs > maxitems) {
+        maxitems = s->nobjs;
+        items = (DrawItem *)realloc(items, sizeof(DrawItem) * maxitems);
+    }
+    /* the eye in world coordinates: -R^T t of the modelview */
+    glGetFloatv(GL_MODELVIEW_MATRIX, mv);
+    for (i = 0; i < 3; i++)
+        eye[i] = -(mv[4 * i] * mv[12] + mv[4 * i + 1] * mv[13] + mv[4 * i + 2] * mv[14]);
     for (i = 0; i < s->nobjs; i++) {
         vgObject *o = s->objs[i];
+        float dx, dy, dz;
         if (!o->enabled)
             continue;
-        glPushMatrix();
-        glMultMatrixf(&o->mat[0][0]);
-        pfDrawScene(vgObjModel(o), t);
-        glPopMatrix();
+        draw_obj(o, t, 0);
+        dx = o->mat[3][0] - eye[0];
+        dy = o->mat[3][1] - eye[1];
+        dz = o->mat[3][2] - eye[2];
+        items[n].obj = o;
+        items[n].d2 = dx * dx + dy * dy + dz * dz;
+        n++;
     }
+    qsort(items, n, sizeof(DrawItem), far_first);
+    for (i = 0; i < n; i++)
+        draw_obj(items[i].obj, t, 1);
 }
 
 /* --- intersections ------------------------------------------------------------ */

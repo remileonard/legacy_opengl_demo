@@ -1282,19 +1282,26 @@ static void update_node(pfNode *n, double t, int depth)
         update_node(n->children[i], t, depth + 1);
 }
 
-void pfDrawScene(pfNode *root, double t)
+/*
+ * One pass of a scene: 0 the opaque geometry (and the update of the
+ * sequences), 1 the transparent geometry, blended without writing depth.
+ * Drawing pass 0 of every object of a scene before pass 1 of every object
+ * works like the opaque and transparent bins of Performer.
+ */
+void pfDrawScenePass(pfNode *root, double t, int pass)
 {
-    update_node(root, t, 0);
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_NORMALIZE);
-    glDisable(GL_BLEND);
-    glDepthMask(GL_TRUE);
-    draw_pass = 0;
-    draw_node(root, 0);
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    glDepthMask(GL_FALSE);
-    draw_pass = 1;
+    if (pass == 0) {
+        update_node(root, t, 0);
+        glDisable(GL_BLEND);
+        glDepthMask(GL_TRUE);
+    } else {
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        glDepthMask(GL_FALSE);
+    }
+    draw_pass = pass;
     draw_node(root, 0);
     glDepthMask(GL_TRUE);
     glDisable(GL_BLEND);
@@ -1302,6 +1309,12 @@ void pfDrawScene(pfNode *root, double t)
     glDisable(GL_TEXTURE_2D);
     glDisable(GL_CULL_FACE);
     glDisable(GL_ALPHA_TEST);
+}
+
+void pfDrawScene(pfNode *root, double t)
+{
+    pfDrawScenePass(root, t, 0);
+    pfDrawScenePass(root, t, 1);
 }
 
 /* --- intersection ------------------------------------------------------- */

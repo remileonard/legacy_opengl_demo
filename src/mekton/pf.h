@@ -372,6 +372,8 @@ void pfPopState(void);
 
 /* draws a scene with the current OpenGL projection and modelview */
 void pfDrawScene(pfNode *root, double time);
+/* one pass of pfDrawScene: 0 opaque geometry, 1 transparent geometry */
+void pfDrawScenePass(pfNode *root, double time, int pass);
 void pfFrameTime(double t);
 double pfGetFrameTime(void);
 
