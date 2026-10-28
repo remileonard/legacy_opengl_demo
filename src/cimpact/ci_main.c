@@ -686,6 +686,10 @@ static void draw_main(void)
     glScissor(x, y, w, h);
     glEnable(GL_SCISSOR_TEST);
     glClearColor(env->skycolor[0], env->skycolor[1], env->skycolor[2], 1);
+#ifdef CI_DEBUG
+    if (getenv("CI_CAM"))
+        glClearColor(1, 0, 1, 1);
+#endif
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
@@ -713,6 +717,8 @@ static void draw_main(void)
     pfEnable(PFEN_LIGHTING);
     pfEnable(PFEN_TEXTURE);
 #ifdef CI_DEBUG
+    if (getenv("CI_NOTEX"))
+        pfDisable(PFEN_TEXTURE);
     if (getenv("CI_CAM"))
         vgDrawScene(gMainScene, gNow);
     else

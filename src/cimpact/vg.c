@@ -879,6 +879,7 @@ static void test_entry(vgObject *o, IscGset *e, unsigned int mask, const pfVec3 
         int i;
         h->hit = 1;
         h->obj = o;
+        h->gset = e->g;
         h->cls = cls;
         h->part = NULL;
         for (i = e->pathlen - 1; i >= 0; i--)

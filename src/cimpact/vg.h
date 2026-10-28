@@ -104,6 +104,7 @@ typedef struct vgHit {
     vgObject *obj;
     pfNode *part;            /* nearest named node, may be NULL */
     unsigned int cls;        /* class of the hit geometry */
+    pfGeoSet *gset;          /* the geoset hit */
     pfNode *path[16];        /* nodes from the object root to the geode */
     int pathlen;
 } vgHit;
