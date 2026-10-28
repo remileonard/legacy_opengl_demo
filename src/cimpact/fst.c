@@ -627,6 +627,98 @@ static pfNode *read_child(Fst *f)
     return NULL;
 }
 
+/* the codes come by groups of 8: rounds a bit position up to the next group */
+static size_t align_group(size_t bits, int n_bits)
+{
+    size_t g = (size_t)n_bits << 3;
+    return bits == 0 ? 0 : (bits - 1) + (g - (bits - 1 + g) % g);
+}
+
+/* decompresses a file of the Unix compress program (.Z, LZW) */
+static unsigned char *unlzw(const unsigned char *in, size_t inlen, size_t *outlen)
+{
+    static unsigned short prefix[65536];
+    static unsigned char suffix[65536], stack[65536];
+    unsigned char *out = NULL, finchar = 0;
+    size_t n = 0, cap = 0, posbits = 24, base = 24, nbits_total = inlen * 8;
+    int maxbits, block, n_bits = 9, bitmask = 0x1ff;
+    long maxcode = 511, maxmaxcode, free_ent, oldcode = -1, code, incode;
+    if (inlen < 3 || in[0] != 0x1f || in[1] != 0x9d)
+        return NULL;
+    maxbits = in[2] & 0x1f;
+    block = in[2] & 0x80;
+    if (maxbits < 9 || maxbits > 16)
+        return NULL;
+    maxmaxcode = 1L << maxbits;
+    free_ent = block ? 257 : 256;
+    for (code = 0; code < 256; code++) {
+        prefix[code] = 0;
+        suffix[code] = (unsigned char)code;
+    }
+    for (;;) {
+        unsigned char *sp;
+        size_t b;
+        if (free_ent > maxcode) {
+            /* the codes grow by one bit: skip to the end of the group of 8 codes */
+            posbits = base + align_group(posbits - base, n_bits);
+            base = posbits;
+            n_bits++;
+            maxcode = n_bits == maxbits ? maxmaxcode : (1L << n_bits) - 1;
+            bitmask = (1 << n_bits) - 1;
+            continue;
+        }
+        if (posbits + n_bits > nbits_total)
+            break;
+        b = posbits >> 3;
+        code = (long)in[b] | (long)(b + 1 < inlen ? in[b + 1] : 0) << 8 | (long)(b + 2 < inlen ? in[b + 2] : 0) << 16;
+        code = (code >> (posbits & 7)) & bitmask;
+        posbits += n_bits;
+        if (n + 65536 > cap) {
+            cap = cap ? 2 * cap : 1 << 20;
+            out = (unsigned char *)realloc(out, cap);
+        }
+        if (oldcode == -1) {
+            if (code >= 256)
+                break;
+            out[n++] = finchar = (unsigned char)code;
+            oldcode = code;
+            continue;
+        }
+        if (code == 256 && block) {
+            free_ent = 256;
+            posbits = base + align_group(posbits - base, n_bits);
+            base = posbits;
+            n_bits = 9;
+            maxcode = 511;
+            bitmask = 0x1ff;
+            continue;
+        }
+        incode = code;
+        sp = stack + sizeof(stack);
+        if (code >= free_ent) {
+            if (code > free_ent)
+                break;
+            *--sp = finchar;
+            code = oldcode;
+        }
+        while (code >= 256 && sp > stack) {
+            *--sp = suffix[code];
+            code = prefix[code];
+        }
+        *--sp = finchar = suffix[code];
+        while (sp < stack + sizeof(stack))
+            out[n++] = *sp++;
+        if (free_ent < maxmaxcode) {
+            prefix[free_ent] = (unsigned short)oldcode;
+            suffix[free_ent] = finchar;
+            free_ent++;
+        }
+        oldcode = incode;
+    }
+    *outlen = n;
+    return out;
+}
+
 static unsigned char *read_whole(const char *path, size_t *size)
 {
     FILE *fp;
@@ -635,12 +727,7 @@ static unsigned char *read_whole(const char *path, size_t *size)
     int piped = 0;
     size_t len = strlen(path);
 
-    if (len > 2 && strcmp(path + len - 2, ".Z") == 0) {
-        char cmd[4200];
-        sprintf(cmd, "gzip -dc \"%.4096s\"", path);
-        fp = popen(cmd, "r");
-        piped = 1;
-    } else if (len > 3 && strcmp(path + len - 3, ".gz") == 0) {
+    if (len > 3 && strcmp(path + len - 3, ".gz") == 0) {
         char cmd[4200];
         sprintf(cmd, "gzip -dc \"%.4096s\"", path);
         fp = popen(cmd, "r");
@@ -664,6 +751,11 @@ static unsigned char *read_whole(const char *path, size_t *size)
         pclose(fp);
     else
         fclose(fp);
+    if (n >= 3 && buf[0] == 0x1f && buf[1] == 0x9d) {
+        unsigned char *out = unlzw(buf, n, &n);
+        free(buf);
+        buf = out;
+    }
     *size = n;
     return buf;
 }

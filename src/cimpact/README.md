@@ -65,7 +65,8 @@ cimpact [-noinstruct] [data directory] [file.adf]
 The default data directory is `data/cimpact`. The game looks for its files
 in that directory and in its `bin`, `models_ogl`, `contours_ogl`, `img`,
 `visual_data/...` and `data/visual_data/...` subdirectories, so the
-original distribution can be used as is:
+directory of the original distribution (`Certain`) can be given as is, or
+its files copied like this:
 
 ```
 data/cimpact/bin/cimpact.adf, trainPath, AlliedShipPath1, ... (from Certain/bin)
@@ -74,8 +75,8 @@ data/cimpact/contours_ogl/*.fst
 data/cimpact/img/*.jpg
 ```
 
-Compressed `.fst.Z` or `.fst.gz` files are read through `gzip` when it is
-installed; on Windows, decompress them first.
+The `.fst.Z` files of the distribution (Unix `compress`) are decompressed
+by the loader itself; `.fst.gz` files are read through `gzip`.
 
 ## The viewer
 
@@ -128,7 +129,7 @@ cimpact_view [data directory | model.fst ...]
 ```
 
 With a directory, the viewer loads every `.fst`, `.fst.Z` or `.fst.gz` of
-`<dir>/models_ogl` and `<dir>/contours_ogl` (compressed files need `gzip`).
+`<dir>/models_ogl` and `<dir>/contours_ogl` (`.gz` files need `gzip`).
 The default directory is `data/cimpact`.
 
 | Input | Action |
