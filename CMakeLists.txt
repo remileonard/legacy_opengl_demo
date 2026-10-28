@@ -46,11 +46,13 @@ add_subdirectory(src/flight)
 add_subdirectory(src/iris)
 add_subdirectory(src/fsn)
 add_subdirectory(src/mekton)
+add_subdirectory(src/cimpact)
 
 set (BUTTON_FLY
     buttonfly
 )
 set(LEGACY_INTERACTIVE
+    cimpact_view
     cycles
     distort
     enterprise

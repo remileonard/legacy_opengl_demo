@@ -856,7 +856,7 @@ static void apply_gstate(const pfGeoState *gs)
     }
     if (gs && gs->alphafunc) {
         glEnable(GL_ALPHA_TEST);
-        glAlphaFunc(gs->alphafunc, 0.0f);
+        glAlphaFunc(gs->alphafunc, gs->alpharef);
     } else {
         glDisable(GL_ALPHA_TEST);
     }
@@ -1127,8 +1127,8 @@ void pfApplyTex(pfTexture *t)
     if (!t->gl_id) {
         glGenTextures(1, &t->gl_id);
         glBindTexture(GL_TEXTURE_2D, t->gl_id);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, t->wrap_s ? t->wrap_s : GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, t->wrap_t ? t->wrap_t : GL_REPEAT);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
         gluBuild2DMipmaps(GL_TEXTURE_2D, GL_RGBA, t->xsize, t->ysize, GL_RGBA,
@@ -1204,6 +1204,25 @@ static void place_light(pfLightSource *l)
 
 static int draw_pass;
 
+/* turns a billboard geoset around Z so that its -Y side faces the eye */
+static void draw_billboard(pfGeoSet *g, const pfVec3 pos)
+{
+    float mv[16], dx, dy;
+    pfVec3 eye;
+    glGetFloatv(GL_MODELVIEW_MATRIX, mv);
+    /* the eye in the local frame: -R^T t */
+    eye[0] = -(mv[0] * mv[12] + mv[1] * mv[13] + mv[2] * mv[14]);
+    eye[1] = -(mv[4] * mv[12] + mv[5] * mv[13] + mv[6] * mv[14]);
+    dx = eye[0] - pos[0];
+    dy = eye[1] - pos[1];
+    glPushMatrix();
+    glTranslatef(pos[0], pos[1], pos[2]);
+    if (dx != 0 || dy != 0)
+        glRotatef((float)PF_RAD2DEG(atan2(dx, -dy)), 0, 0, 1);
+    pfDrawGSet(g);
+    glPopMatrix();
+}
+
 static void draw_node(pfNode *n, int depth)
 {
     int i;
@@ -1220,7 +1239,10 @@ static void draw_node(pfNode *n, int depth)
         int transp = g->gstate && (g->gstate->transparency > 0 || g->gstate->lpoint > 0);
         if (transp != draw_pass)
             continue;
-        pfDrawGSet(g);
+        if (n->type == PFNODE_BBOARD && n->bbpos)
+            draw_billboard(g, n->bbpos[i]);
+        else
+            pfDrawGSet(g);
     }
     switch (n->type) {
     case PFNODE_SWITCH:

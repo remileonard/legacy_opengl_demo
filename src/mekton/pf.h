@@ -82,6 +82,7 @@ typedef struct pfTexture {
     unsigned int gl_id;
     unsigned int *image;   /* RGBA, bottom row first */
     int xsize, ysize, comps;
+    int wrap_s, wrap_t;    /* GL wrap mode, 0 for GL_REPEAT */
 } pfTexture;
 
 typedef struct pfTexEnv {
@@ -110,6 +111,7 @@ typedef struct pfGeoState {
     int transparency;                  /* -1 inherit, 0 off, 1 on */
     unsigned int cullface;             /* GL face, 0 off, ~0 inherit */
     unsigned int alphafunc;            /* GL function, 0 off */
+    float alpharef;
     pfMaterial *frontmtl;
     pfTexture *texture;
     pfTexEnv *texenv;
@@ -223,6 +225,9 @@ typedef struct pfNode {
     int morph;
     /* light source */
     struct pfLightSource *lsource;
+    /* billboard: one position per geoset, turning around Z (axial) */
+    pfVec3 *bbpos;
+    int bbmode;
 } pfNode;
 
 typedef pfNode pfGroup, pfDCS, pfSCS, pfSwitch, pfSequence, pfGeode, pfScene, pfMorph;
