@@ -50,8 +50,12 @@ again.
 | F1 | cockpit, follow and train views |
 | F2 | distance of the follow view |
 | F3, `m` | map on/off |
+| `f` | fog on/off (`-nofog` on the command line starts without fog) |
 | F9 | back to the hangar / start |
 | Esc | quit |
+
+Like the original, the game runs at 30 frames per second: its flight model
+works frame by frame.
 
 The original also used a flight box (joystick) and played its sounds with
 AudioWorks; the port has no sound and no network (DIS) support.
@@ -59,7 +63,7 @@ AudioWorks; the port has no sound and no network (DIS) support.
 ### Data
 
 ```
-cimpact [-noinstruct] [data directory] [file.adf]
+cimpact [-noinstruct] [-nofog] [data directory] [file.adf]
 ```
 
 The default data directory is `data/cimpact`, or `Certain` when the
@@ -121,7 +125,8 @@ A file is a memory image of a scene graph, big-endian:
 
 Group-like nodes start with their name and bounding sphere and end with
 their children. Inherited geostate modes take the defaults of Vega's global
-state (lighting and texturing on, back faces culled).
+state (lighting and texturing on, no face culling: `backface off` in the
+gfx of `cimpact.adf`).
 
 ### Usage
 

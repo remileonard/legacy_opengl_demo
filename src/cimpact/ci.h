@@ -35,6 +35,13 @@
 #define CL_ALLIED_SHIP 0x20000000
 #define CL_AXIS_SHIP 0x40000000
 
+/*
+ * What the ground under an airplane is. The forests are blocks of tree walls
+ * and tops that replace the terrain, so they count as ground (landing there
+ * is a crash all the same).
+ */
+#define CL_HOT (CL_GROUND | CL_WATER | CL_TREES)
+
 /* --- airplane types (mardi + 172, 336 bytes each) ------------------------------ */
 
 typedef struct PlaneType {

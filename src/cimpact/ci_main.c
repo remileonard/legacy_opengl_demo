@@ -7,8 +7,11 @@
  * instruments and map, the selection screen, the intro pages and the
  * explosions (vgObjBank).
  *
- * usage: cimpact [-noinstruct] [-nosound] [-nonetwork] [data directory] [file.adf]
+ * usage: cimpact [-noinstruct] [-nofog] [-nosound] [-nonetwork] [data directory] [file.adf]
  */
+#if !defined(_WIN32) && !defined(_POSIX_C_SOURCE)
+#define _POSIX_C_SOURCE 200112L
+#endif
 #ifdef __APPLE__
 #include <OpenGL/gl.h>
 #include <OpenGL/glu.h>
@@ -25,6 +28,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #include "ci.h"
 #include "jpeg.h"
@@ -57,9 +61,8 @@ static const int plane_codes[6] = { 17, 49, 33, 513, 256, 769 };
 static int playing;              /* i2556 */
 static int sel_code = 17;        /* i156 */
 static int instruct = 1;
+static int fog = 1;
 static float tether_scale = 5;   /* f2288 */
-static double frame_times[8];
-static int nframe_times;
 static double last_time, start_time;
 static double anim_next;         /* f2620 */
 static float crash_timer;        /* f2580 */
@@ -291,7 +294,7 @@ static void camera(float *eye, pfMatrix cam)
         pfSetVec3(c.hpr, tr[2], 0, 0);
         pfMakeCoordMat(m, &c);
         pfXformVec3(d, off, m);
-        vgIsectZ(gMainScene, CL_GROUND | CL_WATER, tr[0], tr[1], 0, &gz, NULL, NULL, NULL);
+        vgIsectZ(gMainScene, CL_HOT, tr[0], tr[1], 0, &gz, NULL, NULL, NULL);
         pfSetVec3(c.xyz, tr[0] + d[0], tr[1] + d[1], gz + d[2]);
         pfSetVec3(c.hpr, tr[2] + hh, pp, 0);
     } else {
@@ -307,6 +310,10 @@ static void camera(float *eye, pfMatrix cam)
         c.hpr[1] = pfArcTan2(d[2], sqrtf(d[0] * d[0] + d[1] * d[1]));
         c.hpr[2] = 0;
     }
+#ifdef CI_DEBUG
+    if (getenv("CI_CAM"))
+        sscanf(getenv("CI_CAM"), "%f,%f,%f,%f,%f", &c.xyz[0], &c.xyz[1], &c.xyz[2], &c.hpr[0], &c.hpr[1]);
+#endif
     pfMakeCoordMat(cam, &c);
     pfCopyVec3(eye, c.xyz);
 }
@@ -484,29 +491,49 @@ static void sel_input(float x, float y, int click)
 
 /* --- time and frame (mardi::updateTime and mardi::updateFrame) --------------------- */
 
-static void update_time(void)
+/*
+ * The original runs at 30 frames per second (the frame rate of its
+ * application definition file) and its flight model works per frame: the
+ * frame rate is limited to 30 Hz as well. A slower machine gets longer
+ * frames, as on the original.
+ */
+#define FRAME_TIME (1 / 30.0)
+
+static double real_time(void)
 {
-    double t = pfGetTime() - start_time, dt = t - last_time, sum = 0;
-    int i, n;
-    last_time = t;
-    if (dt <= 0)
-        dt = 1 / 60.0;
-    if (nframe_times < 8)
-        frame_times[nframe_times++] = dt;
-    else {
-        memmove(frame_times, frame_times + 1, sizeof(double) * 7);
-        frame_times[7] = dt;
+    return pfGetTime() - start_time;
+}
+
+static void sleep_ms(int ms)
+{
+#ifdef _WIN32
+    Sleep(ms);
+#else
+    struct timespec ts;
+    ts.tv_sec = 0;
+    ts.tv_nsec = ms * 1000000L;
+    nanosleep(&ts, NULL);
+#endif
+}
+
+/* 0 while the frame is not over, else starts a new frame */
+static int update_time(void)
+{
+    double t = real_time(), dt = t - last_time;
+    if (dt < FRAME_TIME) {
+        int ms = (int)((FRAME_TIME - dt) * 1000);
+        if (ms > 1)
+            sleep_ms(ms - 1);
+        return 0;
     }
-    n = nframe_times;
-    for (i = 0; i < n; i++)
-        sum += frame_times[i];
-    gDt = (float)(sum / n);
-    if (gDt < 1 / 60.0f)
-        gDt = 1 / 60.0f;
-    if (gDt > 0.5f)
-        gDt = 0.5f;
+    if (dt > 0.5)
+        dt = 0.5;
+    /* frames late by less than a frame keep the 30 Hz rhythm */
+    last_time = t - FRAME_TIME < last_time + FRAME_TIME ? last_time + FRAME_TIME : t;
+    gDt = (float)(dt < FRAME_TIME * 1.5 ? FRAME_TIME : dt);
     gDt90 = gDt * 90;
     gNow = t;
+    return 1;
 }
 
 static void main_viewport(int *x, int *y, int *w, int *h)
@@ -558,6 +585,36 @@ static void update_frame(void)
         float sx, sy;
         int fire = btn_middle || (btn_left && btn_right) || key_fire;
         stick(&sx, &sy);
+#ifdef CI_DEBUG
+        if (getenv("CI_AUTO") && gUserPlane->state != 0) {
+            /* test autopilot: climbs to 250 m and circles */
+            Plane *u = gUserPlane;
+            float tp = (250 - u->pos[2]) * 0.05f;
+            if (tp > 10) tp = 10;
+            if (tp < -10) tp = -10;
+            sy = (u->pos[4] - tp) * 0.05f;
+            sx = ((float)atof(getenv("CI_AUTO")) - u->pos[5]) * 0.02f;
+            if (sy > 0.5f) sy = 0.5f;
+            if (sy < -0.5f) sy = -0.5f;
+            if (sx > 0.5f) sx = 0.5f;
+            if (sx < -0.5f) sx = -0.5f;
+        }
+#endif
+#ifdef CI_DEBUG
+        if (getenv("CI_AUTO") && gUserPlane->state != 0) {
+            /* test autopilot: climbs to 250 m and circles */
+            Plane *u = gUserPlane;
+            float tp = (250 - u->pos[2]) * 0.05f;
+            if (tp > 10) tp = 10;
+            if (tp < -10) tp = -10;
+            sy = (u->pos[4] - tp) * 0.05f;
+            sx = (atof(getenv("CI_AUTO")) - u->pos[5]) * 0.02f;
+            if (sy > 0.5f) sy = 0.5f;
+            if (sy < -0.5f) sy = -0.5f;
+            if (sx > 0.5f) sx = 0.5f;
+            if (sx < -0.5f) sx = -0.5f;
+        }
+#endif
         if (fire && !gUserPlane->dead)
             gunsTrigger();
         planeUpdate(gUserPlane, sx, sy, (btn_left && !btn_right) || key_up, (btn_right && !btn_left) || key_down);
@@ -641,7 +698,7 @@ static void draw_main(void)
     pfInvertOrthoMat(inv, cam);
     glMultMatrixf(&inv[0][0]);
     setup_light();
-    if (playing) {
+    if (playing && fog) {
         float fc[4];
         fc[0] = env->skycolor[0];
         fc[1] = env->skycolor[1];
@@ -655,6 +712,11 @@ static void draw_main(void)
     }
     pfEnable(PFEN_LIGHTING);
     pfEnable(PFEN_TEXTURE);
+#ifdef CI_DEBUG
+    if (getenv("CI_CAM"))
+        vgDrawScene(gMainScene, gNow);
+    else
+#endif
     vgDrawScene(playing ? gMainScene : gSelScene, gNow);
     if (playing) {
         ammoDraw(gGunBank);
@@ -1013,7 +1075,8 @@ static void idle(void)
     static double fps_t;
     Plane *u = gUserPlane;
 #endif
-    update_time();
+    if (!update_time())
+        return;
 #ifdef CI_DEBUG
     if (u && ++frames % 30 == 0) {
         fprintf(stderr, "fps %.1f state %d pos %.0f %.0f %.1f hpr %.0f %.0f %.0f thr %.2f sf %.2f stick %.3f "
@@ -1065,6 +1128,9 @@ static void keyboard(unsigned char k, int x, int y)
         break;
     case 'x': case 'X': case 13: case '\t':
         key_fire = 1;
+        break;
+    case 'f': case 'F':
+        fog = !fog;
         break;
     case 'm': case 'M':
         if (playing && gShowMap >= 0 && map_switch)
@@ -1229,6 +1295,8 @@ int main(int argc, char **argv)
     for (i = 1; i < argc; i++) {
         if (strcmp(argv[i], "-noinstruct") == 0)
             instruct = 0;
+        else if (strcmp(argv[i], "-nofog") == 0)
+            fog = 0;
         else if (strcmp(argv[i], "-nosound") == 0 || strcmp(argv[i], "-nonetwork") == 0)
             ;
         else if (strstr(argv[i], ".adf"))

@@ -325,7 +325,8 @@ static pfGeoState *read_gstate(Fst *f)
         gs->alphafunc = (unsigned int)modes[MODE_ALPHAFUNC];
     gs->alpharef = alpharef;
     if (INH(MODE_CULLFACE)) {
-        gs->cullface = GL_BACK;
+        /* the gfx of cimpact.adf has "backface off": no culling by default */
+        gs->cullface = 0;
     } else {
         static const unsigned int cull[4] = { 0, GL_BACK, GL_FRONT, GL_FRONT_AND_BACK };
         gs->cullface = modes[MODE_CULLFACE] >= 0 && modes[MODE_CULLFACE] < 4 ? cull[modes[MODE_CULLFACE]] : 0;

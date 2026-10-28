@@ -158,7 +158,7 @@ void planeResetMotion(Plane *p)
     planeReset(p);
     p->state = 0;
     p->throttle = 0;
-    if (vgIsectZ(gMainScene, CL_GROUND | CL_WATER, p->init[0], p->init[1], p->init[3], &z, &gp, &gr, NULL))
+    if (vgIsectZ(gMainScene, CL_HOT, p->init[0], p->init[1], p->init[3], &z, &gp, &gr, NULL))
         p->ground = z + p->gear;
     else
         p->ground = -100;
@@ -191,6 +191,12 @@ void planeHit(Plane *p, int n, int bullet)
     (void)bullet;
     if (p->dead)
         return;
+#ifdef CI_DEBUG
+    fprintf(stderr, "hit %d (bullet %d) damage %d\n", n, bullet, p->damage + n);
+#endif
+#ifdef CI_DEBUG
+    fprintf(stderr, "hit %d (bullet %d) damage %d\n", n, bullet, p->damage + n);
+#endif
     p->damage += n;
     if (p->damage < 0)
         p->damage = 0;
@@ -201,6 +207,12 @@ void planeHit(Plane *p, int n, int bullet)
 
 void planeExplode(Plane *p)
 {
+#ifdef CI_DEBUG
+    fprintf(stderr, "explode state %d z %.1f ground %.1f\n", p->state, p->pos[2], p->ground);
+#endif
+#ifdef CI_DEBUG
+    fprintf(stderr, "explode state %d z %.1f ground %.1f\n", p->state, p->pos[2], p->ground);
+#endif
     p->state = 4;
     p->dead = 1;
     ciCreateAirExplosion(p->pos);
@@ -214,6 +226,12 @@ void planeSink(Plane *p)
 
 void planeDiveAndExplode(Plane *p)
 {
+#ifdef CI_DEBUG
+    fprintf(stderr, "dive and explode\n");
+#endif
+#ifdef CI_DEBUG
+    fprintf(stderr, "dive and explode\n");
+#endif
     if (p->state == 0) {
         planeExplode(p);
         return;
@@ -387,8 +405,24 @@ void planeUpdate(Plane *p, float sx, float sy, int up, int down)
             p->shadow_on = 1;
             vgAddSceneObj(gMainScene, p->shadow);
         }
-        ground_hit = vgIsectZ(gMainScene, CL_GROUND | CL_WATER, p->pos[0], p->pos[1], p->pos[3], &gz, &gp, &gr, &ground);
+        ground_hit = vgIsectZ(gMainScene, CL_HOT, p->pos[0], p->pos[1], p->pos[3], &gz, &gp, &gr, &ground);
         if (!ground_hit) {
+#ifdef CI_DEBUG
+            {
+                vgHit h2;
+                float z2;
+                int k;
+                if (vgIsectZ(gMainScene, ~0u, p->pos[0], p->pos[1], 0, &z2, NULL, NULL, &h2)) {
+                    fprintf(stderr, "no ground at %.0f %.0f: hit %s class %#x z %.1f path", p->pos[0], p->pos[1],
+                            h2.obj->name, h2.cls, z2);
+                    for (k = 0; k < h2.pathlen; k++)
+                        fprintf(stderr, " %s", h2.path[k]->name ? h2.path[k]->name : "-");
+                    fprintf(stderr, "\n");
+                } else {
+                    fprintf(stderr, "no ground at %.0f %.0f: nothing\n", p->pos[0], p->pos[1]);
+                }
+            }
+#endif
             p->pos[2] = 0;
             gz = 0;
             gp = p->pos[4];
