@@ -47,72 +47,6 @@ static void terrain_classes(void)
     }
 }
 
-/*
- * The forests of the terrain are hollow blocks: walls of trees, whose upper
- * part is transparent (the tree tops), under a canopy, with no ground below.
- * Seen from above at some angles, the gaps between the tree tops showed the
- * sky. A copy of the canopy at the foot of the walls fills them.
- */
-static int has_texture(pfGeoSet *g, const char *name)
-{
-    return g->gstate && g->gstate->texture && g->gstate->texture->name &&
-           strstr(g->gstate->texture->name, name) != NULL;
-}
-
-static void add_forest_floor(pfNode *geode)
-{
-    static float up[3] = { 0, 0, 1 };
-    pfGeoSet *top = NULL, *g;
-    float wallmin = 1e30f, *co;
-    int i, k, n = 0, *lengths;
-    for (i = 0; i < geode->ngsets; i++) {
-        pfGeoSet *s = geode->gsets[i];
-        const float *c = (const float *)s->attr[PFGS_COORD3];
-        if ((s->prim == PFGS_TRISTRIPS || s->prim == PFGS_FLAT_TRISTRIPS) && s->lengths && has_texture(s, "treetop"))
-            top = s;
-        else if (s->prim == PFGS_QUADS && c && has_texture(s, "treewall"))
-            for (k = 0; k < 4 * s->nprims; k++)
-                if (c[3 * k + 2] < wallmin)
-                    wallmin = c[3 * k + 2];
-    }
-    if (!top || wallmin > 1e29f || !top->attr[PFGS_COORD3])
-        return;
-    for (i = 0; i < top->nprims; i++)
-        n += top->lengths[i];
-    co = (float *)malloc(sizeof(float) * 3 * n);
-    lengths = (int *)malloc(sizeof(int) * top->nprims);
-    memcpy(co, top->attr[PFGS_COORD3], sizeof(float) * 3 * n);
-    memcpy(lengths, top->lengths, sizeof(int) * top->nprims);
-    for (k = 0; k < n; k++)
-        co[3 * k + 2] = wallmin;
-    g = pfNewGSet(NULL);
-    pfGSetPrimType(g, PFGS_TRISTRIPS);
-    pfGSetNumPrims(g, top->nprims);
-    pfGSetPrimLengths(g, lengths);
-    pfGSetAttr(g, PFGS_COORD3, PFGS_PER_VERTEX, co, NULL);
-    pfGSetAttr(g, PFGS_NORMAL3, PFGS_OVERALL, up, NULL);
-    if (top->bind[PFGS_TEXCOORD2] == PFGS_PER_VERTEX)
-        pfGSetAttr(g, PFGS_TEXCOORD2, PFGS_PER_VERTEX, top->attr[PFGS_TEXCOORD2], NULL);
-    if (top->bind[PFGS_COLOR4] == PFGS_OVERALL)
-        pfGSetAttr(g, PFGS_COLOR4, PFGS_OVERALL, top->attr[PFGS_COLOR4], NULL);
-    g->nverts = n;
-    pfGSetGState(g, top->gstate);
-    pfAddGSet(geode, g);
-}
-
-static void add_forest_floors(pfNode *n, int in_trees, int depth)
-{
-    int i;
-    if (!n || depth > 64)
-        return;
-    if (n->name && strncmp(n->name, "trees", 5) == 0)
-        in_trees = 1;
-    if (in_trees && n->ngsets)
-        add_forest_floor(n);
-    for (i = 0; i < n->nchildren; i++)
-        add_forest_floors(n->children[i], in_trees, depth + 1);
-}
-
 void worldTerrainInitDoors(void)
 {
     int i;
@@ -1119,7 +1053,6 @@ void worldConfigure(void)
         exit(1);
     }
     vgObjModel(terrain.obj);
-    add_forest_floors(terrain.obj->model, 0, 0);
     terrain_classes();
     for (i = 0; anims[i]; i++)
         add_named_seqs(terrain.obj, anims[i]);

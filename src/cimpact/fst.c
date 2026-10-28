@@ -280,8 +280,9 @@ static pfTexture *read_tex(Fst *f)
     t->xsize = xs;
     t->ysize = ys;
     t->comps = comps;
-    t->wrap_s = wrap[1] == GL_CLAMP ? GL_CLAMP : GL_REPEAT;
-    t->wrap_t = wrap[2] == GL_CLAMP ? GL_CLAMP : GL_REPEAT;
+    /* the wraps are stored for s, t and r */
+    t->wrap_s = wrap[0] == GL_CLAMP ? GL_CLAMP : GL_REPEAT;
+    t->wrap_t = wrap[1] == GL_CLAMP ? GL_CLAMP : GL_REPEAT;
     t->image = (unsigned int *)malloc((size_t)xs * ys * 4);
     dst = (unsigned char *)t->image;
     for (i = 0; i < xs * ys; i++, src += comps, dst += 4) {
