@@ -218,24 +218,24 @@ void update_projectiles(void)
     my_mek->heat -= 0.1f / tps;
     if (my_mek->heat < 0)
         my_mek->heat = 0;
-    if (inp.e & 2) {
-        inp.e &= ~2;
+    if (mek_input_state.e & 2) {
+        mek_input_state.e &= ~2;
         fire_plasma();
-    } else if (inp.space & 2) {
-        inp.space &= ~2;
+    } else if (mek_input_state.space & 2) {
+        mek_input_state.space &= ~2;
         fire_plasma();
     }
     /* W and Q raise and lower the guns */
-    if (inp.w) {
-        if (inp.shift) {
+    if (mek_input_state.w) {
+        if (mek_input_state.shift) {
             my_mek->aim[1] = 0;
         } else {
             my_mek->aim[1] += 0.5f;
             if (20 < my_mek->aim[1])
                 my_mek->aim[1] = 20;
         }
-    } else if (inp.q) {
-        if (inp.shift) {
+    } else if (mek_input_state.q) {
+        if (mek_input_state.shift) {
             my_mek->aim[1] = 0;
         } else {
             my_mek->aim[1] -= 0.5f;
@@ -244,18 +244,18 @@ void update_projectiles(void)
         }
     }
     /* tab and the left button aim with the pointer */
-    if (inp.tab && inp.left) {
+    if (mek_input_state.tab && mek_input_state.left) {
         extern int center_x, center_y;
         float s, c, d;
         pfVec2 v;
         pfSinCos(chan_fov * 0.5f, &s, &c);
         d = (float)center_x * c / s;
-        v[0] = (float)(inp.x - center_x);
+        v[0] = (float)(mek_input_state.x - center_x);
         v[1] = d;
         my_mek->aim[0] = xasin(v[0] / pfLengthVec2(v)) / 10.0f;
         if (20 < my_mek->aim[0]) my_mek->aim[0] = 20;
         if (my_mek->aim[0] < -20) my_mek->aim[0] = -20;
-        v[0] = (float)(inp.y - center_y);
+        v[0] = (float)(mek_input_state.y - center_y);
         my_mek->aim[1] = xasin(v[0] / pfLengthVec2(v)) / 10.0f;
         if (20 < my_mek->aim[1]) my_mek->aim[1] = 20;
         if (my_mek->aim[1] < -20) my_mek->aim[1] = -20;

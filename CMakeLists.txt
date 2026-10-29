@@ -21,6 +21,10 @@ endif()
 find_package(OpenGL REQUIRED)
 find_package(FreeGLUT CONFIG REQUIRED)
 
+if(WIN32)
+    # CMake targets supply the correct library paths, including static vcpkg builds.
+    add_compile_definitions(FREEGLUT_LIB_PRAGMAS=0)
+endif()
 
 add_subdirectory(src/porting)
 

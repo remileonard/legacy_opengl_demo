@@ -167,51 +167,51 @@ extern int center_x, center_y;
 
 void mek_input(Mek *m)
 {
-    int dx = inp.x - center_x, dy = inp.y - center_y;
+    int dx = mek_input_state.x - center_x, dy = mek_input_state.y - center_y;
 
     if (m->mode & MODE_WALK) {
-        if (inp.tab)
+        if (mek_input_state.tab)
             return;
         m->in_fwd = val_to_input(dy, 40, 200);
-        if (inp.shift) {
+        if (mek_input_state.shift) {
             m->in_side = val_to_input(dx, 40, 200);
-            m->in_turn = inp.left ? -0.5f : inp.right ? 0.5f : 0;
+            m->in_turn = mek_input_state.left ? -0.5f : mek_input_state.right ? 0.5f : 0;
         } else {
             m->in_turn = val_to_input(dx, 40, 200);
-            m->in_side = inp.left ? -0.3f : inp.right ? 0.3f : 0;
+            m->in_side = mek_input_state.left ? -0.3f : mek_input_state.right ? 0.3f : 0;
         }
     } else if (m->mode & MODE_AIR) {
-        if (inp.d)
+        if (mek_input_state.d)
             m->in_throttle += 0.01f;
-        if (inp.a)
+        if (mek_input_state.a)
             m->in_throttle -= 0.01f;
-        if (inp.s)
+        if (mek_input_state.s)
             m->in_throttle = 0;
         else if (m->in_throttle > 1)
             m->in_throttle = 1;
         else if (m->in_throttle < -1)
             m->in_throttle = -1;
-        if (inp.tab)
+        if (mek_input_state.tab)
             return;
         m->in_fwd = val_to_input(dy, 10, 200);
         m->in_side = val_to_input(dx, 10, 200);
         m->in_roll = m->in_side;
         m->in_pitch = -m->in_fwd;
-        m->in_brake = inp.middle == 0;
-        m->in_turn = inp.left ? -1.0f : inp.right ? 1.0f : 0;
+        m->in_brake = mek_input_state.middle == 0;
+        m->in_turn = mek_input_state.left ? -1.0f : mek_input_state.right ? 1.0f : 0;
     } else if (m->mode & MODE_FLY) {
         m->in_throttle = 0;
-        if (inp.d)
+        if (mek_input_state.d)
             m->throttle += 0.05f;
-        if (inp.a)
+        if (mek_input_state.a)
             m->throttle -= 0.05f;
-        if (inp.s)
+        if (mek_input_state.s)
             m->throttle = 0;
         else if (m->f280 < m->throttle)
             m->throttle = m->f280;
         else if (m->throttle < m->f280 / -3.0f)
             m->throttle = m->f280 / -3.0f;
-        if (inp.tab)
+        if (mek_input_state.tab)
             return;
         m->in_pitch = -val_to_input(dy, 5, 400);
         m->in_roll = val_to_input(dx, 5, 400);

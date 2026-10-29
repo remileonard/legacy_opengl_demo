@@ -8,6 +8,10 @@
  * 1280x749 part and the console covers the lower part. The coordinates
  * below are those of that window, scaled to the real window size.
  */
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#endif
 #ifdef __APPLE__
 #include <OpenGL/gl.h>
 #include <OpenGL/glu.h>

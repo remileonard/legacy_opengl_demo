@@ -233,7 +233,7 @@ extern Mek *my_mek;
 extern int number_mektons;
 extern pfMatrix mek_mat, old_mek_mat;
 extern MekType mek_types[2];
-extern Input inp;
+extern Input mek_input_state;
 extern float tps, tps_add;
 extern int int_tps;
 extern int ticks, check_ticks, total_frames;
