@@ -31,7 +31,10 @@ target_compile_options(mekton PRIVATE ${OPENGL_CFLAGS} ${GLUT_CFLAGS})
 target_link_options(mekton PRIVATE ${OPENGL_LDFLAGS} ${GLUT_LDFLAGS})
 
 if(MSVC)
+    include(CheckCSourceCompiles)
+    check_c_source_compiles("int inp; int main(void) { return inp; }"
+        MSVC_LEGACY_INPUT_NAME_AVAILABLE)
     target_compile_definitions(mekton PRIVATE WIN32_LEAN_AND_MEAN)
-    # Release /O2 enables the legacy inp intrinsic, which conflicts with game input.
-    target_compile_options(mekton PRIVATE /FIwindows.h /Oi-)
+    set_target_properties(mekton PROPERTIES C_STANDARD 11 C_STANDARD_REQUIRED ON)
+    target_compile_options(mekton PRIVATE /FIwindows.h)
 endif()
