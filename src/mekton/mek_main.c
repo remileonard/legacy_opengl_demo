@@ -5,10 +5,6 @@
  * GLUT. The game states, key bindings and the order of the updates in
  * mek_loop follow the original.
  */
-#ifdef _WIN32
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
-#endif
 #ifdef __APPLE__
 #include <OpenGL/gl.h>
 #include <OpenGL/glu.h>
@@ -28,7 +24,7 @@
 Mek *mektons[MAX_MEKTONS];
 Mek *my_mek;
 int number_mektons;
-Input mek_input_state;
+Input inp;
 float tps = 30, tps_add;
 int int_tps = 20;
 int ticks, check_ticks, total_frames;
@@ -121,9 +117,9 @@ void mek_restart(void)
 
 static void mark_keys_used(void)
 {
-    mek_input_state.a &= ~2; mek_input_state.d &= ~2; mek_input_state.e &= ~2; mek_input_state.j &= ~2;
-    mek_input_state.q &= ~2; mek_input_state.s &= ~2; mek_input_state.w &= ~2;
-    mek_input_state.space &= ~2;
+    inp.a &= ~2; inp.d &= ~2; inp.e &= ~2; inp.j &= ~2;
+    inp.q &= ~2; inp.s &= ~2; inp.w &= ~2;
+    inp.space &= ~2;
 }
 
 /* one tick of the game */
@@ -240,9 +236,9 @@ void enter_key(void);
 static void modifiers(void)
 {
     int m = glutGetModifiers();
-    mek_input_state.shift = (m & GLUT_ACTIVE_SHIFT) != 0;
-    mek_input_state.ctrl = (m & GLUT_ACTIVE_CTRL) != 0;
-    mek_input_state.alt = (m & GLUT_ACTIVE_ALT) != 0;
+    inp.shift = (m & GLUT_ACTIVE_SHIFT) != 0;
+    inp.ctrl = (m & GLUT_ACTIVE_CTRL) != 0;
+    inp.alt = (m & GLUT_ACTIVE_ALT) != 0;
 }
 
 /* the screens before the game */
@@ -272,8 +268,8 @@ static void other_key(unsigned char k)
             cd_app->state = STATE_PLAY;
             start_pos = k == ' ' ? -1 : k - '0';
             mek_start_pos(my_mek, start_pos);
-            mek_input_state.x = center_x;
-            mek_input_state.y = center_y;
+            inp.x = center_x;
+            inp.y = center_y;
             glutWarpPointer(center_x, win_h - 1 - center_y);
         }
         break;
@@ -289,13 +285,13 @@ static void other_key(unsigned char k)
 static int *letter(unsigned char k)
 {
     switch (k) {
-    case 'a': case 'A': return &mek_input_state.a;
-    case 'd': case 'D': return &mek_input_state.d;
-    case 'e': case 'E': return &mek_input_state.e;
-    case 'j': case 'J': return &mek_input_state.j;
-    case 'q': case 'Q': return &mek_input_state.q;
-    case 's': case 'S': return &mek_input_state.s;
-    case 'w': case 'W': return &mek_input_state.w;
+    case 'a': case 'A': return &inp.a;
+    case 'd': case 'D': return &inp.d;
+    case 'e': case 'E': return &inp.e;
+    case 'j': case 'J': return &inp.j;
+    case 'q': case 'Q': return &inp.q;
+    case 's': case 'S': return &inp.s;
+    case 'w': case 'W': return &inp.w;
     }
     return NULL;
 }
@@ -322,13 +318,13 @@ static void keyboard(unsigned char k, int x, int y)
         if (my_mek->status == 2)
             cd_app->state = STATE_DEAD;
         else
-            mek_input_state.space = 3;
+            inp.space = 3;
         break;
     case 13: enter_key(); break;
     case 127: give_up(); break;
-    case 9: mek_input_state.tab = 1; break;
+    case 9: inp.tab = 1; break;
     case 'f': case 'F': fkey_down(); break;
-    case 'h': case 'H': if (mek_input_state.shift) toggle_help(); else toggle_hud(); break;
+    case 'h': case 'H': if (inp.shift) toggle_help(); else toggle_hud(); break;
     case 'r': case 'R': toggle_radar(); break;
     case 't': case 'T': transform(); break;
     case 'v': case 'V': light_adjust(); break;
@@ -348,8 +344,8 @@ static void keyboard_up(unsigned char k, int x, int y)
         return;
     }
     switch (k) {
-    case ' ': mek_input_state.space &= ~1; break;
-    case 9: mek_input_state.tab = 0; break;
+    case ' ': inp.space &= ~1; break;
+    case 9: inp.tab = 0; break;
     case 'z': case 'Z': cc_zoom_stop(); break;
     case 'x': case 'X': cc_spin_stop(); break;
     case 'c': case 'C': cc_height_stop(); break;
@@ -373,19 +369,19 @@ static void special_up(int k, int x, int y)
 
 static void motion(int x, int y)
 {
-    if (mek_input_state.tab)
+    if (inp.tab)
         return;
-    mek_input_state.x = x;
-    mek_input_state.y = win_h - 1 - y;
+    inp.x = x;
+    inp.y = win_h - 1 - y;
 }
 
 static void mouse(int b, int state, int x, int y)
 {
     int down = state == GLUT_DOWN;
     modifiers();
-    if (b == GLUT_LEFT_BUTTON) mek_input_state.left = down;
-    if (b == GLUT_MIDDLE_BUTTON) mek_input_state.middle = down;
-    if (b == GLUT_RIGHT_BUTTON) mek_input_state.right = down;
+    if (b == GLUT_LEFT_BUTTON) inp.left = down;
+    if (b == GLUT_MIDDLE_BUTTON) inp.middle = down;
+    if (b == GLUT_RIGHT_BUTTON) inp.right = down;
     motion(x, y);
 }
 
@@ -437,8 +433,8 @@ int main(int argc, char **argv)
     init_lighting();
     set_tps(30);
     mek_start();
-    mek_input_state.x = center_x;
-    mek_input_state.y = center_y;
+    inp.x = center_x;
+    inp.y = center_y;
     glutMainLoop();
     return 0;
 }

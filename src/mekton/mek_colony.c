@@ -6,10 +6,6 @@
 #include <math.h>
 #include <stdlib.h>
 
-#ifdef _WIN32
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
-#endif
 #ifdef __APPLE__
 #include <OpenGL/gl.h>
 #else
@@ -133,9 +129,9 @@ void position_lights(float angle)
 /* V brighter, shift V darker, ctrl V reset */
 void light_adjust(void)
 {
-    if (mek_input_state.ctrl) {
+    if (inp.ctrl) {
         light_level = 1;
-    } else if (mek_input_state.shift) {
+    } else if (inp.shift) {
         light_level -= 0.1f;
         if (light_level < 0)
             light_level = 0;

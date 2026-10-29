@@ -92,24 +92,24 @@ static void reset_camera_height(void)
 /* Z zooms in, shift Z out, ctrl Z resets */
 void cc_zoom(void)
 {
-    if (mek_input_state.ctrl) reset_camera_zoom();
-    else zoom = mek_input_state.shift ? 1.0f : -1.0f;
+    if (inp.ctrl) reset_camera_zoom();
+    else zoom = inp.shift ? 1.0f : -1.0f;
 }
 void cc_zoom_stop(void) { zoom = 0; }
 
 /* X spins, shift X the other way, ctrl X resets */
 void cc_spin(void)
 {
-    if (mek_input_state.ctrl) reset_camera_spin();
-    else spin_rate = mek_input_state.shift ? -1.0f : 1.0f;
+    if (inp.ctrl) reset_camera_spin();
+    else spin_rate = inp.shift ? -1.0f : 1.0f;
 }
 void cc_spin_stop(void) { spin_rate = 0; }
 
 /* C raises the camera, shift C lowers it, ctrl C resets */
 void cc_height(void)
 {
-    if (mek_input_state.ctrl) reset_camera_height();
-    else height_rate = mek_input_state.shift ? -0.5f : 0.5f;
+    if (inp.ctrl) reset_camera_height();
+    else height_rate = inp.shift ? -0.5f : 0.5f;
 }
 void cc_height_stop(void) { height_rate = 0; }
 
