@@ -1,0 +1,136 @@
+name: Windows release
+
+on:
+  pull_request:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-2022
+    env:
+      VCPKG_ROOT: ${{ github.workspace }}/.vcpkg
+      VCPKG_BINARY_SOURCES: clear;files,${{ github.workspace }}/.vcpkg-cache,readwrite
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check out pinned vcpkg
+        uses: actions/checkout@v4
+        with:
+          repository: microsoft/vcpkg
+          ref: d4c0a46cb8f63e5c9fa007d13baf1cb3e43bf7e3
+          path: .vcpkg
+
+      - name: Cache compiled dependencies
+        uses: actions/cache@v4
+        with:
+          path: .vcpkg-cache
+          key: windows-2022-x64-static-${{ hashFiles('vcpkg*.json', 'ports/**', 'CMakePresets.json') }}
+
+      - name: Bootstrap vcpkg
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force .vcpkg-cache | Out-Null
+          & "$env:VCPKG_ROOT/bootstrap-vcpkg.bat" -disableMetrics
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Configure Release
+        shell: pwsh
+        env:
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          $options = @()
+          if ($env:REF_TYPE -eq 'tag') {
+            if ($env:REF_NAME -notmatch '^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$') {
+              throw "Expected a version tag such as v1.0.0 or v1.0.0-rc.1"
+            }
+            $options += "-DCPACK_PACKAGE_VERSION=$($env:REF_NAME.Substring(1))"
+          }
+          cmake --preset windows-release @options
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Build Release
+        run: cmake --build --preset windows-release --parallel
+
+      - name: Package and verify extracted ZIP
+        shell: pwsh
+        run: |
+          cpack --config out/build/windows-release/CPackConfig.cmake -C Release -B out/packages
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $archives = @(Get-ChildItem out/packages/*.zip)
+          if ($archives.Count -ne 1) { throw "Expected exactly one ZIP archive" }
+          Expand-Archive $archives[0].FullName out/package-check
+          $package = @(Get-ChildItem out/package-check -Directory)
+          if ($package.Count -ne 1) { throw "Expected one top-level package directory" }
+          cmake "-DPACKAGE_DIR=$($package[0].FullName)" -P out/build/windows-release/VerifyWindowsPackage.cmake
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $vswhere = "${env:ProgramFiles(x86)}/Microsoft Visual Studio/Installer/vswhere.exe"
+          $vs = & $vswhere -latest -products '*' -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+          $dumpbin = Get-ChildItem "$vs/VC/Tools/MSVC/*/bin/Hostx64/x64/dumpbin.exe" |
+            Sort-Object FullName -Descending | Select-Object -First 1
+          if (-not $dumpbin) { throw "dumpbin.exe not found" }
+          foreach ($exe in Get-ChildItem $package[0].FullName -Filter *.exe -Recurse) {
+            $headers = & $dumpbin.FullName /headers $exe.FullName
+            if ($LASTEXITCODE -ne 0) { throw "Cannot inspect $($exe.Name)" }
+            if (-not ($headers -match '8664 machine')) { throw "$($exe.Name) is not x64" }
+            $imports = & $dumpbin.FullName /dependents $exe.FullName
+            if ($LASTEXITCODE -ne 0) { throw "Cannot inspect imports for $($exe.Name)" }
+            foreach ($line in $imports) {
+              if ($line -match '^\s+(\S+\.dll)\s*$') {
+                $dll = $Matches[1]
+                if ($dll -match '^(freeglut|glut|vcruntime|msvcp|msvcr|ucrtbase|api-ms-win-crt)') {
+                  throw "$($exe.Name) unexpectedly requires $dll; expected static linkage"
+                }
+                if ($dll -notmatch '^(api|ext)-ms-win-' -and -not (Test-Path "$env:SystemRoot/System32/$dll")) {
+                  throw "$($exe.Name) requires a non-system DLL: $dll"
+                }
+              }
+            }
+          }
+          Get-FileHash $archives[0].FullName -Algorithm SHA256 |
+            ForEach-Object { "$($_.Hash.ToLowerInvariant())  $($archives[0].Name)" } |
+            Set-Content "$($archives[0].FullName).sha256" -Encoding ascii
+
+      - name: Upload Windows distribution
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-x64-release
+          path: |
+            out/packages/*.zip
+            out/packages/*.sha256
+          if-no-files-found: error
+
+  release:
+    if: github.ref_type == 'tag'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: windows-x64-release
+          path: release
+
+      - name: Create or update draft release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            test "$(gh release view "$RELEASE_TAG" --json isDraft --jq .isDraft)" = true || {
+              echo "Refusing to overwrite an already published release" >&2
+              exit 1
+            }
+          else
+            gh release create "$RELEASE_TAG" --verify-tag --draft --generate-notes --title "$RELEASE_TAG"
+          fi
+          gh release upload "$RELEASE_TAG" release/*.zip release/*.sha256 --clobber

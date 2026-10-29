@@ -21,7 +21,6 @@ endif()
 find_package(OpenGL REQUIRED)
 find_package(FreeGLUT CONFIG REQUIRED)
 
-
 add_subdirectory(src/porting)
 
 add_subdirectory(src/libtk)
@@ -45,11 +44,15 @@ add_subdirectory(src/space)
 add_subdirectory(src/flight)
 add_subdirectory(src/iris)
 add_subdirectory(src/fsn)
+add_subdirectory(src/mekton)
+add_subdirectory(src/cimpact)
 
 set (BUTTON_FLY
     buttonfly
 )
 set(LEGACY_INTERACTIVE
+    cimpact
+    cimpact_view
     cycles
     distort
     enterprise
@@ -59,6 +62,8 @@ set(LEGACY_INTERACTIVE
     gl_puzzle
     insect
     maze
+    mekton
+    mekton_view
     objviewer
     road
     smooth
@@ -179,6 +184,10 @@ foreach(dll ${ALL_DLLS})
         COMMENT "Copie de la DLL ${dll} vers ${DIST_DIR}\n"
     )
 endforeach()
+
+if(WIN32)
+    include(cmake/WindowsPackage.cmake)
+endif()
 
 if(APPLE)
     set(APP_NAME "Flight")

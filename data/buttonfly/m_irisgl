@@ -8,7 +8,7 @@ heat
 	.highcolor. 1.0 .7 1.0
 
 Cycles
-	./interactive/Cycles.exe
+	./interactive/cycles.exe
 	.color. .9 .5 .9
 	.highcolor. 1.0 .7 1.0
 Flight

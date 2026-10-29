@@ -17,6 +17,15 @@
             }
         },
         {
+            "name": "windows-release",
+            "displayName": "Windows x64 portable Release",
+            "inherits": "windows",
+            "cacheVariables": {
+                "VCPKG_TARGET_TRIPLET": "x64-windows-static",
+                "CMAKE_MSVC_RUNTIME_LIBRARY": "MultiThreaded$<$<CONFIG:Debug>:Debug>"
+            }
+        },
+        {
             "name": "linux",
             "displayName": "GCC 12.2.0 x86_64-linux-gnu",
             "description": "Using compilers: C = /usr/bin/gcc, CXX = /usr/bin/g++",
@@ -43,6 +52,11 @@
         }
     ],
     "buildPresets": [
+        {
+            "name": "windows-release",
+            "configurePreset": "windows-release",
+            "configuration": "Release"
+        },
         {
             "name": "windows-debug",
             "displayName": "Visual Studio Community 2022 Release - x86_amd64 - Debug",
