@@ -31,8 +31,7 @@ target_compile_options(mekton PRIVATE ${OPENGL_CFLAGS} ${GLUT_CFLAGS})
 target_link_options(mekton PRIVATE ${OPENGL_LDFLAGS} ${GLUT_LDFLAGS})
 
 if(MSVC)
-    target_compile_definitions(mekton PRIVATE
-        WIN32_LEAN_AND_MEAN
-        _CRT_DECLARE_NONSTDC_NAMES=0)
-    target_compile_options(mekton PRIVATE /FIwindows.h)
+    target_compile_definitions(mekton PRIVATE WIN32_LEAN_AND_MEAN)
+    # Release /O2 enables the legacy inp intrinsic, which conflicts with game input.
+    target_compile_options(mekton PRIVATE /FIwindows.h /Oi-)
 endif()
