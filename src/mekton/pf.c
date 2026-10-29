@@ -1239,6 +1239,10 @@ static void draw_node(pfNode *n, int depth)
         int transp = g->gstate && (g->gstate->transparency > 0 || g->gstate->lpoint > 0);
         if (transp != draw_pass)
             continue;
+        /* alpha tested transparent geometry writes the depth of the texels
+           it keeps, so it does not need to be sorted against itself */
+        if (draw_pass)
+            glDepthMask(g->gstate->alphafunc ? GL_TRUE : GL_FALSE);
         if (n->type == PFNODE_BBOARD && n->bbpos)
             draw_billboard(g, n->bbpos[i]);
         else

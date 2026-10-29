@@ -687,7 +687,7 @@ static void draw_main(void)
     glEnable(GL_SCISSOR_TEST);
     glClearColor(env->skycolor[0], env->skycolor[1], env->skycolor[2], 1);
 #ifdef CI_DEBUG
-    if (getenv("CI_CAM"))
+    if (getenv("CI_CAM") || getenv("CI_MAGENTA"))
         glClearColor(1, 0, 1, 1);
 #endif
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
