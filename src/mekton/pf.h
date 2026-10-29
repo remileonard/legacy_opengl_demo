@@ -152,6 +152,8 @@ typedef struct pfGeoSet {
     pfGeoState *gstate;
     int ntris;             /* intersection cache */
     int *tris;
+    int hascenter;         /* center of the coordinates, for sorting */
+    pfVec3 center;
 } pfGeoSet;
 
 pfGeoSet *pfNewGSet(void *arena);

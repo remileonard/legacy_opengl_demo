@@ -1223,6 +1223,91 @@ static void draw_billboard(pfGeoSet *g, const pfVec3 pos)
     glPopMatrix();
 }
 
+/*
+ * The transparent geosets of a pass are drawn back to front like the
+ * transparent bin of Performer: they are queued with their modelview and
+ * sorted on the eye distance of their center.
+ */
+typedef struct TranspItem {
+    pfGeoSet *g;
+    const float *bbpos;
+    float mv[16];
+    float z;
+    int order;
+} TranspItem;
+
+static TranspItem *transp_items;
+static int transp_n, transp_max;
+
+static void gset_center(pfGeoSet *g)
+{
+    const float *co = (const float *)g->attr[PFGS_COORD3];
+    float lo[3], hi[3];
+    int i, k, n = gset_vertex_count(g);
+    g->hascenter = 1;
+    g->center[0] = g->center[1] = g->center[2] = 0;
+    if (!co || n <= 0)
+        return;
+    for (k = 0; k < 3; k++)
+        lo[k] = hi[k] = co[k];
+    for (i = 1; i < n; i++)
+        for (k = 0; k < 3; k++) {
+            if (co[3 * i + k] < lo[k]) lo[k] = co[3 * i + k];
+            if (co[3 * i + k] > hi[k]) hi[k] = co[3 * i + k];
+        }
+    for (k = 0; k < 3; k++)
+        g->center[k] = (lo[k] + hi[k]) / 2;
+}
+
+static void queue_transp(pfGeoSet *g, const float *bbpos)
+{
+    TranspItem *it;
+    const float *c;
+    if (transp_n == transp_max) {
+        transp_max = transp_max ? 2 * transp_max : 256;
+        transp_items = (TranspItem *)realloc(transp_items, sizeof(TranspItem) * transp_max);
+    }
+    it = &transp_items[transp_n++];
+    it->g = g;
+    it->bbpos = bbpos;
+    it->order = transp_n;
+    glGetFloatv(GL_MODELVIEW_MATRIX, it->mv);
+    if (!g->hascenter)
+        gset_center(g);
+    c = bbpos ? bbpos : g->center;
+    /* eye z of the center, more negative is farther */
+    it->z = it->mv[2] * c[0] + it->mv[6] * c[1] + it->mv[10] * c[2] + it->mv[14];
+}
+
+static int transp_cmp(const void *a, const void *b)
+{
+    const TranspItem *ta = (const TranspItem *)a, *tb = (const TranspItem *)b;
+    /* the graph order is kept for the geosets at the same distance */
+    if (ta->z != tb->z)
+        return ta->z < tb->z ? -1 : 1;
+    return ta->order - tb->order;
+}
+
+static void flush_transp(void)
+{
+    int i;
+    if (transp_n > 1)
+        qsort(transp_items, transp_n, sizeof(TranspItem), transp_cmp);
+    glPushMatrix();
+    glDepthFunc(GL_LEQUAL);
+    for (i = 0; i < transp_n; i++) {
+        glLoadMatrixf(transp_items[i].mv);
+        glDepthMask(transp_items[i].g->gstate->alphafunc ? GL_TRUE : GL_FALSE);
+        if (transp_items[i].bbpos)
+            draw_billboard(transp_items[i].g, transp_items[i].bbpos);
+        else
+            pfDrawGSet(transp_items[i].g);
+    }
+    glPopMatrix();
+    glDepthFunc(GL_LESS);
+    transp_n = 0;
+}
+
 static void draw_node(pfNode *n, int depth)
 {
     int i;
@@ -1239,10 +1324,10 @@ static void draw_node(pfNode *n, int depth)
         int transp = g->gstate && (g->gstate->transparency > 0 || g->gstate->lpoint > 0);
         if (transp != draw_pass)
             continue;
-        /* alpha tested transparent geometry writes the depth of the texels
-           it keeps, so it does not need to be sorted against itself */
-        if (draw_pass)
-            glDepthMask(g->gstate->alphafunc ? GL_TRUE : GL_FALSE);
+        if (draw_pass) {
+            queue_transp(g, n->type == PFNODE_BBOARD && n->bbpos ? n->bbpos[i] : NULL);
+            continue;
+        }
         if (n->type == PFNODE_BBOARD && n->bbpos)
             draw_billboard(g, n->bbpos[i]);
         else
@@ -1307,6 +1392,8 @@ void pfDrawScenePass(pfNode *root, double t, int pass)
     }
     draw_pass = pass;
     draw_node(root, 0);
+    if (pass)
+        flush_transp();
     glDepthMask(GL_TRUE);
     glDisable(GL_BLEND);
     glDisable(GL_LIGHTING);
