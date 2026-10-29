@@ -168,6 +168,39 @@ See [src/cimpact/README.md](src/cimpact/README.md) for the controls, the data la
    out/build/windows/OpenGL_Glut_Legacy_Demos.sln
    ```
 
+### Portable Windows release (x64)
+
+The **Windows release** GitHub Actions workflow builds and checks a portable ZIP
+using Visual Studio 2022. It runs on pull requests, manually with **Run workflow**,
+and when a version tag such as `v1.0.0` or `v1.1.0-rc.1` is pushed.
+Each run provides a `windows-x64-release` artifact containing the ZIP and its
+SHA-256 checksum. Version tags also create a **draft** GitHub Release with those
+files attached; review the draft before publishing it. Re-running a tag can
+update its draft, but will not overwrite a published release.
+
+Extract the entire ZIP and double-click `Start-Demos.cmd`. The launcher sets the
+working directory so Buttonfly can find its menus, models and textures. To run
+an individual demo, open a terminal in the extracted directory and run, for
+example, `.\demos\atlantis.exe`. Do not move the executables out of the package.
+
+FreeGLUT and the MSVC runtime are statically linked in this configuration:
+the destination PC needs neither vcpkg, Visual Studio nor a separate FreeGLUT
+installation. A working OpenGL graphics driver is still required. Mekton and
+Certain Impact still require their separately obtained data files, which are
+not included in the archive.
+
+To produce the same ZIP locally, set `VCPKG_ROOT` as above, then run:
+
+```powershell
+cmake --preset windows-release
+cmake --build --preset windows-release --parallel
+cpack --config out/build/windows-release/CPackConfig.cmake -C Release -B out/packages
+```
+
+The workflow pins vcpkg to the registry baseline in `vcpkg-configuration.json`
+and uses the project's pinned FreeGLUT overlay. Update the workflow's vcpkg
+commit together with that baseline.
+
 ### Linux/macOS
 
 1. **Install dependencies**:

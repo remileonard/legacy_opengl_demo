@@ -186,6 +186,10 @@ foreach(dll ${ALL_DLLS})
     )
 endforeach()
 
+if(WIN32)
+    include(cmake/WindowsPackage.cmake)
+endif()
+
 if(APPLE)
     set(APP_NAME "Flight")
     set(APP_BUNDLE_DIR "${CMAKE_BINARY_DIR}/${APP_NAME}.app")
