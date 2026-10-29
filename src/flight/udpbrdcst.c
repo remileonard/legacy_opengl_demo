@@ -20,6 +20,7 @@
  */
 
 #include <stdio.h>
+#include <string.h>
 #ifndef _WIN32
 #include <sys/time.h>
 #endif
@@ -73,7 +74,7 @@ struct sockaddr_in *addr;
         return (-1);
     }
 
-    bzero(addr, sizeof(*addr));
+    memset(addr, 0, sizeof(*addr));
     addr->sin_addr.s_addr = INADDR_ANY;
     addr->sin_family = AF_INET;
     addr->sin_port = port;
@@ -112,7 +113,7 @@ struct sockaddr_in *addr;
             if (ifaddr.s_addr == (unsigned)-1) {
                 hp = gethostbyname(mcast_ifaddr);
                 if (hp) {
-                    bcopy(hp->h_addr, (caddr_t)&ifaddr, hp->h_length);
+                    memmove(&ifaddr, hp->h_addr, hp->h_length);
                 } else {
                     fprintf(stderr, "Can't find IP address for '%s'\n", mcast_ifaddr);
                     close_socket(fd);
