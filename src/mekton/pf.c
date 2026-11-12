@@ -366,6 +366,40 @@ pfScene *pfNewScene(void) { return new_node(PFNODE_SCENE); }
 pfDCS *pfNewDCS(void) { return new_node(PFNODE_DCS); }
 pfSwitch *pfNewSwitch(void) { return new_node(PFNODE_SWITCH); }
 pfGeode *pfNewGeode(void) { return new_node(PFNODE_GEODE); }
+pfLOD *pfNewLOD(void) { return new_node(PFNODE_LOD); }
+
+void pfLODRange(pfLOD *lod, int index, float range)
+{
+    int i;
+    if (!lod || index < 0)
+        return;
+    if (index >= lod->nranges) {
+        lod->ranges = (float *)realloc(lod->ranges, sizeof(float) * (index + 1));
+        for (i = lod->nranges; i < index; i++)
+            lod->ranges[i] = i ? lod->ranges[i - 1] : 0;
+        lod->nranges = index + 1;
+    }
+    lod->ranges[index] = range;
+}
+
+float pfGetLODRange(const pfLOD *lod, int index)
+{
+    return lod && index >= 0 && index < lod->nranges ? lod->ranges[index] : -1;
+}
+
+void pfLODCenter(pfLOD *lod, const pfVec3 center) { pfCopyVec3(lod->lodcenter, center); }
+
+static float lod_scale = 1;
+void pfLODScale(float scale) { lod_scale = scale; }
+
+pfLayer *pfNewLayer(void)
+{
+    pfNode *n = new_node(PFNODE_LAYER);
+    n->layermode = PFDECAL_LAYER;
+    return n;
+}
+
+void pfLayerMode(pfLayer *layer, int mode) { layer->layermode = mode; }
 
 static int is_group(const pfNode *n)
 {
@@ -462,6 +496,10 @@ pfNode *pfClone(pfNode *n, int mode)
     if (n->nframes) {
         c->times = (float *)malloc(sizeof(float) * n->nframes);
         memcpy(c->times, n->times, sizeof(float) * n->nframes);
+    }
+    if (n->nranges) {
+        c->ranges = (float *)malloc(sizeof(float) * n->nranges);
+        memcpy(c->ranges, n->ranges, sizeof(float) * n->nranges);
     }
     c->children = NULL;
     c->nchildren = c->maxchildren = 0;
@@ -1348,8 +1386,38 @@ static void draw_node(pfNode *n, int depth)
                 draw_node(n->children[n->frame], depth + 1);
         break;
     case PFNODE_LOD:
+        if (n->nranges == 0) {
+            if (n->nchildren)
+                draw_node(n->children[0], depth + 1);
+        } else {
+            /* the eye distance of the center, in the frame of the node */
+            float mv[16], e[3], d;
+            const float *c = n->lodcenter;
+            glGetFloatv(GL_MODELVIEW_MATRIX, mv);
+            e[0] = mv[0] * c[0] + mv[4] * c[1] + mv[8] * c[2] + mv[12];
+            e[1] = mv[1] * c[0] + mv[5] * c[1] + mv[9] * c[2] + mv[13];
+            e[2] = mv[2] * c[0] + mv[6] * c[1] + mv[10] * c[2] + mv[14];
+            d = (float)sqrt(e[0] * e[0] + e[1] * e[1] + e[2] * e[2]) / lod_scale;
+            for (i = 0; i < n->nchildren && i + 1 < n->nranges; i++)
+                if (d >= n->ranges[i] && d < n->ranges[i + 1])
+                    draw_node(n->children[i], depth + 1);
+        }
+        break;
+    case PFNODE_LAYER:
+        if (n->layermode == PFDECAL_OFF) {
+            for (i = 0; i < n->nchildren; i++)
+                draw_node(n->children[i], depth + 1);
+            break;
+        }
+        /* the base, then the decals pulled toward the eye */
         if (n->nchildren)
             draw_node(n->children[0], depth + 1);
+        glEnable(GL_POLYGON_OFFSET_FILL);
+        glPolygonOffset(-1, -2);
+        for (i = 1; i < n->nchildren; i++)
+            draw_node(n->children[i], depth + 1);
+        glPolygonOffset(0, 0);
+        glDisable(GL_POLYGON_OFFSET_FILL);
         break;
     default:
         for (i = 0; i < n->nchildren; i++)

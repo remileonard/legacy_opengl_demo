@@ -127,6 +127,15 @@ Paradigm Simulation's 1996 World War I air combat game built on Vega and IRIS Pe
 See [src/cimpact/README.md](src/cimpact/README.md) for the controls, the data layout and the file format. The Certain Impact data files are not included.
 
 
+### 🛩️ F-18 (Performer / EasyScene)
+A 1996 F-18 demo built on IRIS Performer 2.2 and Coryphaeus EasyScene. `f18_view` is a viewer for its models, terrains and cockpit, stored in Coryphaeus' Designer's Workbench format (`.dwb`), whose loader was rebuilt from `pfdLoad_dwb` inside the IRIX executable. Viewer features:
+- F-18, MiG-27, missile, wrecks, control tower, cockpit and the two terrains
+- Levels of detail switched on the eye distance, decal layers, materials
+- Orbit, zoom, pan, wireframe, texture, lighting and LOD toggles
+
+See [src/f18/README.md](src/f18/README.md) for the file format and the controls. The F-18 data files are not included; most of its textures are encrypted and are not drawn yet.
+
+
 ## Prerequisites
 
 - **CMake** 3.26.0 or higher
@@ -280,6 +289,7 @@ legacy_opengl_demo/
     ├── insect/            # Insect animation demo
     ├── mekton/            # Mekton game and scene viewer (IRIS Performer .pfb loader)
     ├── cimpact/           # Certain Impact game and model viewer (Vega .fst loader)
+    ├── f18/               # F-18 demo model viewer (Designer's Workbench .dwb loader)
     ├── libtk/             # TK toolkit (X11/GLX to GLUT port)
     ├── roller_coaster/    # Roller coaster simulation
     └── smooth/            # Model viewer

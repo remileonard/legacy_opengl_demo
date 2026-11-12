@@ -47,6 +47,7 @@ add_subdirectory(src/iris)
 add_subdirectory(src/fsn)
 add_subdirectory(src/mekton)
 add_subdirectory(src/cimpact)
+add_subdirectory(src/f18)
 
 set (BUTTON_FLY
     buttonfly
@@ -57,6 +58,7 @@ set(LEGACY_INTERACTIVE
     cycles
     distort
     enterprise
+    f18_view
     flight
     flip
     fsn

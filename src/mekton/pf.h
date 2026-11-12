@@ -230,9 +230,30 @@ typedef struct pfNode {
     /* billboard: one position per geoset, turning around Z (axial) */
     pfVec3 *bbpos;
     int bbmode;
+    /* LOD: child i is drawn from range i to range i + 1 of the eye distance
+     * to the center (no ranges: child 0 is always drawn) */
+    int nranges;
+    float *ranges;
+    pfVec3 lodcenter;
+    /* layer: PFDECAL_* mode, children 1..n are decals on child 0 */
+    int layermode;
 } pfNode;
 
 typedef pfNode pfGroup, pfDCS, pfSCS, pfSwitch, pfSequence, pfGeode, pfScene, pfMorph;
+typedef pfNode pfLOD, pfLayer;
+
+#define PFDECAL_OFF 0
+#define PFDECAL_LAYER 1
+#define PFDECAL_BASE_FAST 2
+
+pfLOD *pfNewLOD(void);
+void pfLODRange(pfLOD *lod, int index, float range);
+float pfGetLODRange(const pfLOD *lod, int index);
+void pfLODCenter(pfLOD *lod, const pfVec3 center);
+/* multiplies every LOD range of the drawing (Performer's channel LOD scale) */
+void pfLODScale(float scale);
+pfLayer *pfNewLayer(void);
+void pfLayerMode(pfLayer *layer, int mode);
 
 pfGroup *pfNewGroup(void);
 pfScene *pfNewScene(void);
