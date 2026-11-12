@@ -1,11 +1,12 @@
 /*
  * f18.c - the F-18 demo (IRIS Performer 2.2 and Coryphaeus EasyScene)
  *
- * Runs an EasyScene script of the demo (data/f18/scripts/*.set): the
- * window of its pipe, its channels, its objects, its keys and its modules.
- * The functions of the demo that are not rebuilt yet (the flight, the HUD,
- * the weather, the smoke, the sound...) are reported missing by the
- * interpreter, and the eye is then moved with the mouse.
+ * Runs an EasyScene script of the demo (the .set files of
+ * data/f18/scripts): the window of its pipes, its channels, its objects,
+ * its keys and its modules. The functions of the demo are those of
+ * flight.c and effects.c; the ones not rebuilt (the weather, the sound...)
+ * are reported missing by the interpreter. Without the flight, the eye
+ * would be moved with the mouse.
  *
  * usage: f18 [-D symbol] [script.set]
  */
@@ -14,6 +15,9 @@
 #include <OpenGL/glu.h>
 #else
 #ifdef _WIN32
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
 #include <windows.h>
 #endif
 #include <GL/gl.h>

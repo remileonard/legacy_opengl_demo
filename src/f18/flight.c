@@ -62,6 +62,9 @@
 #include <OpenGL/glu.h>
 #else
 #ifdef _WIN32
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
 #include <windows.h>
 #endif
 #include <GL/gl.h>
@@ -628,6 +631,13 @@ static void updateEye(const char *arg)
 
 /* --- the enemies ------------------------------------------------------------------- */
 
+/* the pseudo random numbers of the made-up routes */
+static unsigned int route_rand(unsigned int *seed)
+{
+    *seed = *seed * 1103515245u + 12345u;
+    return *seed >> 16 & 0x7fff;
+}
+
 /* a made-up route: straight lines, turns and climbs, flown with the
  * equations of the demo so that the wings and the nose come back level */
 static void make_route(Enemy *e, int n)
@@ -635,13 +645,16 @@ static void make_route(Enemy *e, int n)
     unsigned int seed = 12345u + 977u * (unsigned int)n;
     float r = 0, p = 0;
     int cap = 60 * 120, len = 0, seg;
-#define RND() ((seed = seed * 1103515245u + 12345u) >> 16 & 0x7fff)
+#define RND() route_rand(&seed)
     e->route = (float *)malloc(sizeof(float) * 3 * cap);
     for (seg = 0; len < cap - 600; seg++) {
         int kind = seg % 2 == 0 ? 0 : 1 + RND() % 3, frames, i;
-        float bank = (float)(30 + RND() % 40) * (RND() % 2 ? 1 : -1);
-        float pull = 0.2f + (RND() % 30) / 100.0f;
-        float speed = (float)(450 + RND() % 300);
+        float bank = (float)(30 + RND() % 40);
+        float pull, speed;
+        if (RND() % 2)
+            bank = -bank;
+        pull = 0.2f + (RND() % 30) / 100.0f;
+        speed = (float)(450 + RND() % 300);
         frames = kind == 0 ? 180 + RND() % 240 : 120 + RND() % 240;
         for (i = 0; i < frames && len < cap; i++, len++) {
             float rr, pr, cr = (float)cos(PF_DEG2RAD(r));

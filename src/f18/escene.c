@@ -28,6 +28,9 @@
 #include <OpenGL/gl.h>
 #else
 #ifdef _WIN32
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
 #include <windows.h>
 #endif
 #include <GL/gl.h>
@@ -704,7 +707,7 @@ typedef struct Stmt {
     const char *file;
 } Stmt;
 
-static Token *peek(Stmt *s)
+static Token *stmt_peek(Stmt *s)
 {
     static Token end;
     /* the commas and the dots of the clauses carry no meaning */
@@ -719,17 +722,17 @@ static Token *peek(Stmt *s)
     return &s->tok[s->pos];
 }
 
-static Token *take(Stmt *s)
+static Token *stmt_take(Stmt *s)
 {
-    Token *t = peek(s);
+    Token *t = stmt_peek(s);
     if (t->type != T_END)
         s->pos++;
     return t;
 }
 
-static int accept(Stmt *s, const char *word)
+static int stmt_accept(Stmt *s, const char *word)
 {
-    Token *t = peek(s);
+    Token *t = stmt_peek(s);
     if (t->type == T_WORD && strcmp(t->text, word) == 0) {
         s->pos++;
         return 1;
@@ -739,13 +742,13 @@ static int accept(Stmt *s, const char *word)
 
 static const char *str_arg(Stmt *s)
 {
-    Token *t = take(s);
+    Token *t = stmt_take(s);
     return t->type == T_STRING || t->type == T_WORD || t->type == T_NUMBER ? t->text : "";
 }
 
 static double num_arg(Stmt *s)
 {
-    Token *t = peek(s);
+    Token *t = stmt_peek(s);
     if (t->type != T_NUMBER)
         return 0;
     s->pos++;
@@ -813,7 +816,7 @@ static void stmt_pipe(Stmt *s)
 {
     const char *name = str_arg(s);
     esPipe *p = find_pipe(name);
-    if (accept(s, "add")) {
+    if (stmt_accept(s, "add")) {
         if (p) {
             warn(s, "pipe already exists:", name);
         } else {
@@ -829,16 +832,16 @@ static void stmt_pipe(Stmt *s)
         warn(s, "unknown pipe", name);
         return;
     }
-    while (peek(s)->type != T_END) {
-        if (accept(s, "on")) {
-            if (accept(s, "screen"))
+    while (stmt_peek(s)->type != T_END) {
+        if (stmt_accept(s, "on")) {
+            if (stmt_accept(s, "screen"))
                 p->screen = (int)num_arg(s);
-        } else if (accept(s, "viewport")) {
+        } else if (stmt_accept(s, "viewport")) {
             int k;
             for (k = 0; k < 4; k++)
                 p->viewport[k] = (int)num_arg(s);
         } else {
-            warn(s, "pipe: ignored", take(s)->text);
+            warn(s, "pipe: ignored", stmt_take(s)->text);
         }
     }
 }
@@ -853,15 +856,15 @@ static void stmt_qdev(Stmt *s)
         memset(k, 0, sizeof(*k));
         k->device = dupstr(dev);
     }
-    while (peek(s)->type != T_END) {
-        if (accept(s, "function")) {
+    while (stmt_peek(s)->type != T_END) {
+        if (stmt_accept(s, "function")) {
             free(k->function);
             k->function = dupstr(str_arg(s));
             k->func = lookup(k->function, "qdev");
-        } else if (accept(s, "autorepeat")) {
+        } else if (stmt_accept(s, "autorepeat")) {
             k->autorepeat = 1;
         } else {
-            warn(s, "qdev: ignored", take(s)->text);
+            warn(s, "qdev: ignored", stmt_take(s)->text);
         }
     }
 }
@@ -870,7 +873,7 @@ static void stmt_module(Stmt *s)
 {
     const char *name = str_arg(s);
     Module *m = find_module(name);
-    if (accept(s, "add")) {
+    if (stmt_accept(s, "add")) {
         if (m) {
             warn(s, "module already exists:", name);
         } else {
@@ -884,8 +887,8 @@ static void stmt_module(Stmt *s)
         warn(s, "module does not exist:", name);
         return;
     }
-    while (peek(s)->type != T_END) {
-        Token *t = take(s);
+    while (stmt_peek(s)->type != T_END) {
+        Token *t = stmt_take(s);
         int ph;
         for (ph = 0; ph < ES_NPHASES; ph++)
             if (t->type == T_WORD && strcmp(t->text, phase_names[ph]) == 0)
@@ -904,9 +907,9 @@ static void stmt_object(Stmt *s)
 {
     const char *name = str_arg(s);
     esObject *o = esFindObject(name);
-    while (peek(s)->type != T_END) {
+    while (stmt_peek(s)->type != T_END) {
         int st = 0;
-        if (accept(s, "load") || (st = accept(s, "loadstatic")) != 0) {
+        if (stmt_accept(s, "load") || (st = stmt_accept(s, "loadstatic")) != 0) {
             const char *file = str_arg(s);
             if (o) {
                 warn(s, "object already exists:", name);
@@ -916,18 +919,18 @@ static void stmt_object(Stmt *s)
         } else if (!o) {
             warn(s, "object not loaded yet:", name);
             return;
-        } else if (accept(s, "isectGeom")) {
+        } else if (stmt_accept(s, "isectGeom")) {
             free(o->isect_file);
             o->isect_file = dupstr(str_arg(s));
-        } else if (accept(s, "mask")) {
+        } else if (stmt_accept(s, "mask")) {
             o->isect_mask = (unsigned int)num_arg(s);
-        } else if (accept(s, "type")) {
-            if (accept(s, "terrain"))
+        } else if (stmt_accept(s, "type")) {
+            if (stmt_accept(s, "terrain"))
                 o->is_terrain = 1;
             else
-                warn(s, "object type ignored:", take(s)->text);
+                warn(s, "object type ignored:", stmt_take(s)->text);
         } else {
-            warn(s, "object: ignored", take(s)->text);
+            warn(s, "object: ignored", stmt_take(s)->text);
         }
     }
 }
@@ -936,7 +939,7 @@ static void stmt_channel(Stmt *s)
 {
     const char *name = str_arg(s);
     esChannel *c = esFindChannel(name);
-    if (accept(s, "add")) {
+    if (stmt_accept(s, "add")) {
         if (c) {
             warn(s, "channel already exists:", name);
             return;
@@ -950,7 +953,7 @@ static void stmt_channel(Stmt *s)
         c->far_clip = 10000;
         c->fov_h = 45;
         c->fov_v = -1;
-        if (accept(s, "on") && accept(s, "pipe")) {
+        if (stmt_accept(s, "on") && stmt_accept(s, "pipe")) {
             const char *pn = str_arg(s);
             if ((c->pipe = find_pipe(pn)) == NULL)
                 warn(s, "couldn't find pipe", pn);
@@ -960,31 +963,31 @@ static void stmt_channel(Stmt *s)
         warn(s, "channel does not exist:", name);
         return;
     }
-    while (peek(s)->type != T_END) {
+    while (stmt_peek(s)->type != T_END) {
         int k;
-        if (accept(s, "viewport")) {
+        if (stmt_accept(s, "viewport")) {
             for (k = 0; k < 4; k++)
                 c->viewport[k] = (float)num_arg(s);
-        } else if (accept(s, "clip")) {
+        } else if (stmt_accept(s, "clip")) {
             c->near_clip = (float)num_arg(s);
             c->far_clip = (float)num_arg(s);
-        } else if (accept(s, "fov")) {
+        } else if (stmt_accept(s, "fov")) {
             c->fov_h = (float)num_arg(s);
             c->fov_v = (float)num_arg(s);
-        } else if (accept(s, "fadeLOD")) {
+        } else if (stmt_accept(s, "fadeLOD")) {
             c->fade_lod = 1;
-        } else if (accept(s, "viewpos")) {
+        } else if (stmt_accept(s, "viewpos")) {
             for (k = 0; k < 3; k++)
                 c->viewpos[k] = (float)num_arg(s);
-        } else if (accept(s, "viewrot")) {
+        } else if (stmt_accept(s, "viewrot")) {
             for (k = 0; k < 3; k++)
                 c->viewrot[k] = (float)num_arg(s);
-        } else if (accept(s, "attach")) {
+        } else if (stmt_accept(s, "attach")) {
             const char *on = str_arg(s);
             if ((c->attach = esFindObject(on)) == NULL)
                 warn(s, "cannot find object to attach channel:", on);
         } else {
-            warn(s, "channel: ignored", take(s)->text);
+            warn(s, "channel: ignored", stmt_take(s)->text);
         }
     }
 }
@@ -995,7 +998,7 @@ static void stmt_usercb(Stmt *s)
     char func[1024], arg[1024] = "";
     esFunc f;
     strcpy(func, fname);
-    if (accept(s, "argument"))
+    if (stmt_accept(s, "argument"))
         strcpy(arg, str_arg(s));
     if ((f = lookup(func, "userCallback")) != NULL)
         f(arg);
@@ -1003,7 +1006,7 @@ static void stmt_usercb(Stmt *s)
 
 static void run_stmt(Stmt *s, void (*configure_cb)(void))
 {
-    Token *t = take(s);
+    Token *t = stmt_take(s);
     const char *kw = t->text;
     if (t->type != T_WORD) {
         warn(s, "syntax error near", kw);
