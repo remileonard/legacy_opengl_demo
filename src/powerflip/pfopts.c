@@ -115,6 +115,7 @@ int pf_option(int c, const char *arg)
         break;
     case 'L':
         pf_nolighting = 1;
+        YAODL_NoLighting = 1;
         break;
     case 'r':
         pf_redraw = 1;

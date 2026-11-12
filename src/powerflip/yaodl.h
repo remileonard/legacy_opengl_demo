@@ -57,6 +57,8 @@ struct Yobj {
 
 /* the drawing style of the polygons: 0 filled, 3 wireframe (closed lines) */
 extern int YAODL_DrawStyle;
+/* the application draws without lighting (lines model) */
+extern int YAODL_NoLighting;
 /* polygons drawn by the last frames, for the performance display */
 extern int indexpolygons_NumPolygonsDrawn;
 

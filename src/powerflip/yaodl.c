@@ -36,6 +36,7 @@
 #include "yaodl.h"
 
 int YAODL_DrawStyle = 0;
+int YAODL_NoLighting = 0;
 int indexpolygons_NumPolygonsDrawn = 0;
 
 #ifndef M_PI
@@ -382,9 +383,31 @@ static void lines_executeN(Yobj *o, int i)
     endline();
 }
 
+static int has_normals(Yobj *o)
+{
+    int k;
+    for (k = 0; k < o->nassoc; k++)
+        if (same(o->assoc[k]->cls->name, "normals"))
+            return 1;
+    return 0;
+}
+
+void resetmodel(void);
+
+/* lines without normals cannot be lit: they are drawn in their color, as
+   with nofliplighting */
 static void lines_execute(Yobj *o)
 {
+    int k, lit = has_normals(o);
+    for (k = 0; k < o->nkids && !lit; k++)
+        lit = has_normals(o->kids[k]);
+    if (lit || YAODL_NoLighting || measuring) {
+        execute_compiled(o);
+        return;
+    }
+    lmbind(LMODEL, 0);
     execute_compiled(o);
+    resetmodel();
 }
 
 static void polygons_execute(Yobj *o)
@@ -537,7 +560,6 @@ static void untransform_pop(Yobj *o, int full)
 }
 
 /* nofliplighting: no lighting, then the lighting model of flip again */
-void resetmodel(void);
 
 static void nofliplighting_push(Yobj *o, int full)
 {

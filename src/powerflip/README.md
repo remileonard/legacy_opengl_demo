@@ -103,6 +103,9 @@ are restored between two elements.
 | `trimcurves` | knots, number of points, points `u v w`, repeated | a rational trimming curve of the surface i |
 
 The colors replace the diffuse color of the material (`lmcolor(LMC_DIFFUSE)`).
+Lines without normals (`f15_wire.defs`) are drawn without lighting, in
+their color, as with `nofliplighting`: lit, their brightness would depend
+on an arbitrary normal and change with the angle.
 A texture is read once, modulates the lit color, and is searched in the
 current directory then in the directory of the model. A texture bound by
 an enclosing object wins over the inner ones. In `eye` space the plane of a
