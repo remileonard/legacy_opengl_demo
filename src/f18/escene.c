@@ -24,6 +24,14 @@
  * A '.' after the phase of a module ("preinit. func") is accepted and
  * ignored.  The modules run in the order of the script.
  */
+#ifdef __APPLE__
+#include <OpenGL/gl.h>
+#else
+#ifdef _WIN32
+#include <windows.h>
+#endif
+#include <GL/gl.h>
+#endif
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -34,6 +42,7 @@
 
 #include "escene.h"
 #include "dwb.h"
+#include "drt.h"
 
 esScene es;
 
@@ -203,6 +212,59 @@ void esObjectPos(esObject *o, float x, float y, float z, float h, float p, float
         /* the roll of EasyScene turns the other way (360 - r) */
         pfDCSTrans(o->node, x, y, z);
         pfDCSRot(o->node, h, p, -r);
+    }
+}
+
+void esSetHud(esObject *o, int on, float x, float y, float z)
+{
+    if (!o)
+        return;
+    o->hud = on;
+    pfSetVec3(o->hud_offset, x, y, z);
+}
+
+void esSetDrtBaseAddr(esObject *o, const float *vars, int nvars)
+{
+    if (!o)
+        return;
+    o->drt_vars = vars;
+    o->drt_nvars = nvars;
+}
+
+void esDrawHuds(void)
+{
+    int i;
+    for (i = 0; i < es.nobjects; i++) {
+        esObject *o = es.objects[i];
+        if (!o->drt || !o->hud || o->hud_off)
+            continue;
+        /* the frame of the eye of OpenGL is the one of EasyScene: Y up,
+         * looking along -Z; the HUD has no depth (zbuffer OFF) */
+        /* the HUD channel has the field of view of its channel, with its
+         * own clipping planes around the HUD */
+        {
+            float pm[16], n = 0.5f, f = 10;
+            glMatrixMode(GL_PROJECTION);
+            glPushMatrix();
+            glGetFloatv(GL_PROJECTION_MATRIX, pm);
+            pm[10] = -(f + n) / (f - n);
+            pm[14] = -2 * f * n / (f - n);
+            glLoadMatrixf(pm);
+        }
+        glMatrixMode(GL_MODELVIEW);
+        glPushMatrix();
+        glLoadIdentity();
+        glTranslatef(o->hud_offset[0], o->hud_offset[1], o->hud_offset[2]);
+        glDisable(GL_DEPTH_TEST);
+        glDisable(GL_LIGHTING);
+        glDisable(GL_TEXTURE_2D);
+        glDisable(GL_CULL_FACE);
+        drtDraw(o->drt, o->drt_vars, o->drt_nvars);
+        glEnable(GL_DEPTH_TEST);
+        glPopMatrix();
+        glMatrixMode(GL_PROJECTION);
+        glPopMatrix();
+        glMatrixMode(GL_MODELVIEW);
     }
 }
 
@@ -432,6 +494,12 @@ static int load_object(esObject *o)
         if (!pfFindFile(o->file, path, 4)) {
             fprintf(stderr, "easyScene: cannot find %s for object %s\n", o->file, o->name);
             return 0;
+        }
+        if (n > 4 && strcmp(o->file + n - 4, ".drt") == 0) {
+            /* runtime files: drawn with their links, not in the scene */
+            if ((o->drt = drtLoad(path)) == NULL)
+                fprintf(stderr, "easyScene: cannot read %s (object %s)\n", o->file, o->name);
+            return o->drt != NULL;
         }
         if (n > 4 && strcmp(o->file + n - 4, ".dwb") == 0) {
             m = pfdLoadFile_dwb(path);

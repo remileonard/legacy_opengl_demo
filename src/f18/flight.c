@@ -35,8 +35,7 @@
  * straight lines.
  *
  * Not rebuilt yet: the missiles (left button, Alt keys, C key), the gun
- * (space bar in flight), the explosions, the smoke, the sound, the HUD of
- * the cockpit (a .drt file) and the radar.
+ * (space bar in flight), the explosions, the smoke, the sound and the radar.
  */
 #ifdef __APPLE__
 #include <OpenGL/gl.h>
@@ -352,9 +351,55 @@ static void toggleHud(const char *arg)
     esObject *hud = esFindObject("f18hud");
     (void)arg;
     F.hud_off = !F.hud_off;
-    if (hud && hud->node)
-        pfNodeTravMask(hud->node, PFTRAV_DRAW, F.hud_off ? 0 : 0xffffffffU, PFTRAV_SELF, PF_SET);
+    if (hud)
+        hud->hud_off = F.hud_off;
 }
+
+/* --- the variables of the HUD (easyScene.vars) ---------------------------------- */
+
+enum {
+    HV_X, HV_Y, HV_Z, HV_PITCH, HV_ROLL, HV_HEADING, HV_VELOCITY, HV_CLIMB,
+    HV_HOT, HV_MSL, HV_ASL, HV_LEFT, HV_LCOL, HV_RIGHT, HV_RCOL, HV_INRANGE, HV_N
+};
+
+static float hudVars[HV_N];
+
+static float signed_angle(float a)
+{
+    if (a > 180) return a - 360;
+    if (a < -180) return a + 360;
+    return a;
+}
+
+/* updateHudValues: the airplane in EasyScene coordinates, its pitch and
+ * roll from -180 to 180, its heading in tenths of degrees, its speed and
+ * height above the ground, the enemy locked (-1 none), and the missiles:
+ * loading time (10 when loaded) and color (600 green when loaded, 250 red
+ * while loading); the missiles are not rebuilt yet, both are loaded */
+static void updateHudValues(const char *arg)
+{
+    esObject *p = F.plane;
+    (void)arg;
+    if (!p)
+        return;
+    hudVars[HV_X] = p->xyz[0];
+    hudVars[HV_Y] = p->xyz[2];
+    hudVars[HV_Z] = -p->xyz[1];
+    hudVars[HV_PITCH] = signed_angle(p->hpr[1]);
+    hudVars[HV_HEADING] = p->hpr[0] * 10;
+    hudVars[HV_ROLL] = signed_angle(p->hpr[2]);
+    hudVars[HV_VELOCITY] = F.speed;
+    hudVars[HV_HOT] = F.height < 1e5f ? F.height : 0;
+    hudVars[HV_ASL] = (float)F.target;
+    hudVars[HV_LEFT] = 10;
+    hudVars[HV_LCOL] = 600;
+    hudVars[HV_RIGHT] = 10;
+    hudVars[HV_RCOL] = 600;
+    hudVars[HV_INRANGE] = -1;
+}
+
+static void initAnimation(const char *arg) { (void)arg; }
+static void updateAnimation(const char *arg) { (void)arg; }
 
 static void plusRadar(const char *arg)
 {
@@ -870,6 +915,14 @@ static void initFlight(const char *arg)
     wingman_mode(WM_FOLLOW);
     esAddModuleFunc("updateFlight", ES_PREAPP, updateFlight);
     esAddModuleFunc("dispFlight", ES_POSTDRAW, dispFlight);
+    /* the HUD 2.5 m in front of the eye, with the variables of the flight */
+    {
+        esObject *hud = esFindObject("f18hud");
+        if (hud) {
+            esSetHud(hud, 1, 0, 0, -2.5f);
+            esSetDrtBaseAddr(hud, hudVars, HV_N);
+        }
+    }
     readRoute();
     esAddModuleFunc("updateEnemy", ES_PREAPP, updateEnemy);
     esAddModuleFunc("updateEye", ES_POSTAPP, updateEye);
@@ -891,4 +944,7 @@ void flight_register(void)
     esRegisterFunction("restartFlight", restartFlight);
     esRegisterFunction("toggleBeeBox", toggleBeeBox);
     esRegisterFunction("setFadeDistance", setFadeDistance);
+    esRegisterFunction("updateHudValues", updateHudValues);
+    esRegisterFunction("initAnimation", initAnimation);
+    esRegisterFunction("updateAnimation", updateAnimation);
 }

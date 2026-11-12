@@ -128,7 +128,7 @@ See [src/cimpact/README.md](src/cimpact/README.md) for the controls, the data la
 
 
 ### 🛩️ F-18 (Performer / EasyScene)
-A 1996 F-18 demo built on IRIS Performer 2.2 and Coryphaeus EasyScene. `f18` runs the EasyScene scripts of the demo (pipes, channels, objects, keys and modules) with its flight rebuilt from the executable: the F-18 flown with the mouse, the chase, side and cockpit views, crashes, and five enemies flying their routes (missiles, gun, cockpit HUD and effects not rebuilt yet) and `f18_view` is a viewer for its models, terrains and cockpit, stored in Coryphaeus' Designer's Workbench format (`.dwb`), whose loader was rebuilt from `pfdLoad_dwb` inside the IRIX executable. Viewer features:
+A 1996 F-18 demo built on IRIS Performer 2.2 and Coryphaeus EasyScene. `f18` runs the EasyScene scripts of the demo (pipes, channels, objects, keys and modules) with its flight rebuilt from the executable: the F-18 flown with the mouse, the chase, side and cockpit views, crashes, the head up display with its pitch ladder and heading tape, and five enemies flying their routes (missiles, gun and effects not rebuilt yet) and `f18_view` is a viewer for its models, terrains and cockpit, stored in Coryphaeus' Designer's Workbench format (`.dwb`), whose loader was rebuilt from `pfdLoad_dwb` inside the IRIX executable. Viewer features:
 - F-18, MiG-27, missile, wrecks, control tower, cockpit and the two terrains, with their textures decrypted as the demo does
 - Levels of detail switched on the eye distance, decal layers, materials
 - Orbit, zoom, pan, wireframe, texture, lighting and LOD toggles

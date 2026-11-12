@@ -43,6 +43,15 @@ typedef struct esObject {
     pfVec3 xyz, hpr;        /* position (Performer) and orientation (EasyScene:
                              * the roll turns the other way) */
     float radius;           /* bounding sphere of the model */
+    /* runtime files (.drt): drawn in front of the eye of a channel as a
+     * head up display (esSetHud), with the variables of the application
+     * (esSetDrtBaseAddr) */
+    struct Drt *drt;
+    const float *drt_vars;
+    int drt_nvars;
+    int hud;                /* drawn as the HUD of the main channel */
+    int hud_off;            /* switched off */
+    pfVec3 hud_offset;      /* from the eye, EasyScene (x, up, z) */
     pfVec3 center;
 } esObject;
 
@@ -107,6 +116,12 @@ void esAddModuleFunc(const char *name, int phase, esFunc f);
 
 esObject *esFindObject(const char *name);
 esChannel *esFindChannel(const char *name);
+
+/* the HUD of an object (esSetHud) and its variables (esSetDrtBaseAddr) */
+void esSetHud(esObject *o, int on, float x, float y, float z);
+void esSetDrtBaseAddr(esObject *o, const float *vars, int nvars);
+/* draws the HUDs of the objects in the frame of the eye */
+void esDrawHuds(void);
 
 /* places an object */
 void esObjectPos(esObject *o, float x, float y, float z, float h, float p, float r);

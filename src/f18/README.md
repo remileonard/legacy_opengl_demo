@@ -44,7 +44,7 @@ is a list of statements ended by `;`, with `#` comments and `%ifdef`,
 The functions named by a script are found by name, as the original found
 the symbols of the executable: the program registers them with
 `esRegisterFunction`. The functions of the demo that are not rebuilt yet
-(the missiles, the gun, the HUD of the cockpit, the radar display, the
+(the missiles, the gun, the radar display, the
 weather `esInitEnv`, the smoke, the trails, the sound...) are reported
 once by the interpreter, which goes on. Without `initFlight`, the eye
 would be moved with the mouse (left drag: turn, right drag or wheel:
@@ -70,7 +70,7 @@ script (60 Hz): `f18` calls the app modules at that rate.
 | `P` | the view of each enemy in turn, then the cockpit |
 | `F` | the airplane 20 lengths behind an enemy chosen at random |
 | `N` | the enemies at their lowest speed |
-| `R` | the head up display of the cockpit (not drawn yet) |
+| `R` | the head up display (HUD) on and off |
 | up / down arrows | range of the radar |
 | space | after a crash, starts again at once (in flight: the gun, not rebuilt yet) |
 | `W`, `T`, `S`, `H` | wireframe, textures, statistics, list of the keys |
@@ -95,6 +95,47 @@ and turn to the origin). A crashed enemy turns into its wreck
 `./` in the path of the scripts); `0.route` and `2.route` are the same
 flight. When a route file is missing, `f18` makes a route up from turns,
 climbs and straight lines.
+
+### The head up display
+
+The Long Beach script loads the HUD of the demo, `myf18.drt` (the San
+Diego scripts have it commented out). EasyScene draws it on a HUD channel
+that follows the main channel, 2.5 m in front of the eye (`esSetHud`),
+without depth, over every view; `updateHudValues` fills its variables
+(`hudVars`, in the order of `easyScene.vars`): the position in EasyScene
+coordinates, the pitch and the roll, the heading in tenths of degrees, the
+speed, the height above the ground, the enemy locked, the loading and the
+color of the two missiles (10 and green when loaded) and the "in range"
+light. The HUD shows the pitch ladder turning with the roll, the heading
+tape, the speed, the altitude and the missiles.
+
+`.drt` files ("runtime" files of Designer's Workbench) are `.dwb` files
+with links: rotations, translations, scales, visibility, colors and texts
+of their groups, faces and strings, driven by functions of the variables.
+`drt.c` was rebuilt from `f18hud.drt` and its ASCII version
+`f18hud.drta`, which name the records:
+
+| Opcode | Record | Fields used |
+|---|---|---|
+| `0x1775` | face | `+0x0a` 1 filled, 2 closed outline, 3 open line |
+| `0x17c0` | string | `+0x04` color index (high 16 bits), `+0x10` font width, `+0x14` font height, `+0x20` alignment (2 centered), `+0x58` position |
+| `0x179a`, `0x1799` | its text, its font (`olddwb.vfn`, polylines in a cell) |
+| `0x2713` | link table | `+0x00` number of links of the record before it |
+| `0x2787` | rotate (in the XY plane) | `+0x00` origin, `+0x14` lower and upper limits of the value, `+0x1c` start and end angles, `+0x24` flags (0x10000: limits) |
+| `0x278f` | translate | `+0x0c` direction, `+0x18` start and end offsets, `+0x20` lower and upper limits, `+0x28` flags |
+| `0x2790` | visibility | shown while the value is not negative |
+| `0x278a` | text | `+0x0c` 0x10000 float, else integer; low bit: spaces, else zeros; its format in `0x2714` |
+| `0x2788` | scale | `+0x00` origin, `+0x0c` axis |
+| `0x2776` | color | the value is the color index |
+| `0x2718` | function (80 bytes, outer first) | `+0x00` offset of the variable, `+0x08` function (high 16 bits), `+0x14` a, `+0x18` b, `+0x20` 2: of the next record, 3: of the variable |
+
+The functions are 16 `x`, 7 `linear` a·x + b, 4 `div` x / a + b, 11
+`mod2` a·x modulo b and 15 `trunc` trunc(x / a) + b (the five labels of the
+heading tape check them: `linear(10, trunc(10, mod2(1, linear(1, div(10,
+heading, 0), 370), 360), 0), 0)` is the multiple of 10 above the heading).
+A color index c is the entry c / 128 of the color table (`0x1790`) at the
+intensity c % 128 / 127: 250 is the red of a missile being loaded, 600 the
+green of a loaded one.
 
 ## The viewer
 

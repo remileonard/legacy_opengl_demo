@@ -246,6 +246,9 @@ static void draw_channel(const esChannel *c)
     pfDrawScene(es.root, pfGetTime());
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     esRunPhase(ES_POSTDRAW);
+    /* the HUD channel of the main channel */
+    if (es.current_channel == 0)
+        esDrawHuds();
 }
 
 static void overlay(void)
