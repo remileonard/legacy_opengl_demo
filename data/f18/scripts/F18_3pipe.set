@@ -1,0 +1,150 @@
+
+#
+# Directory information on where to look for models & textures
+#
+path "./:./models:./textures:./textures/flames:./sounds:./fonts";
+
+#
+# Screen Definitions 
+#
+
+#process app cull draw isect;
+process app cull draw;
+cpu 1 app isolate;
+cpu 2 cull isolate;
+cpu 3 draw isolate;
+#cpu 4 isect share;
+
+framerate 30.0;
+#phase LOCK;
+
+pipe "pipe0" add on screen 0,
+		viewport 0,1279,0,1023;
+pipe "pipe1" add on screen 1,
+		viewport 0,1279,0,1023;
+pipe "pipe2" add on screen 2,
+		viewport 0,1279,0,1023;
+
+#
+# Key Press/Release Function Bindings 
+#
+# qdev "WKEY" function "wireframeToggle";
+
+# remember to set the environment variables:
+# setenv FBPORT /dev/ttydx
+#                          where x is the serial port #
+# setenv FPTYPE BeeBox
+
+qdev "BKEY" function "toggleBeeBox";
+qdev "FKEY" function "toggleWingman";
+qdev "LEFTALTKEY" function "explodeLeftMissile";
+qdev "RIGHTALTKEY" function "explodeRightMissile";
+# qdev "SKEY" function "saveRec";
+qdev "NKEY" function "noSpeeding";
+# qdev "MKEY" function "eyeMissile";
+qdev "EKEY" function "eyeFlight";
+qdev "WKEY" function "watchEnemy";
+qdev "TKEY" function "statsToggle";
+qdev "CKEY" function "cheatMissile";
+qdev "RKEY" function "toggleHud";
+qdev "UPARROWKEY" function "plusRadar", autorepeat;
+qdev "DOWNARROWKEY" function "minusRadar", autorepeat;
+qdev "SPACEKEY" function "restartFlight";
+qdev "HKEY" function "help";
+qdev "QKEY" function "wireframeToggle";
+qdev "ZKEY" function "textureToggle";
+
+
+#module "cool weathers" add,
+#  preinit "esInitEnv",
+#  postapp "esUpdateEnv",
+#  predraw "esDrawEnv" ;
+
+module "eyestuff" add, preinit. "eyeStuff";
+module "Trails Init" add, preinit. "initTrails" ;
+module "smokeStuff" add, preinit. "initSmoke";
+module "Fumes init" add, preinit "initFumes";
+
+configure;
+
+# objects
+#
+
+object "camera" load "eye.dwb";
+
+object "ground" loadstatic "new_terrain.dwb";
+object "ground" type terrain;
+
+object "f18" load "f18.dwb" isectGeom "f18_i.drt" mask 0xffffffff;
+object "Enemy0" load "f18.dwb" isectGeom "f18_i.drt" mask 0xffffffff;
+object "Enemy1" load "f18.dwb" isectGeom "f18_i.drt" mask 0xffffffff;
+object "Enemy2" load "f18.dwb" isectGeom "f18_i.drt" mask 0xffffffff;
+object "Enemy3" load "Mig27.dwb" isectGeom "Mig27_i.dwb" mask 0xffffffff;
+object "Enemy4" load "Mig27.dwb" isectGeom "Mig27_i.dwb" mask 0xffffffff;
+
+object "Broken0" load "Broken0.dwb";
+object "Broken1" load "Broken1.dwb";
+object "Broken2" load "Broken2.dwb";
+object "Broken3" load "Broken3.dwb";
+object "Broken4" load "Broken4.dwb";
+
+#object "f18hud" load "f18hud.drt"; 
+
+# Channel linkages 
+#
+
+channel "pipe0chan0" add on pipe "pipe0";
+channel "pipe0chan0" viewport 0.00 1.0 0.00 1.00,
+		    clip 10.00, 30000.00,
+		    fov 50.00 -1.00,
+		    fadeLOD,
+#		    window -0.50, 0.50, -0.31, 0.31;
+		    viewpos 0.00 0.00 0.00,
+		    viewrot 0.00 0.00 0.00;
+channel "1" add on pipe "pipe1";
+channel "1" viewport 0.00 1.0 0.00 1.00,
+		    clip 10.00, 30000.00,
+		    fov 50.00 -1.00,
+		    fadeLOD,
+#		    window 0.245, 1.245, -0.31, 0.31;
+		    viewpos 0.00 0.00 0.00,
+		    viewrot -53.33 0.00 0.00;
+channel "2" add on pipe "pipe2";
+channel "2" viewport 0.00 1.0 0.00 1.00,
+		    clip 10.00, 30000.00,
+		    fov 50.00 -1.00,
+		    fadeLOD,
+#		    window -1.245, -0.245, -0.31, 0.31;
+		    viewpos 0.00 0.00 0.00,
+		    viewrot 53.33 0.00 0.00;
+
+channel "pipe0chan0" attach "camera";
+channel "1" attach "camera";
+channel "2" attach "camera";
+
+# Modules 
+#
+#module "updateHudValues" add, preapp "updateHudValues";
+#module "drt" add, postinit. "initAnimation", postapp "updateAnimation";
+
+#module "initWeather" add postinit "initWeather";
+module "PrepageEffects" add, postinit. "initEffects";
+module "start" add, postinit. "initFlight" ;
+module "updateSmoke" add, preapp "updateSmoke";
+module "drawSmoke" add, postrender "drawSmoke";
+module "f18 audio" add, postinit "initAudio", postapp "controlAudio";
+
+#module "switchTexture" add postinit "textureToggle";
+
+userCallback "setFadeDistance" argument "750.0";
+
+%ifdef MORRIS
+# setup the hostname before the postinit module is called.
+usercb "cbHostname" argument "smorgum 2000 f18";
+usercb "cbBroadcastPacket" argument "0";
+
+module "network stuff" add, 
+  postinit "setupNetworkProc", 
+  preapp "syncNetworkProc";
+#endif
+%endif

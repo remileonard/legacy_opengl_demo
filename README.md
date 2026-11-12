@@ -133,7 +133,7 @@ A 1996 F-18 demo built on IRIS Performer 2.2 and Coryphaeus EasyScene. `f18_view
 - Levels of detail switched on the eye distance, decal layers, materials
 - Orbit, zoom, pan, wireframe, texture, lighting and LOD toggles
 
-See [src/f18/README.md](src/f18/README.md) for the file format and the controls. The F-18 data files are not included; most of its textures are encrypted and are not drawn yet.
+See [src/f18/README.md](src/f18/README.md) for the file format and the controls. The F-18 data files are in `data/f18`.
 
 
 ## Prerequisites
