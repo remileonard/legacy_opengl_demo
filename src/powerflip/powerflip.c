@@ -28,6 +28,7 @@
  * ... and buttons and panels
  */
 #include "powerflip.h"
+#include "pfopts.h"
 #include "light.h"
 #include "porting/iris2ogl.h"
 #include <stdio.h>
@@ -37,8 +38,6 @@
 
 /* Global variables */
 
-static long XOrigin, YOrigin, Width, Height;
-static int UsePrefposition = 0, UsePrefsize = 0;
 
 static int nobjs;      /* How many objects we're spinning */
 static flipobj **fobj; /* Array of flipobj pointers */
@@ -62,6 +61,7 @@ Matrix idmat = {/* Useful Matrix to have around... */
 /* Prototypes for local functions */
 void main(int, char **);
 void parse_args(int, char **);
+void load_objects(int, char **);
 void init_windows(char *);
 void init_menus(void), do_menus(void);
 void read_files(void), draw_scene(void);
@@ -90,10 +90,14 @@ void make_lights(void);
 void drawflipobj(flipobj *obj);
 
 void main(int argc, char **argv) {
+    parse_args(argc, argv);
+    pf_before_window();
     init_windows(argv[0]);
-    parse_args(argc, argv); /* This reads in the files, too */
-    
+    pf_title_message();
+    load_objects(argc, argv);
+
     make_lights();
+    pf_init_scene();
 
     add_event(ANY, ESCKEY, UP, ui_exit, NULL);
     qdevice(ESCKEY);
@@ -139,6 +143,14 @@ void remember_view(float *rot, float *trans) {
         vadd(trans, lobj.trans, lobj.trans);
     }
 
+    if (pf_clipobj.select) /* Moving the clipping plane */
+    {
+        vcopy(rot, pf_clipobj.espin);
+        pf_clipobj.espin[3] = rot[3];
+
+        vadd(trans, pf_clipobj.trans, pf_clipobj.trans);
+    }
+    else
     for (i = 0; i < nobjs; i++) {
         if (fobj[i]->select) {
             vcopy(rot, fobj[i]->espin);
@@ -187,6 +199,7 @@ void update_objeulers() {
         add_quats(fobj[i]->espin, fobj[i]->er, fobj[i]->er);
     }
     add_quats(lobj.espin, lobj.er, lobj.er);
+    add_quats(pf_clipobj.espin, pf_clipobj.er, pf_clipobj.er);
 }
 
 /*
@@ -199,12 +212,14 @@ void draw_objects() {
 #ifdef HDWBUG
     /* Speedy clear */
     if (clover1)
-        czclear(0, getgdesc(GD_ZMAX));
+        czclear(pf_clear_color(), getgdesc(GD_ZMAX));
     else
 #endif
-        czclear(0, getgdesc(GD_ZMIN));
+        czclear(pf_clear_color(), getgdesc(GD_ZMIN));
 
-    /* The viewing matrix, for the "untransform" of the YAODL objects */
+    /* The YAODL background, then the viewing matrix for the "untransform"
+       of the YAODL objects */
+    pf_draw_background();
     yaodl_set_view();
 
     /* Transform the lights */
@@ -218,10 +233,14 @@ void draw_objects() {
         //polysdrawn += draw_lights();
     popmatrix();
 
+    /* The opaque objects keep one side of the clipping plane */
+    pf_clip_begin(0);
     for (i = 0; i < nobjs; i++) {
         if (fobj[i]->display && !fobj[i]->ablend) {
             pushmatrix();
             setmaterial(fobj[i]->material);
+            if (pf_backmaterial >= 0)
+                setbackmaterial(pf_backmaterial);
             /* Translate */
             translate(fobj[i]->trans[0], fobj[i]->trans[1], fobj[i]->trans[2]);
 
@@ -250,13 +269,17 @@ void draw_objects() {
             popmatrix();
         }
     }
-    /* Alpha blend, if we're on a machine that can do it */
+    /* Alpha blend, if we're on a machine that can do it; the transparent
+       objects keep the other side of the clipping plane */
     if (blending_supported) {
+        pf_clip_begin(1);
         alpha_on();
         for (i = 0; i < nobjs; i++) {
             if (fobj[i]->display && fobj[i]->ablend) {
                 pushmatrix();
                 setmaterial(NUM_MATERIALS + fobj[i]->material);
+                if (pf_backmaterial >= 0)
+                    setbackmaterial(NUM_MATERIALS + pf_backmaterial);
 
                 translate(fobj[i]->trans[0], fobj[i]->trans[1], fobj[i]->trans[2]);
 
@@ -279,6 +302,10 @@ void draw_objects() {
         }
         alpha_off();
     }
+    pf_clip_end();
+
+    /* Motion blur of the frames */
+    pf_blur();
 
     if (show_performance)
         draw_rate(polysdrawn);
@@ -373,10 +400,6 @@ void init_windows(char *title)
     else
         clover1 = 0;
 
-    if (UsePrefposition)
-        prefposition(XOrigin, XOrigin + Width - 1, YOrigin, YOrigin + Height - 1);
-    else if (UsePrefsize)
-        prefsize(Width, Height);
 
     /* Open with the executable's name (stripped of directory) */
     
@@ -432,43 +455,31 @@ void init_windows(char *title)
     translate(0.0, 0.0, -1.1);
 }
 
+static int still;
+
+/*
+ * The options of powerflip (pfopts.c), then the models
+ */
 void parse_args(int argc, char **argv)
 {
-    int whichobj = 0; /* Which one we're doing now */
-    int i, c, err, still;
-    float objzmax, objmaxpoint();
+    int i, c, err;
     extern int optind;
     extern char *optarg;
 
     still = FALSE; /* Spin around like crazy by default */
 
-    /*
-     * If on a machine that can't double-buffer, stay still!
-     */
-    
-    if (getgdesc(GD_BITS_NORM_DBL_RED) == 0)
-        still = TRUE;
-
     err = FALSE;
-    while ((c = getopt(argc, argv, "W:sh")) != -1) {
+    while ((c = getopt(argc, argv, "wWLrf:MB:CF:m:sSDhb:T:Rp:o:c:z")) != -1) {
         switch (c) {
-        case 'W': /* provide x1,y1,x2,y2  or just xsize, ysize */
-            if (4 == sscanf(optarg, "%d,%d,%d,%d", &XOrigin, &YOrigin, &Width, &Height)) {
-                UsePrefposition = 1;
-            } else if (2 == sscanf(optarg, "%d,%d", &Width, &Height)) {
-                UsePrefsize = 1;
-            } else {
-                err = 1;
-            }
-            break;
-
         case 's': /* Still (don't move) */
             still = TRUE;
             break;
         case 'h': /* Help */
-        default:
-            printf("error parsing args\n");
             err = TRUE;
+            break;
+        default:
+            if (pf_option(c, optarg) <= 0)
+                err = TRUE;
             break;
         }
     }
@@ -482,11 +493,43 @@ void parse_args(int argc, char **argv)
     if (err || nobjs==0 )
     {
         fprintf(stderr, "Usage:\n");
-        fprintf(stderr, "%s [-sh] [-W[xorg,yorg,]width,height] modelname [modelname]\n",argv[0]);
-        fprintf(stderr, "\t-s Means stay still, objects won't get random rotation\n");
-        fprintf(stderr, "\t-h Help (this message)\n");
+        fprintf(stderr, "%s [-rsSCwWLRDhM] [-B blurfactor] [-Fdensity] [-f r,g,b]\n", argv[0]);
+        fprintf(stderr, "\t[-T title_message] [-m material,backmaterial]\n");
+        fprintf(stderr, "\t[-p x,y,z] [-o q1,q2,q3,q4] [-c r,g,b]\n");
+        fprintf(stderr, "\t[-b backgroundfile] modelname [modelname...]\n");
+        fprintf(stderr, "-s Stay still, objects won't get random rotation\n");
+        fprintf(stderr, "-S Stereo mode\n");
+        fprintf(stderr, "-C Turns clipping planes on\n");
+        fprintf(stderr, "-w Models are wireframe\n");
+        fprintf(stderr, "-W When moving, draw in wireframe\n");
+        fprintf(stderr, "-L No lighting\n");
+        fprintf(stderr, "-r Redraw scene even when nothing is moving\n");
+        fprintf(stderr, "-D Debug mode\n");
+        fprintf(stderr, "-h Help (this message)\n");
+        fprintf(stderr, "-B Turns on motion blur\n");
+        fprintf(stderr, "-M No multisampling if available\n");
+        fprintf(stderr, "-F Turns on fog with given density\n");
+        fprintf(stderr, "-f Turns on fog with given color\n");
+        fprintf(stderr, "-m Gives object the specified default material\n");
+        fprintf(stderr, "-T Display title_string when loading data\n");
+        fprintf(stderr, "-b Use YAODL file as the background\n");
+        fprintf(stderr, "-R Root (background) window\n");
+        fprintf(stderr, "-p Position of models\n");
+        fprintf(stderr, "-o Orientation of models, as a quaternion\n");
+        fprintf(stderr, "-c Set color for window background\n");
         exit(1);
     }
+}
+
+/*
+ * Read the models given after the options
+ */
+void load_objects(int argc, char **argv)
+{
+    int whichobj = 0; /* Which one we're doing now */
+    int i;
+    float objzmax, objmaxpoint();
+    extern int optind;
 
     fobj = (flipobj **)malloc(sizeof(flipobj *) * nobjs);
     for (i = optind; i < argc; i++) {
@@ -540,14 +583,20 @@ void parse_args(int argc, char **argv)
         }
         /* Set-up defaults */
         fobj[whichobj]->display = TRUE;
-        fobj[whichobj]->type = POLYGONS; /* draw polygons */
+        fobj[whichobj]->type = pf_wireframe ? LINES : POLYGONS; /* draw polygons */
         fobj[whichobj]->select = FALSE;
-        fobj[whichobj]->material = 2;
+        fobj[whichobj]->material = pf_material >= 0 && pf_material < NUM_MATERIALS ? pf_material : 2;
         fobj[whichobj]->ablend = FALSE;
         vzero(fobj[whichobj]->trans);
+        if (pf_have_position)
+            vcopy(pf_position, fobj[whichobj]->trans);
 
         vzero(fobj[whichobj]->er);
         fobj[whichobj]->er[3] = 1.0;
+        if (pf_have_orientation) {
+            vcopy(pf_orientation, fobj[whichobj]->er);
+            fobj[whichobj]->er[3] = pf_orientation[3];
+        }
         if (still) {
             vzero(fobj[whichobj]->espin);
             fobj[whichobj]->espin[3] = 1.0;
@@ -646,6 +695,7 @@ void init_menus() {
         objmenus[i] = newpup();
         remake_objmenu(i);
     }
+    pf_init_menus();
     flipmenu = newpup();
 
     remake_menus();
@@ -676,6 +726,7 @@ void remake_menus(void) {
         sprintf(temp, "%s %%m", fobj[i]->fname);
         addtopup(flipmenu, temp, objmenus[i]);
     }
+    pf_add_menus(flipmenu);
     if (nobjs > 1)
         addtopup(flipmenu, "Select all %f", select_all);
     if (show_performance)
@@ -908,14 +959,20 @@ void alpha_off() {
  */
 void anything_moving(int *ptr) {
     int spinning(float *);
+    static int was_moving;
 
     *ptr = FALSE;
 
     if (ui_quiet) {
         int i;
 
-        /* If lights are spinning... */
-        if (spinning(lobj.espin))
+        /* Once more after a move, filled again after "Move Wireframe" */
+        if (was_moving)
+            *ptr = TRUE;
+        was_moving = FALSE;
+        /* If lights or the clipping plane are spinning, or the motion blur
+           or -r ask for it... */
+        if (spinning(lobj.espin) || spinning(pf_clipobj.espin) || pf_animating())
             *ptr = TRUE;
         /* Or objects are spinning, redraw */
         else
@@ -924,6 +981,8 @@ void anything_moving(int *ptr) {
                     *ptr = TRUE;
                 }
             }
+    } else {
+        was_moving = TRUE;
     }
 }
 

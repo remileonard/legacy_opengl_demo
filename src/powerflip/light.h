@@ -28,6 +28,7 @@ void defineshading(void) ;
  */
 #define NUM_MATERIALS 10
 void setmaterial(int);
+void setbackmaterial(int);
 extern char *matnames[NUM_MATERIALS];
 
 /*

@@ -22,6 +22,7 @@ endif()
 add_executable(powerflip
     powerflip.c
     pfobj.c
+    pfopts.c
     yaodl.c
     image.c
     light.c

@@ -7,21 +7,55 @@ transformations, polygons, lines, colors, normals, and in the original also
 textures, NURBS, lights and animation.
 
 ```
-powerflip [-sh] [-W[xorg,yorg,]width,height] model.ydl|model.defs [...]
+powerflip [-rsSCwWLRDhM] [-B blurfactor] [-Fdensity] [-f r,g,b]
+          [-T title_message] [-m material,backmaterial]
+          [-p x,y,z] [-o q1,q2,q3,q4] [-c r,g,b]
+          [-b backgroundfile] model.ydl|model.defs [...]
 ```
+
+| Option | |
+|---|---|
+| `-s` | stay still, no random rotation |
+| `-w` / `-W` | the models are wireframe / wireframe while moving |
+| `-L` | lines model: no lighting |
+| `-r` | redraw even when nothing moves |
+| `-b file` | a YAODL background, drawn in [-1, 1] without lighting nor z-buffer (`background*.defs`, `stars.defs`) |
+| `-c r,g,b` | background color |
+| `-F density`, `-f r,g,b` | fog of this density / color |
+| `-C` | clipping plane on |
+| `-B n` | motion blur keeping n % of the previous frames (with an accumulation buffer) |
+| `-m m,b` | material and back material of the models (0 to 9, as in the menu) |
+| `-p x,y,z`, `-o q1,q2,q3,q4` | position and orientation (quaternion) of the models |
+| `-T text` | a line of the message shown while loading |
+| `-S`, `-M`, `-R`, `-D`, `-z` | stereo, no multisampling, root window, debug, undocumented: accepted, no effect here |
+
+The menu of flip gets the entries of powerflip:
+
+- **Fog**: clear air, fog (grey or `-f`), haze, black fog (depthcue); the
+  background takes the color of the fog; density, near and far distances,
+  modes `vertex`/`pixel` x `exp`/`exp2`/`lin` (density 0.2, near 0.02,
+  far 5 by default);
+- **Blur and Sharpen**: motion blur, only with an accumulation buffer (not
+  with Mesa/Xvfb, for example);
+- **Clipping Planes**: the opaque objects keep one side of a plane, the
+  transparent ones the other side; the plane turns with the mouse with
+  "Move with Mouse";
+- **Move Wireframe**: wireframe while moving.
 
 ## Files
 
 | File | Role |
 |---|---|
 | `powerflip.c`, `light.c`, `powerflip.h` | the application, taken from flip (menus, mouse, lights, materials) |
+| `pfopts.c` | the options and menus of powerflip: background, fog, clipping plane, motion blur, wireframe |
 | `pfobj.c` | the objects of the application: YAODL models |
 | `yaodl.c`, `yaodl.h` | parser and classes of YAODL |
 | `image.c` | `readImageRGB`: the SGI images of the textures |
 | `gen_envmap_yaodl.sh` | the IRIX script adding an environment map to a model |
 
 The IRIS GL calls go through `src/porting` (`c3f`, `c4f`, `texgen`, the
-NURBS functions and `lmcolor` were completed there for powerflip).
+NURBS functions, `clipplane`, `acsize` / `acbuf`, the back material, and
+`lmcolor` and `fogvertex` were completed there for powerflip).
 
 ## YAODL
 
@@ -90,7 +124,8 @@ Polygons and lines are compiled in display lists, as in the original.
    models and are parsed and ignored
 4. NURBS and trimming curves - **done**
 5. animation (`advanceTime`, `seconds`, `spline`, `transVector`, `rotVector`)
-6. the menus and options of powerflip (fog, motion blur, clipping planes...)
+6. the menus and options of powerflip (background, fog, motion blur,
+   clipping planes, wireframe...) - **done**
 
 The classes of the later steps are parsed and ignored with a message.
 

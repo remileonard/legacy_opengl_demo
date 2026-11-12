@@ -92,6 +92,16 @@ void setmaterial(int m) {
 }
 
 /*
+ *	The material of the back faces (-m material,backmaterial of powerflip)
+ */
+void setbackmaterial(int m) {
+    if (m < 0 || m >= 2 * NUM_MATERIALS)
+        fprintf(stderr, "setbackmaterial error: back material %d undefined\n", m);
+    else
+        lmbind(BACKMATERIAL, m + 1);
+}
+
+/*
  *	The colors of the YAODL objects replace the diffuse color of the
  * material (lmcolor), which is otherwise the current color: start with
  * the diffuse color of the current material.

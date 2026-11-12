@@ -101,6 +101,8 @@ typedef int16_t Device;
 #define GD_ZMAX         16
 #define GD_ZMIN         17
 #define GD_TEXTURE_PERSP 18
+#define GD_CLIPPLANES   19  // Number of user clipping planes
+#define GD_BITS_ACBUF   20  // Bits of the accumulation buffer
 
 #define MAX_LIGHTS 8
 #define MAX_MATERIALS 256
@@ -157,6 +159,7 @@ typedef struct {
 #define LMODEL      14
 #define LOCALVIEWER 15
 #define TWO_SIDE    16
+#define BACKMATERIAL 17  // lmbind target: material of the back faces
 
 #define LIGHT0      0
 #define LIGHT1      1
@@ -835,6 +838,22 @@ void tevbind(int target, int texid);
 #define TG_REFRACTMAP 5
 
 void texgen(int coord, int mode, float params[]);
+
+/* user clipping planes */
+#define CP_OFF    0
+#define CP_ON     1
+#define CP_DEFINE 2
+void clipplane(int index, int mode, float params[]);
+
+/* accumulation buffer: acsize before winopen asks for one */
+#define AC_CLEAR            0
+#define AC_ACCUMULATE       1
+#define AC_CLEAR_ACCUMULATE 2
+#define AC_RETURN           3
+#define AC_MULT             4
+#define AC_ADD              5
+void acsize(int planes);
+void acbuf(int op, float value);
 
 /* NURBS (on the GLU NURBS) */
 #define N_PIXEL_TOLERANCE 1

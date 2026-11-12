@@ -1011,6 +1011,22 @@ void lmbind(int target, int index) {
             break;
         }
         
+        case BACKMATERIAL: {
+            // the back faces get their own material, with two-sided lighting
+            if (index > 0 && index < MAX_MATERIALS && materials[index].defined) {
+                MaterialDef *mat = &materials[index];
+                glMaterialfv(GL_BACK, GL_AMBIENT, mat->ambient);
+                glMaterialfv(GL_BACK, GL_DIFFUSE, mat->diffuse);
+                glMaterialfv(GL_BACK, GL_SPECULAR, mat->specular);
+                glMaterialfv(GL_BACK, GL_EMISSION, mat->emission);
+                glMaterialf(GL_BACK, GL_SHININESS, mat->shininess);
+                glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE);
+            } else {
+                glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, GL_FALSE);
+            }
+            break;
+        }
+
         case LMODEL: {
             if (index == 0) {
                 // Reset to default light model
@@ -1293,6 +1309,36 @@ void iris_glut_report_warnings(const char *fmt, va_list ap) {
     vfprintf(stderr, fmt, ap);
     fprintf(stderr, "\n");
 }
+static int iris_accum_planes;
+
+void acsize(int planes) {
+    iris_accum_planes = planes;
+}
+
+void acbuf(int op, float value) {
+    switch (op) {
+    case AC_CLEAR:
+        glClearAccum(0, 0, 0, 0);
+        glClear(GL_ACCUM_BUFFER_BIT);
+        break;
+    case AC_ACCUMULATE:
+        glAccum(GL_ACCUM, value);
+        break;
+    case AC_CLEAR_ACCUMULATE:
+        glAccum(GL_LOAD, value);
+        break;
+    case AC_RETURN:
+        glAccum(GL_RETURN, value);
+        break;
+    case AC_MULT:
+        glAccum(GL_MULT, value);
+        break;
+    case AC_ADD:
+        glAccum(GL_ADD, value);
+        break;
+    }
+}
+
 void winopen(const char *title) {
     // Initialize GLUT if not already done
     static int glut_initialized = 0;
@@ -1303,7 +1349,12 @@ void winopen(const char *title) {
         glut_initialized = 1;
     }
     
-    glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH) ;
+    glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH | (iris_accum_planes > 0 ? GLUT_ACCUM : 0)) ;
+    if (iris_accum_planes > 0 && !glutGet(GLUT_DISPLAY_MODE_POSSIBLE)) {
+        // pas de buffer d'accumulation sur cette machine
+        glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
+        iris_accum_planes = 0;
+    }
     glutInitWindowSize(window_width, window_height);
     glutInitWindowPosition(window_x, window_y);
     main_window = glutCreateWindow(title);
@@ -2795,42 +2846,30 @@ void fogvertex(int mode, float density[]) {
             break;
             
         case FG_VTX_LIN:
-            // Mode linéaire vertex fog
+        case FG_PIX_LIN:
+            // Brouillard linéaire : params = {near, far, r, g, b}
             glFogi(GL_FOG_MODE, GL_LINEAR);
             if (density) {
+                GLfloat fog_color[4] = { density[2], density[3], density[4], 1.0f };
                 glFogf(GL_FOG_START, density[0]);
                 glFogf(GL_FOG_END, density[1]);
-                
-                // Couleur si fournie
-                if (density[2] != 0.0f || density[3] != 0.0f) {
-                    GLfloat fog_color[4] = {
-                        density[1],
-                        density[2],
-                        density[3],
-                        1.0f
-                    };
-                    glFogfv(GL_FOG_COLOR, fog_color);
-                }
+                glFogfv(GL_FOG_COLOR, fog_color);
             }
-            glHint(GL_FOG_HINT, GL_NICEST);
+            glHint(GL_FOG_HINT, mode == FG_PIX_LIN ? GL_NICEST : GL_FASTEST);
             break;
-            
+
         case FG_VTX_EXP:
-            // Mode exponentiel vertex fog
-            glFogi(GL_FOG_MODE, GL_EXP);
-            if (density) {
-                glFogf(GL_FOG_DENSITY, density[0]);
-            }
-            glHint(GL_FOG_HINT, GL_NICEST);
-            break;
-            
+        case FG_PIX_EXP:
         case FG_VTX_EXP2:
-            // Mode exponentiel carré vertex fog
-            glFogi(GL_FOG_MODE, GL_EXP2);
+        case FG_PIX_EXP2:
+            // Brouillard exponentiel (carré) : params = {densité, r, g, b}
+            glFogi(GL_FOG_MODE, mode == FG_VTX_EXP || mode == FG_PIX_EXP ? GL_EXP : GL_EXP2);
             if (density) {
+                GLfloat fog_color[4] = { density[1], density[2], density[3], 1.0f };
                 glFogf(GL_FOG_DENSITY, density[0]);
+                glFogfv(GL_FOG_COLOR, fog_color);
             }
-            glHint(GL_FOG_HINT, GL_NICEST);
+            glHint(GL_FOG_HINT, mode == FG_PIX_EXP || mode == FG_PIX_EXP2 ? GL_NICEST : GL_FASTEST);
             break;
             
         default:
@@ -3252,6 +3291,34 @@ void pwlcurve(int n, double *data, int offset, int type) {
     float *f = nurbs_floats(data, n, offset / (int)sizeof(double), size);
     if (f)
         gluPwlCurve(get_nurbs(), n, f, size, size == 3 ? GLU_MAP1_TRIM_3 : GLU_MAP1_TRIM_2);
+}
+
+/*
+ * clipplane: CP_DEFINE gives the plane in the current coordinates, CP_ON and
+ * CP_OFF enable or disable it.
+ */
+void clipplane(int index, int mode, float params[]) {
+    GLenum plane;
+    GLint max = 6;
+
+    glGetIntegerv(GL_MAX_CLIP_PLANES, &max);
+    if (index < 0 || index >= max)
+        return;
+    plane = GL_CLIP_PLANE0 + index;
+    switch (mode) {
+    case CP_DEFINE:
+        if (params) {
+            GLdouble eq[4] = { params[0], params[1], params[2], params[3] };
+            glClipPlane(plane, eq);
+        }
+        break;
+    case CP_ON:
+        glEnable(plane);
+        break;
+    default:
+        glDisable(plane);
+        break;
+    }
 }
 
 /*

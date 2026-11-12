@@ -14,6 +14,9 @@
  * successor clauses in the FAR, DOD or NASA FAR Supplement. Unpublished -
  * rights reserved under the Copyright Laws of the United States.
  */
+#ifndef POWERFLIP_H
+#define POWERFLIP_H
+
 #include <stdio.h>
 #include "porting/iris2ogl.h"
 #include "light.h"
@@ -53,3 +56,4 @@ flipobj *readflipobj(char *name);
 void drawflipobj(flipobj *obj);
 float objmaxpoint(flipobj *obj);
 
+#endif

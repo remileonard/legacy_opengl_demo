@@ -39,3 +39,12 @@ Can
 
 Nurbs
 	./interactive/powerflip.exe data/powerflip/nurb.defs
+
+Space (stars)
+	./interactive/powerflip.exe -b data/powerflip/stars.defs data/powerflip/space.ydl
+
+Beethoven (background)
+	./interactive/powerflip.exe -b data/powerflip/background1.defs data/powerflip/beethoven.ydl
+
+Doughnut and martini (fog, clipping)
+	./interactive/powerflip.exe -F 0.6 -C data/powerflip/doughnut.ydl data/powerflip/martini.ydl
