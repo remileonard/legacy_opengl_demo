@@ -2,7 +2,7 @@
 # Designer's Workbench files and the demo reuse the Performer layer of Mekton
 set(PF_DIR ${CMAKE_SOURCE_DIR}/src/mekton)
 set(F18_VIEW_SOURCES f18_view.c dwb.c dwb.h ${PF_DIR}/pf.c ${PF_DIR}/pfb.c)
-set(F18_SOURCES f18.c escene.c escene.h flight.c flight.h drt.c drt.h dwb.c dwb.h ${PF_DIR}/pf.c ${PF_DIR}/pfb.c)
+set(F18_SOURCES f18.c escene.c escene.h flight.c flight.h effects.c effects.h drt.c drt.h dwb.c dwb.h ${PF_DIR}/pf.c ${PF_DIR}/pfb.c)
 
 foreach(target f18_view f18)
     if(target STREQUAL "f18")

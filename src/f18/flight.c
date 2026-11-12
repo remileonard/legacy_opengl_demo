@@ -45,8 +45,14 @@
  * enemy hit falls along its heading, rolling, and crashes as a wreck; an
  * enemy with a missile on its tail rolls to a random angle and pulls.
  *
- * Not rebuilt yet: the gun (space bar in flight), the explosions, the
- * smoke and the trails, the sound and the radar.
+ * The effects (effects.c): explosions and debris when a missile explodes
+ * or an airplane crashes, black smoke behind the airplanes hit, smoke and
+ * flames (flames.dwb, an animation) on their wrecks, the exhaust of the
+ * missiles, a white flash when the player crashes. The gun (space bar)
+ * makes explosions on the enemy in the sight, without damage, as in the
+ * demo.
+ *
+ * Not rebuilt yet: the trails, the weather, the sound and the radar.
  */
 #ifdef __APPLE__
 #include <OpenGL/gl.h>
@@ -67,6 +73,7 @@
 
 #include "escene.h"
 #include "flight.h"
+#include "effects.h"
 
 F18Mouse f18_mouse;
 
@@ -106,6 +113,9 @@ typedef struct Enemy {
     float ground;           /* elevation of the ground under it */
     float speed;
     int isect_period, isect_count;
+    esObject *flames;       /* burning on its wreck */
+    int fume;               /* its black smoke when hit, -1 none */
+    int smoke;              /* the smoke of its wreck, -1 none */
 } Enemy;
 
 /* the two missiles under the wings (EasyScene: 32 bytes from +0xc0 of the
@@ -119,6 +129,7 @@ typedef struct Missile {
     long reload_frame;      /* reloading since, 0 none */
     float speed;
     int isect_count;
+    int fume;               /* its exhaust */
 } Missile;
 
 typedef struct Flight {
@@ -480,11 +491,19 @@ static void restart(void)
 static void restartFlight(const char *arg)
 {
     (void)arg;
-    if (F.crashed)
+    if (F.crashed) {
         restart();
+    } else if (F.target >= 0 && F.target < F.nenemies) {
+        /* the gun: explosions on the enemy in the sight (esGetObjInLOS),
+         * without damage, as in the demo */
+        fxAddEffect(FX_EXPLOSION, F.enemy[F.target].obj->xyz, 1);
+        fxAddEffect(FX_DEBRIS, F.enemy[F.target].obj->xyz, 1);
+    }
 }
 
 static void toggleBeeBox(const char *arg) { (void)arg; }
+static void initEffects(const char *arg) { (void)arg; fxInit(); }
+static void nothing(const char *arg) { (void)arg; }
 static void eyeStuff(const char *arg) { (void)arg; }
 
 static float fade_distance;
@@ -504,6 +523,7 @@ static void planeCrash(void)
     F.height = h;
     if (h < 5) {
         F.crashed = 1;
+        fxAddEffect(FX_FLASH, F.plane->xyz, 3);
         esObjectPos(F.plane, F.plane->xyz[0], F.plane->xyz[1], F.plane->xyz[2] + 500,
                     F.plane->hpr[0], 0, 0);
         F.isect_on = 0;
@@ -701,6 +721,11 @@ static void initEnemy(int n)
     e->isect_count = n;
     if (e->sw)
         pfSwitchVal(e->sw, 0);
+    if (e->flames && e->flames->node)
+        pfNodeTravMask(e->flames->node, PFTRAV_DRAW, 0, PFTRAV_SELF, PF_SET);
+    fxRemoveSmoke(e->smoke);
+    e->smoke = -1;
+    fxFumeOn(e->fume, 0);
 }
 
 /* the enemies, their wrecks (Broken%d) and their routes */
@@ -729,6 +754,10 @@ static void readRoute(void)
                 pfRemoveChild(es.root, broken->node);
         }
         read_route(e, i);
+        /* the flames of its wreck, as large as a fifth of the airplane */
+        e->fume = e->smoke = -1;
+        if ((e->flames = esAddObj("flames.dwb")) != NULL)
+            pfDCSScale(e->flames->node, diag(e->obj) / 5);
         F.nenemies++;
         initEnemy(i);
     }
@@ -755,6 +784,15 @@ static void enemy_ground(Enemy *e, int n)
         e->saved_y = e->obj->xyz[1];
         if (e->sw)
             pfSwitchVal(e->sw, 1);
+        /* the explosion, the smoke and the flames of the wreck */
+        fxAddEffect(FX_EXPLOSION, e->obj->xyz, 2);
+        fxAddEffect(FX_DEBRIS, e->obj->xyz, e->hit ? 1.5f : 1);
+        fxFumeOn(e->fume, 0);
+        e->smoke = fxAddSmoke(e->obj, 2 * diag(e->obj), 0.8f);
+        if (e->flames && e->flames->node) {
+            esObjectPos(e->flames, e->obj->xyz[0], e->obj->xyz[1], e->obj->xyz[2], 0, 0, 0);
+            pfNodeTravMask(e->flames->node, PFTRAV_DRAW, 0xffffffffU, PFTRAV_SELF, PF_SET);
+        }
     }
 }
 
@@ -790,6 +828,12 @@ static void updateEnemy(const char *arg)
             if (e->height <= o->xyz[2] - z)
                 z = e->ground + 2;
             esObjectPos(o, e->fall[0] + v * t * sh, e->fall[1] - v * t * ch, z, h, p, r + 5);
+            /* explosions from 1.5 to 3 and from 4.5 to 6 seconds (the demo
+             * adds one each frame, here one every 6 frames) */
+            if ((t / 90 == 1 || t / 90 == 3) && t % 6 == 0) {
+                fxAddEffect(FX_EXPLOSION, o->xyz, 0.5f);
+                fxAddEffect(FX_DEBRIS, o->xyz, 1);
+            }
         } else {
             /* a missile coming: evade (roll to a random angle and pull),
              * or climb first when low */
@@ -949,6 +993,8 @@ static void loadMissiles(void)
             exit(1);
         }
         attach_missile(i);
+        F.missile[i].fume = fxAddFume(F.missile[i].obj, 0.9f, 0.9f, 0.88f, 1, 10, 75);
+        fxFumeOn(F.missile[i].fume, 0);
     }
     esAddModuleFunc("updateMissile", ES_PREAPP, updateMissile);
 }
@@ -965,6 +1011,7 @@ static void initMissile(int i)
     m->fire_frame = F.frame;
     m->passed = 0;
     m->isect_count = 0;
+    fxFumeOn(m->fume, 1);
 }
 
 static void fire_missile(void)
@@ -982,6 +1029,11 @@ static void fire_missile(void)
 static void explodeMissile(int i)
 {
     Missile *m = &F.missile[i];
+    if (F.fired[i]) {
+        fxAddEffect(FX_EXPLOSION, m->obj->xyz, 2);
+        fxAddEffect(FX_DEBRIS, m->obj->xyz, 1);
+    }
+    fxFumeOn(m->fume, 0);
     F.fired[i] = 0;
     m->locked = 0;
     m->fire_frame = 0;
@@ -1062,6 +1114,10 @@ static void cbMissile(int i)
     if (e->sw)
         pfSwitchVal(e->sw, 1);
     e->isect_period = 1;
+    /* black smoke behind it */
+    if (e->fume < 0)
+        e->fume = fxAddFume(e->obj, 0.12f, 0.11f, 0.1f, 1, 10, 100);
+    fxFumeOn(e->fume, 1);
     explodeMissile(i);
 }
 
@@ -1267,6 +1323,12 @@ void flight_register(void)
     esRegisterFunction("explodeLeftMissile", explodeLeftMissile);
     esRegisterFunction("explodeRightMissile", explodeRightMissile);
     esRegisterFunction("cheatMissile", cheatMissile);
+    /* the effects: the smoke and the fumes are updated and drawn with them */
+    esRegisterFunction("initEffects", initEffects);
+    esRegisterFunction("initSmoke", initEffects);
+    esRegisterFunction("initFumes", initEffects);
+    esRegisterFunction("updateSmoke", nothing);
+    esRegisterFunction("drawSmoke", nothing);
     esRegisterFunction("toggleBeeBox", toggleBeeBox);
     esRegisterFunction("setFadeDistance", setFadeDistance);
     esRegisterFunction("updateHudValues", updateHudValues);

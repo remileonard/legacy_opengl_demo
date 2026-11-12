@@ -44,8 +44,8 @@ is a list of statements ended by `;`, with `#` comments and `%ifdef`,
 The functions named by a script are found by name, as the original found
 the symbols of the executable: the program registers them with
 `esRegisterFunction`. The functions of the demo that are not rebuilt yet
-(the gun, the radar display, the
-weather `esInitEnv`, the smoke, the trails, the sound...) are reported
+(the radar display, the
+weather `esInitEnv`, the trails, the sound...) are reported
 once by the interpreter, which goes on. Without `initFlight`, the eye
 would be moved with the mouse (left drag: turn, right drag or wheel:
 speed, middle drag: slide).
@@ -77,7 +77,7 @@ script (60 Hz): `f18` calls the app modules at that rate.
 | left button, Enter | fires a missile at the enemy locked |
 | left / right Alt, `1` / `2` | explodes the left / right missile |
 | `C` | the missiles fly straight to their target (cheat) |
-| space | after a crash, starts again at once (in flight: the gun, not rebuilt yet) |
+| space | after a crash, starts again at once; in flight, the gun: explosions on the enemy in the sight, without damage, as in the demo |
 | `W`, `T`, `S`, `H` | wireframe, textures, statistics, list of the keys |
 | Esc | quit |
 
@@ -129,6 +129,34 @@ close behind, as in the demo; `F` puts the airplane right behind an enemy.
 
 `F18_LOG=1` prints the messages of the display (fired, hit, went past,
 crashed...) on the error output.
+
+### The effects
+
+`effects.c` rebuilds the three effect systems of EasyScene, drawn with
+the puff texture `steam.inta`:
+
+- `esAddEffect(type, position, scale)` (`checkEffects`, `updateExplosion`,
+  `updateDebris`, `updateFlak`, `updateWhiteFlash`): 1 an explosion (a
+  fire ball of puffs growing and fading from yellow to dark smoke), 2
+  debris thrown up and falling, 3 flak, 4 a white flash of the screen.
+  The demo adds an explosion of scale 2 and debris of scale 1 when a
+  missile explodes or an airplane crashes, smaller ones while an airplane
+  hit falls (here one every 6 frames instead of every frame), the gun adds
+  them on the enemy in the sight, and the crash of the player flashes the
+  screen;
+- `esAddFume`: puffs left behind an object, growing from one size to
+  another in a number of frames: the exhaust of the missiles (1 to 10 m in
+  75 frames) and the black smoke of the airplanes hit (1 to 10 m in 100);
+- `esAddSmoke`: the smoke column of a wreck, twice as large as the
+  airplane, density 0.8.
+
+The wrecks burn: `flames.dwb`, scaled to a fifth of the airplane, is an
+animation of 32 frames (a group with the flag `0x01000000`, the frames as
+children, 1/30 second each at `+0x80`), loaded as a `pfSequence`.
+
+The sizes, speeds and durations of the explosions are double precision
+constants of the IRIX code not all recovered: they are chosen to look like
+the demo.
 
 ### The head up display
 
@@ -195,7 +223,9 @@ files can be given instead.
 | `q`, Esc | quit |
 
 The textures are looked for, by the base name of the file name stored in
-the model, next to the model, in `../textures` and in `textures`, with
+the model, next to the model, in `../textures`, in `textures`, in the
+directory of the stored name under `../textures` (`flames/f1`) and in the
+path of the application, with
 the extensions `.rgb`, `.rgba`, `.int`, `.inta` and `.bw` when the name
 has none.
 
@@ -228,7 +258,7 @@ enclose the children of the record before them.
 | Opcode | Record | Fields used |
 |---|---|---|
 | `0x1771` | header (320 bytes) | `+0x00` short units (0 m, 1 ft, 2 in, 3 cm, 4 nautical miles...), `+0x04` float version, `+0x08` date, `+0x86` short up axis: 2 for the models made with Y up (the airplanes, nose along -Z), turned to the Z up of Performer by a pitch of 90 degrees, as `pfdLoad_dwb` does |
-| `0x1772` | group (160 bytes) | `+0x34` flags: bit 26, the children are decals on the first child (`pfLayer`) |
+| `0x1772` | group (160 bytes) | `+0x34` flags: bit 26, the children are decals on the first child (`pfLayer`); bit 24, the children are the frames of an animation (`pfSequence`), `+0x80` seconds each |
 | `0x1773` | level of detail (96 bytes) | `+0x08` switch out, `+0x0c` switch in, `+0x10` center |
 | `0x1775` | polygon (76 bytes) | `+0x00` color index, `+0x04` vertices, `+0x10` texture (-1 none), `+0x2c` color `0xAABBGGRR`, `+0x36` material (-1 none) |
 | `0x177a`, `0x177c` | vertices of the polygon | 44 bytes each: color index, x y z, normal, s t, 2 floats |

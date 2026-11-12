@@ -290,6 +290,9 @@ void pfGetDCSMat(pfDCS *d, pfMatrix m);
 void pfSwitchVal(pfSwitch *s, int val);
 int pfGetSwitchVal(const pfSwitch *s);
 
+pfSequence *pfNewSeq(void);
+/* the time of a frame (frame < 0: of every frame of the children) */
+void pfSeqTime(pfSequence *s, int frame, float time);
 void pfSeqMode(pfSequence *s, int mode);
 int pfGetSeqMode(const pfSequence *s);
 int pfGetSeqFrame(const pfSequence *s, int *repeat);

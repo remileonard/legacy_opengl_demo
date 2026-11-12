@@ -644,6 +644,27 @@ void pfGetDCSMat(pfDCS *d, pfMatrix m) { pfCopyMat(m, d->mat); }
 void pfSwitchVal(pfSwitch *s, int val) { if (s) s->switchval = val; }
 int pfGetSwitchVal(const pfSwitch *s) { return s ? s->switchval : 0; }
 
+pfSequence *pfNewSeq(void) { return new_node(PFNODE_SEQUENCE); }
+
+void pfSeqTime(pfSequence *s, int frame, float time)
+{
+    int i, n = frame < 0 ? s->nchildren : frame + 1;
+    if (!s || n <= 0)
+        return;
+    if (n > s->nframes) {
+        s->times = (float *)realloc(s->times, sizeof(float) * (n + 1));
+        for (i = s->nframes; i < n; i++)
+            s->times[i] = 0.033f;
+        s->nframes = n;
+    }
+    if (frame < 0) {
+        for (i = 0; i < n; i++)
+            s->times[i] = time;
+    } else {
+        s->times[frame] = time;
+    }
+}
+
 void pfSeqMode(pfSequence *s, int mode)
 {
     if (!s)

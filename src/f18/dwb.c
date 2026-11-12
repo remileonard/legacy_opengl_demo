@@ -8,7 +8,9 @@
  *  0x1771 header      +0x00 short units, +0x04 float version, +0x86 short
  *                     up axis (2: Y up, the loader turns the model to Z up)
  *  0x1772 group       +0x34 flags, bit 26: the children are decals on the
- *                     first one (layer)
+ *                     first one (layer); bit 24: the children are the
+ *                     frames of an animation (sequence), +0x80 seconds
+ *                     each
  *  0x1773 LOD         +0x08 switch out, +0x0c switch in, +0x10 center
  *  0x1775 polygon     +0x00 color index, +0x04 number of vertices,
  *                     +0x10 texture (-1 none), +0x2c color 0xAABBGGRR,
@@ -46,6 +48,7 @@
 #define OP_TEXTURE 0x17eb
 
 #define GROUP_LAYER 0x04000000U
+#define GROUP_SEQUENCE 0x01000000U
 #define VERTEX_SIZE 44
 #define MAX_DEPTH 256
 
@@ -218,19 +221,46 @@ static const char *base_name(const char *path)
  * or no extension): the image is searched by its name next to the model */
 static pfTexture *load_texture(Loader *L, const char *name)
 {
-    static const char *sub[] = { "", "/../textures", "/textures" };
+    /* next to the model, in ../textures, in textures, and in the directory
+     * of the original name under ../textures ("./encModels/flames/f1" in
+     * ../textures/flames) */
+    static const char *subs[] = { "", "/../textures", "/textures", NULL };
+    const char *sub[4];
+    char last_dir[256] = "";
     static const char *ext[] = { "", ".rgb", ".rgba", ".int", ".inta", ".bw" };
     static pfTexture **cache;
     static char **cache_name;
     static int ncache;
     const char *base = base_name(name);
     char path[8192];
+    const char *e, *b0;
+    sub[0] = subs[0];
+    sub[1] = subs[1];
+    sub[2] = subs[2];
+    e = base > name ? base - 1 : name;
+    for (b0 = e; b0 > name && b0[-1] != '/' && b0[-1] != '\\'; b0--)
+        ;
+    if (e > b0 && e - b0 < 200) {
+        strcpy(last_dir, "/../textures/");
+        strncat(last_dir, b0, e - b0);
+    }
+    sub[3] = last_dir;
     pfTexture *t;
     int i, j, k;
 
-    for (i = 0; i < 3; i++)
+    for (i = 0; i < 5; i++)
         for (j = 0; j < 6; j++) {
-            sprintf(path, "%s%s/%.1000s%s", L->dir, sub[i], base, ext[j]);
+            if (i == 3 && !last_dir[0])
+                continue;
+            if (i == 4) {
+                /* the path of the application (pfFilePath) */
+                char f[1100];
+                sprintf(f, "%.1000s%s", base, ext[j]);
+                if (!pfFindFile(f, path, 4))
+                    continue;
+            } else {
+                sprintf(path, "%s%s/%.1000s%s", L->dir, sub[i], base, ext[j]);
+            }
             if (!file_exists(path))
                 continue;
             for (k = 0; k < ncache; k++)
@@ -484,6 +514,9 @@ pfNode *pfdLoadFile_dwb(const char *file)
     Level last_level;
     long size, p;
     int depth = 0, last_is_poly = 0, last_tex = -1, y_up = 0;
+    pfNode *seqs[64];
+    float seq_time[64];
+    int nseqs = 0, k;
     FILE *fp = fopen(file, "rb");
 
     memset(&stats, 0, sizeof(stats));
@@ -534,6 +567,14 @@ pfNode *pfdLoadFile_dwb(const char *file)
             if (flags & GROUP_LAYER) {
                 n = pfNewLayer();
                 stats.layers++;
+            } else if (flags & GROUP_SEQUENCE) {
+                /* an animation: its children in turn, +0x80 seconds each */
+                n = pfNewSeq();
+                n->userdata = NULL;
+                if (nseqs < 64) {
+                    seqs[nseqs] = n;
+                    seq_time[nseqs++] = len >= 0x84 ? bef(b + 0x80) : 0.033f;
+                }
             } else {
                 n = pfNewGroup();
             }
@@ -650,6 +691,12 @@ pfNode *pfdLoadFile_dwb(const char *file)
         }
     }
     finish_batches(&L);
+    for (k = 0; k < nseqs; k++) {
+        pfSeqTime(seqs[k], -1, seq_time[k] > 0 ? seq_time[k] : 0.033f);
+        pfSeqInterval(seqs[k], PFSEQ_CYCLE, 0, -1);
+        pfSeqDuration(seqs[k], 1, -1);
+        pfSeqMode(seqs[k], PFSEQ_START);
+    }
     free(data);
     free(L.tex);
     stats.y_up = y_up;
