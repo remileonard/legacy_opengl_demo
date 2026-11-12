@@ -424,7 +424,7 @@ static void draw_node(const Drt *d, const Node *n, const float *vars, int nvars,
         case L_ROTATE: {
             float a = map(v, l->f[5], l->f[6], l->f[7], l->f[8], (l->w[9] & 0x10000) != 0);
             glTranslatef(l->f[0], l->f[1], l->f[2]);
-            glRotatef(a, 0, 0, 1);
+            glRotatef(-a, 0, 0, 1);
             glTranslatef(-l->f[0], -l->f[1], -l->f[2]);
             break;
         }
