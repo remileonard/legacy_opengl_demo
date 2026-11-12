@@ -1,0 +1,16 @@
+San Diego
+	interactive/f18 data/f18/scripts/F18_1pipe.set
+	.color. .9 .5 .9
+	.highcolor. 1.0 .7 1.0
+San Diego 3 screens
+	interactive/f18 data/f18/scripts/F18_3pipe.set
+	.color. .9 .5 .9
+	.highcolor. 1.0 .7 1.0
+Long Beach
+	interactive/f18 data/f18/scripts/LB_1pipe.set
+	.color. .9 .5 .9
+	.highcolor. 1.0 .7 1.0
+Models
+	interactive/f18_view data/f18
+	.color. .9 .5 .9
+	.highcolor. 1.0 .7 1.0

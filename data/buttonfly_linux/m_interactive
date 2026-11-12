@@ -36,3 +36,5 @@ FSN
 	.highcolor. 1.0 .7 1.0
 Flight
 	.menu. data/buttonfly_linux/m_flight
+F-18
+	.menu. data/buttonfly_linux/m_f18
