@@ -115,6 +115,16 @@ in wireframe.
 ```
 sh gen_envmap_yaodl.sh {LINEAR|CONTOUR|SPHEREMAP} model.ydl image.rgb > model_env.ydl
 ```
+
+On Windows, `data/powerflip/gen_envmap_yaodl.cmd` (also in the Windows
+package) does the same without bash; the output is a file, since a binary
+`.ydl` cannot go through the console:
+
+```
+cd data\powerflip
+gen_envmap_yaodl.cmd SPHEREMAP ranger.ydl flowers.rgb ranger_env.ydl
+..\..\interactive\powerflip.exe ranger_env.ydl
+```
 Polygons and lines are compiled in display lists, as in the original.
 
 ## Status
