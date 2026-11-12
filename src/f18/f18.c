@@ -172,6 +172,8 @@ static void move_eye(float dt)
 
 /* --- drawing ------------------------------------------------------------------ */
 
+static void key_name(const char *dev, char *out);
+
 static void text(int x, int y, const char *s)
 {
     glRasterPos2i(x, y);
@@ -276,17 +278,48 @@ static void overlay(void)
         }
     }
     if (show_help) {
-        y = win_h - 70;
+        y = win_h - 110;
         text(10, y, es.script);
         y -= 20;
-        for (i = 0; i < es.nkeys; i++, y -= 16) {
-            sprintf(buf, "%-14s %s%s", es.keys[i].device, es.keys[i].function ? es.keys[i].function : "",
+        if (!free_eye) {
+            text(10, y, "Arrows        stick: left / right roll, up dives, down climbs");
+            y -= 16;
+            text(10, y, "A / Z         faster / slower (or right / middle button, or wheel)");
+            y -= 16;
+            text(10, y, f18_mouse.no_steer ? "M             the mouse flies the airplane (off)"
+                                          : "M             the mouse flies the airplane (on)");
+            y -= 16;
+        }
+        for (i = 0; i < es.nkeys; i++) {
+            char name[64];
+            int k;
+            /* A and Z are the speed keys */
+            if (!free_eye && (strcmp(es.keys[i].device, "AKEY") == 0 || strcmp(es.keys[i].device, "ZKEY") == 0))
+                continue;
+            /* one line for the keys bound to the same function */
+            for (k = 0; k < i; k++)
+                if (es.keys[k].function && es.keys[i].function &&
+                    strcmp(es.keys[k].function, es.keys[i].function) == 0)
+                    break;
+            if (k < i)
+                continue;
+            key_name(es.keys[i].device, name);
+            for (k = i + 1; k < es.nkeys; k++)
+                if (es.keys[k].function && es.keys[i].function &&
+                    strcmp(es.keys[k].function, es.keys[i].function) == 0 && strlen(name) < 40) {
+                    char other[32];
+                    key_name(es.keys[k].device, other);
+                    strcat(name, ", ");
+                    strcat(name, other);
+                }
+            sprintf(buf, "%-13s %s%s", name, es.keys[i].function ? es.keys[i].function : "",
                     es.keys[i].func ? "" : "  (not available yet)");
             text(10, y, buf);
+            y -= 16;
         }
         y -= 8;
         text(10, y, free_eye ? "mouse: left drag turn the eye, right drag or wheel speed, middle drag slide, Esc quit"
-                             : "mouse: from the middle of the window, roll and pitch; right button faster, middle slower; Esc quit");
+                             : "mouse: from the middle of the window, roll and pitch (M); H this help; Esc quit");
     }
     glEnable(GL_DEPTH_TEST);
 }
@@ -350,31 +383,119 @@ static void passive(int x, int y)
 
 static void idle(void) { glutPostRedisplay(); }
 
+/* keys added to the ones of the scripts: A and Z hold the speed up and
+ * down (before the bindings of the scripts), 1 and 2 stand for the Alt
+ * keys, which do not reach every program */
 static void keyboard(unsigned char k, int x, int y)
 {
     char buf[32];
     (void)x; (void)y;
+    if (!free_eye && (k == 'a' || k == 'A')) {
+        f18_mouse.faster = 1;
+        return;
+    }
+    if (!free_eye && (k == 'z' || k == 'Z')) {
+        f18_mouse.slower = 1;
+        return;
+    }
+    if (!free_eye && (k == 'm' || k == 'M')) {
+        f18_mouse.no_steer = !f18_mouse.no_steer;
+        return;
+    }
     if (device(ascii_device(k, buf)))
+        return;
+    if ((k == '+' || k == '=') && device("UPARROWKEY"))
+        return;
+    if (k == '-' && device("DOWNARROWKEY"))
+        return;
+    if (k == '1' && device("LEFTALTKEY"))
+        return;
+    if (k == '2' && device("RIGHTALTKEY"))
         return;
     if (k == 27)
         exit(0);
 }
 
+static void keyboard_up(unsigned char k, int x, int y)
+{
+    (void)x; (void)y;
+    if (k == 'a' || k == 'A')
+        f18_mouse.faster = 0;
+    if (k == 'z' || k == 'Z')
+        f18_mouse.slower = 0;
+}
+
+/* the IRIS GL name of a device as a key name for the help */
+static void key_name(const char *dev, char *out)
+{
+    static const char *names[][2] = {
+        { "UPARROWKEY", "Page Up, +" }, { "DOWNARROWKEY", "Page Down, -" }, { "LEFTARROWKEY", "Left" },
+        { "RIGHTARROWKEY", "Right" }, { "LEFTALTKEY", "Left Alt or 1" }, { "RIGHTALTKEY", "Right Alt or 2" },
+        { "SPACEKEY", "Space" }, { "ESCKEY", "Esc" }, { "RETKEY", "Enter" }, { "PAGEUPKEY", "Page Up" },
+        { "PAGEDOWNKEY", "Page Down" }, { "LEFTSHIFTKEY", "Left Shift" }, { "RIGHTSHIFTKEY", "Right Shift" },
+        { "LEFTCTRLKEY", "Left Ctrl" }, { "RIGHTCTRLKEY", "Right Ctrl" }
+    };
+    size_t i, n = strlen(dev);
+    for (i = 0; i < sizeof(names) / sizeof(names[0]); i++)
+        if (strcmp(dev, names[i][0]) == 0) {
+            strcpy(out, names[i][1]);
+            return;
+        }
+    if (n > 3 && strcmp(dev + n - 3, "KEY") == 0 && n - 3 < 30) {
+        memcpy(out, dev, n - 3);
+        out[n - 3] = 0;
+    } else {
+        strcpy(out, dev);
+    }
+}
+
+/* the arrows fly the airplane (the scripts bind them to the range of the
+ * radar, on Page Up and Page Down here) */
+static int *arrow(int k)
+{
+    switch (k) {
+    case GLUT_KEY_UP: return &f18_mouse.up;
+    case GLUT_KEY_DOWN: return &f18_mouse.down;
+    case GLUT_KEY_LEFT: return &f18_mouse.kleft;
+    case GLUT_KEY_RIGHT: return &f18_mouse.kright;
+    }
+    return NULL;
+}
+
 static void special(int k, int x, int y)
 {
     char buf[32];
+    int *a = arrow(k);
     (void)x; (void)y;
+    if (!free_eye && a) {
+        *a = 1;
+        return;
+    }
+    if (!free_eye && k == GLUT_KEY_PAGE_UP && device("UPARROWKEY"))
+        return;
+    if (!free_eye && k == GLUT_KEY_PAGE_DOWN && device("DOWNARROWKEY"))
+        return;
     device(special_device(k, buf));
 }
 
+static void special_up(int k, int x, int y)
+{
+    int *a = arrow(k);
+    (void)x; (void)y;
+    if (a)
+        *a = 0;
+}
 static void mouse(int b, int state, int x, int y)
 {
     passive(x, y);
     if (b == GLUT_LEFT_BUTTON) f18_mouse.left = state == GLUT_DOWN;
     if (b == GLUT_MIDDLE_BUTTON) f18_mouse.middle = state == GLUT_DOWN;
     if (b == GLUT_RIGHT_BUTTON) f18_mouse.right = state == GLUT_DOWN;
-    if (!free_eye)
+    if (!free_eye) {
+        if (state == GLUT_DOWN && b == 3) f18_mouse.wheel++;
+        if (state == GLUT_DOWN && b == 4) f18_mouse.wheel--;
         return;
+    }
     if (state == GLUT_DOWN) {
         if (b == 3) { eye_speed += 20; return; }
         if (b == 4) { eye_speed -= 20; return; }
@@ -443,6 +564,8 @@ static void configure(void)
     glutDisplayFunc(display);
     glutReshapeFunc(reshape);
     glutKeyboardFunc(keyboard);
+    glutKeyboardUpFunc(keyboard_up);
+    glutSpecialUpFunc(special_up);
     glutSpecialFunc(special);
     glutMouseFunc(mouse);
     glutMotionFunc(motion);

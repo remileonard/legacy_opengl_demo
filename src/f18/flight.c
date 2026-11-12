@@ -501,16 +501,24 @@ static void updateFlight(const char *arg)
         return;
     }
     lock_target();
-    if (f18_mouse.inside && f18_mouse.w > 0 && f18_mouse.h > 0) {
+    if (f18_mouse.inside && !f18_mouse.no_steer && f18_mouse.w > 0 && f18_mouse.h > 0) {
         float hw = f18_mouse.w / 2.0f, hh = f18_mouse.h / 2.0f;
         /* the IRIS GL y goes up */
         pitch_rate = (hh - f18_mouse.y) / hh * 1.0f;
         roll_rate = (f18_mouse.x - hw) / hw * 5.0f;
-        if (f18_mouse.right)
-            F.speed += 1;
-        else if (f18_mouse.middle)
-            F.speed -= 1;
     }
+    /* the keyboard: the arrows hold the stick (up pushes the nose down) */
+    if (f18_mouse.kleft != f18_mouse.kright)
+        roll_rate = f18_mouse.kright ? 3.0f : -3.0f;
+    if (f18_mouse.up != f18_mouse.down)
+        pitch_rate = f18_mouse.up ? 0.7f : -0.7f;
+    if (f18_mouse.faster || (f18_mouse.right && !f18_mouse.no_steer))
+        F.speed += 1;
+    else if (f18_mouse.slower || (f18_mouse.middle && !f18_mouse.no_steer))
+        F.speed -= 1;
+    /* the wheel: 10 m/s a step */
+    F.speed += 10.0f * f18_mouse.wheel;
+    f18_mouse.wheel = 0;
     if (F.speed >= 1000) F.speed = 1000;
     else if (F.speed <= 100) F.speed = 100;
     fly(F.plane, roll_rate, pitch_rate, F.speed);

@@ -10,6 +10,10 @@ typedef struct F18Mouse {
     int x, y;               /* position */
     int w, h;               /* size of the window */
     int left, middle, right;
+    int faster, slower;     /* the speed keys (A and Z) are held */
+    int wheel;              /* wheel steps since the last frame */
+    int up, down, kleft, kright; /* the arrow keys are held (flight) */
+    int no_steer;           /* the mouse does not fly the airplane (M) */
     int inside;             /* the pointer was seen in the window */
 } F18Mouse;
 

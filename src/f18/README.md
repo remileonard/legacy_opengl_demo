@@ -65,15 +65,23 @@ script (60 Hz): `f18` calls the app modules at that rate.
 | Input | Action |
 |---|---|
 | mouse position | from the middle of the window: roll (5°/frame at the edge) and pitch (1°/frame); the pitch turns the airplane around its wings |
-| right / middle button | faster / slower (1 m/s per frame, 100 to 1000 m/s) |
+| arrows | the same from the keyboard: left / right roll (3°/frame), up dives, down climbs (0.7°/frame) |
+| `M` | the mouse flies the airplane or not (for a touchpad: fly with the arrows) |
+| `A` / `Z`, right / middle button, wheel | faster / slower (1 m/s per frame, 10 m/s a wheel step, 100 to 1000 m/s) |
 | `E` | the views around the airplane in turn: tether (fixed side), tether 2 (turning with the airplane), follow (the place of the airplane 30 frames ago, the view at start) |
 | `P` | the view of each enemy in turn, then the cockpit |
 | `F` | the airplane 20 lengths behind an enemy chosen at random |
 | `N` | the enemies at their lowest speed |
 | `R` | the head up display (HUD) on and off |
-| up / down arrows | range of the radar |
+| Page Up / Page Down, `+` / `-` | range of the radar (the up and down arrows of the scripts) |
+| left / right Alt, `1` / `2` | the left / right missile (not rebuilt yet) |
 | space | after a crash, starts again at once (in flight: the gun, not rebuilt yet) |
 | `W`, `T`, `S`, `H` | wireframe, textures, statistics, list of the keys |
+| Esc | quit |
+
+The keys of the scripts come first, except `A`, `Z` and the arrows, which
+fly the airplane in `f18` (`Z` toggles the textures in the 3-screen
+script, `T` too).
 
 The ground is tested under the airplane every 20 frames, every frame below
 500 m: below 5 m the airplane crashes ("You just died...Attempting to
