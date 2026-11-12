@@ -3095,6 +3095,165 @@ void texbind(int target, int texid) {
     current_texture_id = texid;
 
 }
+
+/*
+ * === NURBS ===
+ * The IRIS GL NURBS on the GLU NURBS. The data is given in doubles with
+ * offsets in bytes; GLU wants floats with strides in floats, and keeps the
+ * pointers until gluEndSurface / gluEndCurve: the converted arrays are freed
+ * at the end of the surface or the curve.
+ */
+static GLUnurbsObj *iris_nurbs;
+static float **nurbs_data;
+static int nurbs_ndata, nurbs_maxdata;
+static int nurbs_in_trim;
+
+static GLUnurbsObj *get_nurbs(void) {
+    if (!iris_nurbs) {
+        iris_nurbs = gluNewNurbsRenderer();
+        gluNurbsProperty(iris_nurbs, GLU_SAMPLING_TOLERANCE, 25.0f);
+        gluNurbsProperty(iris_nurbs, GLU_DISPLAY_MODE, GLU_FILL);
+    }
+    return iris_nurbs;
+}
+
+static float *nurbs_floats(const double *d, int n, int stride, int size) {
+    float *f;
+    int i, k;
+    if (n <= 0)
+        return NULL;
+    f = (float *)malloc(sizeof(float) * n * size);
+    for (i = 0; i < n; i++)
+        for (k = 0; k < size; k++)
+            f[i * size + k] = (float)d[i * stride + k];
+    if (nurbs_ndata == nurbs_maxdata) {
+        nurbs_maxdata = nurbs_maxdata ? 2 * nurbs_maxdata : 16;
+        nurbs_data = (float **)realloc(nurbs_data, sizeof(float *) * nurbs_maxdata);
+    }
+    nurbs_data[nurbs_ndata++] = f;
+    return f;
+}
+
+static void nurbs_free(void) {
+    int i;
+    for (i = 0; i < nurbs_ndata; i++)
+        free(nurbs_data[i]);
+    nurbs_ndata = 0;
+}
+
+void setnurbsproperty(int property, float value) {
+    GLUnurbsObj *n = get_nurbs();
+    switch (property) {
+    case N_PIXEL_TOLERANCE:
+        gluNurbsProperty(n, GLU_SAMPLING_TOLERANCE, value);
+        break;
+    case N_CULLING:
+        gluNurbsProperty(n, GLU_CULLING, value != 0 ? GL_TRUE : GL_FALSE);
+        break;
+    case N_DISPLAY:
+        if (value == N_OUTLINE_POLY)
+            gluNurbsProperty(n, GLU_DISPLAY_MODE, GLU_OUTLINE_POLYGON);
+        else if (value == N_OUTLINE_PATCH || value == N_ISOLINE_S)
+            gluNurbsProperty(n, GLU_DISPLAY_MODE, GLU_OUTLINE_PATCH);
+        else
+            gluNurbsProperty(n, GLU_DISPLAY_MODE, GLU_FILL);
+        break;
+    default:
+        break;
+    }
+}
+
+/* the normals of the surfaces are generated, as on IRIS GL */
+void bgnsurface(void) {
+    glPushAttrib(GL_ENABLE_BIT);
+    glEnable(GL_AUTO_NORMAL);
+    glEnable(GL_NORMALIZE);
+    gluBeginSurface(get_nurbs());
+}
+
+void endsurface(void) {
+    gluEndSurface(get_nurbs());
+    glPopAttrib();
+    nurbs_free();
+}
+
+/* size of a point of a NURBS type, and its GL map */
+static int nurbs_type(int type, int surface, GLenum *map) {
+    switch (type) {
+    case N_V3D: *map = surface ? GL_MAP2_VERTEX_3 : GL_MAP1_VERTEX_3; return 3;
+    case N_V3DR: *map = surface ? GL_MAP2_VERTEX_4 : GL_MAP1_VERTEX_4; return 4;
+    case N_T2D: *map = surface ? GL_MAP2_TEXTURE_COORD_2 : GL_MAP1_TEXTURE_COORD_2; return 2;
+    case N_T2DR: *map = surface ? GL_MAP2_TEXTURE_COORD_3 : GL_MAP1_TEXTURE_COORD_3; return 3;
+    case N_C4D: *map = surface ? GL_MAP2_COLOR_4 : GL_MAP1_COLOR_4; return 4;
+    case N_C4DR: *map = surface ? GL_MAP2_COLOR_4 : GL_MAP1_COLOR_4; return 4;
+    case N_P2D: *map = GLU_MAP1_TRIM_2; return 2;
+    case N_P2DR: *map = GLU_MAP1_TRIM_3; return 3;
+    }
+    return 0;
+}
+
+void nurbssurface(int scount, double sknot[], int tcount, double tknot[], int s_offset, int t_offset,
+                  double *ctlarray, int sorder, int torder, int type) {
+    GLenum map;
+    int size = nurbs_type(type, 1, &map);
+    int ns = scount - sorder, nt = tcount - torder, i, j, k;
+    float *sk, *tk, *ctl;
+    if (size == 0 || ns <= 0 || nt <= 0)
+        return;
+    sk = nurbs_floats(sknot, scount, 1, 1);
+    tk = nurbs_floats(tknot, tcount, 1, 1);
+    /* the control points, s varying fastest */
+    ctl = (float *)malloc(sizeof(float) * ns * nt * size);
+    for (j = 0; j < nt; j++)
+        for (i = 0; i < ns; i++)
+            for (k = 0; k < size; k++)
+                ctl[(j * ns + i) * size + k] =
+                    (float)*(double *)((char *)ctlarray + j * t_offset + i * s_offset + k * sizeof(double));
+    if (nurbs_ndata == nurbs_maxdata) {
+        nurbs_maxdata = nurbs_maxdata ? 2 * nurbs_maxdata : 16;
+        nurbs_data = (float **)realloc(nurbs_data, sizeof(float *) * nurbs_maxdata);
+    }
+    nurbs_data[nurbs_ndata++] = ctl;
+    gluNurbsSurface(get_nurbs(), scount, sk, tcount, tk, size, size * ns, ctl, sorder, torder, map);
+}
+
+void bgncurve(void) {
+    gluBeginCurve(get_nurbs());
+}
+
+void endcurve(void) {
+    gluEndCurve(get_nurbs());
+    nurbs_free();
+}
+
+void nurbscurve(int knot_count, double knots[], int offset, double *ctlarray, int order, int type) {
+    GLenum map;
+    int size = nurbs_type(type, 0, &map), n = knot_count - order;
+    float *k, *ctl;
+    if (size == 0 || n <= 0)
+        return;
+    k = nurbs_floats(knots, knot_count, 1, 1);
+    ctl = nurbs_floats(ctlarray, n, offset / (int)sizeof(double), size);
+    gluNurbsCurve(get_nurbs(), knot_count, k, size, ctl, order, map);
+}
+
+void bgntrim(void) {
+    nurbs_in_trim = 1;
+    gluBeginTrim(get_nurbs());
+}
+
+void endtrim(void) {
+    gluEndTrim(get_nurbs());
+    nurbs_in_trim = 0;
+}
+
+void pwlcurve(int n, double *data, int offset, int type) {
+    int size = type == N_P2DR ? 3 : 2;
+    float *f = nurbs_floats(data, n, offset / (int)sizeof(double), size);
+    if (f)
+        gluPwlCurve(get_nurbs(), n, f, size, size == 3 ? GLU_MAP1_TRIM_3 : GLU_MAP1_TRIM_2);
+}
+
 /*
  * texgen: TG_LINEAR uses a plane in object coordinates, TG_CONTOUR a plane
  * in eye coordinates (transformed by the current matrix), TG_SPHEREMAP a

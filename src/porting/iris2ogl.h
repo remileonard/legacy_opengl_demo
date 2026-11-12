@@ -836,6 +836,42 @@ void tevbind(int target, int texid);
 
 void texgen(int coord, int mode, float params[]);
 
+/* NURBS (on the GLU NURBS) */
+#define N_PIXEL_TOLERANCE 1
+#define N_CULLING         2
+#define N_DISPLAY         3
+#define N_ERRORCHECKING   4
+#define N_SUBDIVISIONS    5
+#define N_S_STEPS         6
+#define N_T_STEPS         7
+#define N_TILES           8
+
+#define N_FILL            1.0
+#define N_OUTLINE_POLY    2.0
+#define N_OUTLINE_PATCH   5.0
+#define N_ISOLINE_S       12.0
+
+#define N_P2D   0x8
+#define N_P2DR  0xd
+#define N_V3D   0x4c
+#define N_V3DR  0x51
+#define N_T2D   0x88
+#define N_T2DR  0x8d
+#define N_C4D   0xd0
+#define N_C4DR  0xd5
+
+void setnurbsproperty(int property, float value);
+void bgnsurface(void);
+void endsurface(void);
+void nurbssurface(int scount, double sknot[], int tcount, double tknot[], int s_offset, int t_offset,
+                  double *ctlarray, int sorder, int torder, int type);
+void bgncurve(void);
+void endcurve(void);
+void nurbscurve(int knot_count, double knots[], int offset, double *ctlarray, int order, int type);
+void bgntrim(void);
+void endtrim(void);
+void pwlcurve(int n, double *data, int offset, int type);
+
 // Color map functions
 void gflush(void);
 void getmcolor(Colorindex index, RGBvalue* r, RGBvalue* g, RGBvalue* b);

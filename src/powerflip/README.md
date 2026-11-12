@@ -20,8 +20,8 @@ powerflip [-sh] [-W[xorg,yorg,]width,height] model.ydl|model.defs [...]
 | `image.c` | `readImageRGB`: the SGI images of the textures |
 | `gen_envmap_yaodl.sh` | the IRIX script adding an environment map to a model |
 
-The IRIS GL calls go through `src/porting` (`c3f`, `c4f`, `texgen` and
-`lmcolor` were completed there for powerflip).
+The IRIS GL calls go through `src/porting` (`c3f`, `c4f`, `texgen`, the
+NURBS functions and `lmcolor` were completed there for powerflip).
 
 ## YAODL
 
@@ -61,12 +61,18 @@ are restored between two elements.
 | `sContours`, `tContours` | mode (`contour`, `linear`, `spheremap`, `off`), space (`eye`, `object`), plane (4 floats, not for `spheremap`), repeated | `texgen` of s / t |
 | `regularMesh` | 2 ints (columns, rows), `vertices` | triangle strips between the rows |
 | `subdivides` | | accepted, no effect (IRIX screen subdivision) |
+| `nurbs` | s knots, t knots, `ns nt`, ns*nt points of 3 or 4 floats (s varying fastest), repeated | a NURBS surface, with its attributes (trimming curves) inside it |
+| `trimcurves` | knots, number of points, points `u v w`, repeated | a rational trimming curve of the surface i |
 
 The colors replace the diffuse color of the material (`lmcolor(LMC_DIFFUSE)`).
 A texture is read once, modulates the lit color, and is searched in the
 current directory then in the directory of the model. A texture bound by
 an enclosing object wins over the inner ones. In `eye` space the plane of a
 contour is given with the identity as viewing matrix.
+
+A NURBS surface also gets a bilinear patch of texture coordinates over the
+parameters [-1, 1] x [-1, 1]; it is drawn filled, or as outline polygons
+in wireframe.
 
 ```
 sh gen_envmap_yaodl.sh {LINEAR|CONTOUR|SPHEREMAP} model.ydl image.rgb > model_env.ydl
@@ -82,7 +88,7 @@ Polygons and lines are compiled in display lists, as in the original.
    Local...); the YAODL classes `light`, `lightPosition`, `lightColor`,
    `lightAmbient`, `spotlight`, `spotdirection` are used by none of the
    models and are parsed and ignored
-4. NURBS and trimming curves
+4. NURBS and trimming curves - **done**
 5. animation (`advanceTime`, `seconds`, `spline`, `transVector`, `rotVector`)
 6. the menus and options of powerflip (fog, motion blur, clipping planes...)
 

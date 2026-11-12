@@ -36,3 +36,6 @@ F15 wire
 
 Can
 	./interactive/powerflip.exe data/powerflip/re_can.ydl
+
+Nurbs
+	./interactive/powerflip.exe data/powerflip/nurb.defs

@@ -872,6 +872,172 @@ static void regularmesh_execute(Yobj *o)
     list_pop(o->assoc, o->nassoc, 1);
 }
 
+/* --- nurbs: "(nurbs sknots, tknots, ns nt, points, ...)" ------------------------------ */
+
+typedef struct {
+    int nsknots, ntknots;
+    double *sknots, *tknots;
+    int ns, nt, size;       /* control points in s and t, 3 or 4 coordinates */
+    double *points;         /* s varying fastest */
+} YSurface;
+
+typedef struct {
+    int nknots;
+    double *knots;
+    int npoints;            /* homogeneous 2D points (u v w) */
+    double *points;
+} YTrim;
+
+static double *doubles(Yobj *l, int *n)
+{
+    double *d;
+    int i;
+    *n = l->cls == &yfloat_class ? l->nf : l->ni;
+    d = (double *)malloc(sizeof(double) * (*n ? *n : 1));
+    for (i = 0; i < *n; i++)
+        d[i] = l->cls == &yfloat_class ? l->f[i] : l->iv[i];
+    return d;
+}
+
+static int is_numbers(Yobj *o)
+{
+    return o->cls == &yfloat_class || o->cls == &yint_class;
+}
+
+static Yobj *create_nurbs(const YClass *cls, Yobj **args, int nargs)
+{
+    Yobj *o = new_obj(cls);
+    YSurface *sf;
+    int k, n;
+    if (nargs == 0 || nargs % 4) {
+        fprintf(stderr, "YAODL: Nurbs: Bad arguments\n");
+        return NULL;
+    }
+    sf = (YSurface *)calloc(nargs / 4, sizeof(YSurface));
+    for (k = 0; k < nargs; k += 4) {
+        YSurface *e = &sf[k / 4];
+        if (!is_numbers(args[k]) || !is_numbers(args[k + 1]) || args[k + 2]->cls != &yint_class
+            || args[k + 2]->ni != 2 || !is_numbers(args[k + 3])) {
+            fprintf(stderr, "YAODL: Nurbs: Bad arguments\n");
+            return NULL;
+        }
+        e->sknots = doubles(args[k], &e->nsknots);
+        e->tknots = doubles(args[k + 1], &e->ntknots);
+        e->ns = args[k + 2]->iv[0];
+        e->nt = args[k + 2]->iv[1];
+        e->points = doubles(args[k + 3], &n);
+        if (e->ns <= 0 || e->nt <= 0 || n % (e->ns * e->nt)) {
+            fprintf(stderr, "YAODL: Nurbs: Bad arguments\n");
+            return NULL;
+        }
+        e->size = n / (e->ns * e->nt);
+        if ((e->size != 3 && e->size != 4) || e->nsknots <= e->ns || e->ntknots <= e->nt) {
+            fprintf(stderr, "YAODL: Nurbs: Bad arguments\n");
+            return NULL;
+        }
+    }
+    o->ext = sf;
+    o->count = nargs / 4;
+    return o;
+}
+
+/* the parameters of the texture: a bilinear patch over [-1, 1] */
+static double tex_knots[4] = { -1, -1, 1, 1 };
+static double tex_points[8] = { 0, 0, 1, 0, 0, 1, 1, 1 };
+
+/* the surface i, with the element i of its attributes (the trimming curves)
+   between bgnsurface and endsurface */
+static void nurbs_executeN(Yobj *o, int i)
+{
+    static int style = -1;
+    YSurface *e = &((YSurface *)o->ext)[clamp(i, o->count)];
+    if (measuring) {
+        int k;
+        for (k = 0; k < e->ns * e->nt; k++) {
+            double *p = e->points + k * e->size;
+            float v[3], w = e->size == 4 && p[3] != 0 ? (float)p[3] : 1.0f;
+            Yobj tmp;
+            v[0] = (float)p[0] / w;
+            v[1] = (float)p[1] / w;
+            v[2] = (float)p[2] / w;
+            memset(&tmp, 0, sizeof(tmp));
+            tmp.f = v;
+            tmp.width = 3;
+            tmp.count = 1;
+            vertices_executeN(&tmp, 0);
+        }
+        measure_polys++;
+        return;
+    }
+    if (style != YAODL_DrawStyle) {
+        setnurbsproperty(N_DISPLAY, YAODL_DrawStyle == 3 ? N_OUTLINE_POLY : N_FILL);
+        style = YAODL_DrawStyle;
+    }
+    bgnsurface();
+    nurbssurface(e->nsknots, e->sknots, e->ntknots, e->tknots, e->size * (int)sizeof(double),
+                 e->size * e->ns * (int)sizeof(double), e->points, e->nsknots - e->ns, e->ntknots - e->nt,
+                 e->size == 3 ? N_V3D : N_V3DR);
+    nurbssurface(4, tex_knots, 4, tex_knots, 2 * sizeof(double), 4 * sizeof(double), tex_points, 2, 2, N_T2D);
+    list_executeN(o->assoc, o->nassoc, i);
+    endsurface();
+}
+
+/* nurbs::Execute: the attributes are executed inside the surfaces */
+static void nurbs_execute(Yobj *o)
+{
+    int i;
+    list_push(o->assoc, o->nassoc, 1);
+    for (i = 0; i < o->count; i++) {
+        if (i) {
+            list_pop(o->assoc, o->nassoc, 0);
+            list_push(o->assoc, o->nassoc, 0);
+        }
+        nurbs_executeN(o, i);
+    }
+    list_pop(o->assoc, o->nassoc, 1);
+}
+
+/* trimcurves: "(trimcurves knots, npoints, points, ...)", points u v w */
+static Yobj *create_trimcurves(const YClass *cls, Yobj **args, int nargs)
+{
+    Yobj *o = new_obj(cls);
+    YTrim *t;
+    int k, n;
+    if (nargs == 0 || nargs % 3) {
+        fprintf(stderr, "YAODL: Nurbs: Bad arguments\n");
+        return NULL;
+    }
+    t = (YTrim *)calloc(nargs / 3, sizeof(YTrim));
+    for (k = 0; k < nargs; k += 3) {
+        YTrim *e = &t[k / 3];
+        if (!is_numbers(args[k]) || args[k + 1]->cls != &yint_class || args[k + 1]->ni != 1
+            || !is_numbers(args[k + 2])) {
+            fprintf(stderr, "YAODL: Nurbs: Bad arguments\n");
+            return NULL;
+        }
+        e->knots = doubles(args[k], &e->nknots);
+        e->npoints = args[k + 1]->iv[0];
+        e->points = doubles(args[k + 2], &n);
+        if (e->npoints <= 0 || n != 3 * e->npoints || e->nknots <= e->npoints) {
+            fprintf(stderr, "YAODL: Nurbs: Bad arguments\n");
+            return NULL;
+        }
+    }
+    o->ext = t;
+    o->count = nargs / 3;
+    return o;
+}
+
+static void trimcurves_executeN(Yobj *o, int i)
+{
+    YTrim *e = &((YTrim *)o->ext)[clamp(i, o->count)];
+    if (measuring)
+        return;
+    bgntrim();
+    nurbscurve(e->nknots, e->knots, 3 * sizeof(double), e->points, e->nknots - e->npoints, N_P2DR);
+    endtrim();
+}
+
 static const YClass classes[] = {
     { "group", create_group, NULL, group_executeN, group_push, group_pop },
     { "lines", create_vertices_group, lines_execute, lines_executeN, group_push, group_pop },
@@ -893,11 +1059,13 @@ static const YClass classes[] = {
     { "tContours", create_contours, NULL, contours_executeN, contours_push, contours_pop },
     { "subdivides", create_subdivides, NULL, NULL, NULL, NULL },
     { "regularMesh", create_regularmesh, regularmesh_execute, NULL, group_push, group_pop },
+    { "nurbs", create_nurbs, nurbs_execute, nurbs_executeN, NULL, NULL },
+    { "trimcurves", create_trimcurves, NULL, trimcurves_executeN, NULL, NULL },
 };
 
 /* names of the classes still to do (textures, nurbs, lights, animation) */
 static const char *later[] = {
-    "nurbs", "trimcurves", "light", "lightPosition", "lightAmbient", "lightColor", "spotlight", "spotdirection", "transVector",
+    "light", "lightPosition", "lightAmbient", "lightColor", "spotlight", "spotdirection", "transVector",
     "rotVector", "floatValue", "floatValues", "intValue", "advanceTime", "seconds", "spline",
 };
 

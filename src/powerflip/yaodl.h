@@ -52,6 +52,7 @@ struct Yobj {
     int flag;
     void *saved;
     struct YContour *contours;
+    void *ext;              /* nurbs surfaces, trimming curves */
 };
 
 /* the drawing style of the polygons: 0 filled, 3 wireframe (closed lines) */
