@@ -106,6 +106,35 @@ SGI's 3D File System Navigator, the file browser of the "It's a UNIX system!" sc
 
 See [src/fsn/README.md](src/fsn/README.md) for how it was rebuilt and the controls.
 
+### 🤖 Mekton
+SGI's 1996 mech combat demo built on IRIS Performer, rebuilt from the IRIX executable: `mekton` is the game (mechs, flight, plasma guns, cameras, HUD, instrument panel and radars), `mekton_view` a viewer for its scenes. The undocumented Performer binary format (`.pfb`) was rebuilt from the loader inside the executable. Viewer features:
+- Mechs, arenas, colony and city scenes with their textures and materials
+- Animated sequences (explosions) and the scrolling waterfall
+- Orbit, zoom, pan, wireframe, texture and lighting toggles
+
+See [src/mekton/README.md](src/mekton/README.md) for the file format and the controls. The Mekton data files are not included.
+
+
+### ✈️ Certain Impact
+Paradigm Simulation's 1996 World War I air combat game built on Vega and IRIS Performer, rebuilt from the IRIX executable: `cimpact` is the game, `cimpact_view` a viewer for its models and terrain. Vega's undocumented "fast" format (`.fst`) was rebuilt from the loader inside the executable, and a small compatibility layer stands for the parts of Vega the game uses (application definition file, objects and scenes, intersections, paths, DIS appearances). Game features:
+- Six biplanes (Fokker D VII, Fokker Dr I, Albatros D III, Sopwith, Fe2b, American Standard) with the original flight model: taxiing, take-off, stalls, landings
+- German or Allied side: protect or stop the supply train, destroy the blockades, the bridge, the ships, the blimp
+- Battle regions with enemy fighters, flak cannons and fuel, ammo and repair balloons
+- Machine guns with tracers, bombs, explosions, damaged buildings
+- Cockpit with working instruments and map, follow, train and dying views
+- Selection screen, intro and instruction pages, three skill levels
+
+See [src/cimpact/README.md](src/cimpact/README.md) for the controls, the data layout and the file format. The Certain Impact data files are not included.
+
+
+### 🛩️ F-18 (Performer / EasyScene)
+A 1996 F-18 demo built on IRIS Performer 2.2 and Coryphaeus EasyScene. `f18` runs the EasyScene scripts of the demo (pipes, channels, objects, keys and modules) with its flight rebuilt from the executable: the F-18 flown with the mouse, the chase, side and cockpit views, crashes, the green head up display with its pitch ladder and heading tape, a radar, five enemies flying their routes, the guided missiles that shoot them down, and the effects: explosions, debris, missile exhaust, black smoke, burning wrecks and `f18_view` is a viewer for its models, terrains and cockpit, stored in Coryphaeus' Designer's Workbench format (`.dwb`), whose loader was rebuilt from `pfdLoad_dwb` inside the IRIX executable. Viewer features:
+- F-18, MiG-27, missile, wrecks, control tower, cockpit and the two terrains, with their textures decrypted as the demo does
+- Levels of detail switched on the eye distance, decal layers, materials
+- Orbit, zoom, pan, wireframe, texture, lighting and LOD toggles
+
+See [src/f18/README.md](src/f18/README.md) for the file format and the controls. The F-18 data files are in `data/f18`.
+
 
 ## Prerequisites
 
@@ -147,6 +176,39 @@ See [src/fsn/README.md](src/fsn/README.md) for how it was rebuilt and the contro
    ```
    out/build/windows/OpenGL_Glut_Legacy_Demos.sln
    ```
+
+### Portable Windows release (x64)
+
+The **Windows release** GitHub Actions workflow builds and checks a portable ZIP
+using Visual Studio 2022. It runs on pull requests, manually with **Run workflow**,
+and when a version tag such as `v1.0.0` or `v1.1.0-rc.1` is pushed.
+Each run provides a `windows-x64-release` artifact containing the ZIP and its
+SHA-256 checksum. Version tags also create a **draft** GitHub Release with those
+files attached; review the draft before publishing it. Re-running a tag can
+update its draft, but will not overwrite a published release.
+
+Extract the entire ZIP and double-click `Start-Demos.cmd`. The launcher sets the
+working directory so Buttonfly can find its menus, models and textures. To run
+an individual demo, open a terminal in the extracted directory and run, for
+example, `.\demos\atlantis.exe`. Do not move the executables out of the package.
+
+FreeGLUT and the MSVC runtime are statically linked in this configuration:
+the destination PC needs neither vcpkg, Visual Studio nor a separate FreeGLUT
+installation. A working OpenGL graphics driver is still required. Mekton and
+Certain Impact still require their separately obtained data files, which are
+not included in the archive.
+
+To produce the same ZIP locally, set `VCPKG_ROOT` as above, then run:
+
+```powershell
+cmake --preset windows-release
+cmake --build --preset windows-release --parallel
+cpack --config out/build/windows-release/CPackConfig.cmake -C Release -B out/packages
+```
+
+The workflow pins vcpkg to the registry baseline in `vcpkg-configuration.json`
+and uses the project's pinned FreeGLUT overlay. Update the workflow's vcpkg
+commit together with that baseline.
 
 ### Linux/macOS
 
@@ -225,6 +287,9 @@ legacy_opengl_demo/
     ├── gl_puzzle/         # 3D puzzle game
     ├── ideas/             # SGI Ideas demo
     ├── insect/            # Insect animation demo
+    ├── mekton/            # Mekton game and scene viewer (IRIS Performer .pfb loader)
+    ├── cimpact/           # Certain Impact game and model viewer (Vega .fst loader)
+    ├── f18/               # F-18 demo: EasyScene scripts, Designer's Workbench .dwb loader, viewer
     ├── libtk/             # TK toolkit (X11/GLX to GLUT port)
     ├── roller_coaster/    # Roller coaster simulation
     └── smooth/            # Model viewer

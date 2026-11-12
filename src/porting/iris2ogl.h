@@ -101,6 +101,8 @@ typedef int16_t Device;
 #define GD_ZMAX         16
 #define GD_ZMIN         17
 #define GD_TEXTURE_PERSP 18
+#define GD_CLIPPLANES   19  // Number of user clipping planes
+#define GD_BITS_ACBUF   20  // Bits of the accumulation buffer
 
 #define MAX_LIGHTS 8
 #define MAX_MATERIALS 256
@@ -157,6 +159,7 @@ typedef struct {
 #define LMODEL      14
 #define LOCALVIEWER 15
 #define TWO_SIDE    16
+#define BACKMATERIAL 17  // lmbind target: material of the back faces
 
 #define LIGHT0      0
 #define LIGHT1      1
@@ -176,6 +179,8 @@ void init_texture_system(void);
 void cpack(uint32_t color);
 void mapcolor(Colorindex index, RGBvalue r, RGBvalue g, RGBvalue b);
 void RGBcolor(RGBvalue r, RGBvalue g, RGBvalue b);
+void c3f(const float c[3]);
+void c4f(const float c[4]);
 
 // color() is a macro for indexed color mode
 #define color(i) iris_set_color_index(i)
@@ -280,6 +285,15 @@ void setpattern(int id);
 void lmdef(int deftype, int index, int np, float props[]);
 void lmbind(int target, int index);
 void lmcolor(int mode);
+
+/* lmcolor modes: the material property that follows the current color */
+#define LMC_COLOR    0
+#define LMC_EMISSION 1
+#define LMC_AMBIENT  2
+#define LMC_DIFFUSE  3
+#define LMC_SPECULAR 4
+#define LMC_AD       5
+#define LMC_NULL     6
 
 // === Font Management ===
 typedef void* fmfonthandle;
@@ -809,6 +823,73 @@ void texdef2d(int texid, int nc, int width, int height, void* image, int np, flo
 void tevdef(int texid, int nc, float props[]);
 void texbind(int target, int texid);
 void tevbind(int target, int texid);
+
+/* texture coordinate generation */
+#define TX_S 0
+#define TX_T 1
+#define TX_R 2
+#define TX_Q 3
+
+#define TG_OFF       0
+#define TG_ON        1
+#define TG_CONTOUR   2
+#define TG_LINEAR    3
+#define TG_SPHEREMAP 4
+#define TG_REFRACTMAP 5
+
+void texgen(int coord, int mode, float params[]);
+
+/* user clipping planes */
+#define CP_OFF    0
+#define CP_ON     1
+#define CP_DEFINE 2
+void clipplane(int index, int mode, float params[]);
+
+/* accumulation buffer: acsize before winopen asks for one */
+#define AC_CLEAR            0
+#define AC_ACCUMULATE       1
+#define AC_CLEAR_ACCUMULATE 2
+#define AC_RETURN           3
+#define AC_MULT             4
+#define AC_ADD              5
+void acsize(int planes);
+void acbuf(int op, float value);
+
+/* NURBS (on the GLU NURBS) */
+#define N_PIXEL_TOLERANCE 1
+#define N_CULLING         2
+#define N_DISPLAY         3
+#define N_ERRORCHECKING   4
+#define N_SUBDIVISIONS    5
+#define N_S_STEPS         6
+#define N_T_STEPS         7
+#define N_TILES           8
+
+#define N_FILL            1.0
+#define N_OUTLINE_POLY    2.0
+#define N_OUTLINE_PATCH   5.0
+#define N_ISOLINE_S       12.0
+
+#define N_P2D   0x8
+#define N_P2DR  0xd
+#define N_V3D   0x4c
+#define N_V3DR  0x51
+#define N_T2D   0x88
+#define N_T2DR  0x8d
+#define N_C4D   0xd0
+#define N_C4DR  0xd5
+
+void setnurbsproperty(int property, float value);
+void bgnsurface(void);
+void endsurface(void);
+void nurbssurface(int scount, double sknot[], int tcount, double tknot[], int s_offset, int t_offset,
+                  double *ctlarray, int sorder, int torder, int type);
+void bgncurve(void);
+void endcurve(void);
+void nurbscurve(int knot_count, double knots[], int offset, double *ctlarray, int order, int type);
+void bgntrim(void);
+void endtrim(void);
+void pwlcurve(int n, double *data, int offset, int type);
 
 // Color map functions
 void gflush(void);

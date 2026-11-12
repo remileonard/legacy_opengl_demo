@@ -18,3 +18,8 @@ endif()
 target_include_directories(flight PRIVATE ${OPENGL_INCLUDE_DIRS} ${GLUT_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR}/..)
 target_compile_options(flight PRIVATE ${OPENGL_CFLAGS} ${GLUT_CFLAGS})
 target_link_options(flight PRIVATE ${OPENGL_LDFLAGS} ${GLUT_LDFLAGS})
+
+if(MSVC)
+    set_property(SOURCE udpbrdcst.c APPEND PROPERTY COMPILE_OPTIONS
+        "/FI${CMAKE_SOURCE_DIR}/src/porting/iris2ogl.h")
+endif()

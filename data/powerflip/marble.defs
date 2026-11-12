@@ -1,0 +1,5 @@
+(group
+	(indexpolygons (vertices vertex_coords : t_xy, n), i)
+	: (textures "/usr/demos/General_Demos/powerflip/data/corinth.rgb"),
+	  colors 1.0 1.0 1.0,
+),

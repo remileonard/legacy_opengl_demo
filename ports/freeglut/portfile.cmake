@@ -6,6 +6,12 @@ vcpkg_from_github(
     HEAD_REF master
 )
 
+# CMake supplies link dependencies; the header pragmas use names that differ
+# from FREEGLUT_REPLACE_GLUT and also leak into the library's own object files.
+vcpkg_replace_string("${SOURCE_PATH}/include/GL/freeglut_std.h"
+    "define FREEGLUT_LIB_PRAGMAS 1"
+    "define FREEGLUT_LIB_PRAGMAS 0")
+
 if(VCPKG_TARGET_IS_OSX)
     message("Building freeglut with Cocoa backend on macOS.")
     set(FREEGLUT_COCOA_OPTIONS -DFREEGLUT_COCOA=ON)

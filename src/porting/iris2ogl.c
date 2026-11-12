@@ -127,6 +127,14 @@ void iris_set_color_index(int index) {
     }
 }
 
+void c3f(const float c[3]) {
+    glColor3fv(c);
+}
+
+void c4f(const float c[4]) {
+    glColor4fv(c);
+}
+
 void cpack(uint32_t color) {
     // Convert packed RGB (0xRRGGBB) to float components
     float b = ((color >> 16) & 0xFF) / 255.0f;
@@ -1003,6 +1011,22 @@ void lmbind(int target, int index) {
             break;
         }
         
+        case BACKMATERIAL: {
+            // the back faces get their own material, with two-sided lighting
+            if (index > 0 && index < MAX_MATERIALS && materials[index].defined) {
+                MaterialDef *mat = &materials[index];
+                glMaterialfv(GL_BACK, GL_AMBIENT, mat->ambient);
+                glMaterialfv(GL_BACK, GL_DIFFUSE, mat->diffuse);
+                glMaterialfv(GL_BACK, GL_SPECULAR, mat->specular);
+                glMaterialfv(GL_BACK, GL_EMISSION, mat->emission);
+                glMaterialf(GL_BACK, GL_SHININESS, mat->shininess);
+                glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE);
+            } else {
+                glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, GL_FALSE);
+            }
+            break;
+        }
+
         case LMODEL: {
             if (index == 0) {
                 // Reset to default light model
@@ -1047,12 +1071,32 @@ void lmbind(int target, int index) {
 }
 
 void lmcolor(int mode) {
-    // Color material mode - stub
-    if (mode == 1) { // LMC_COLOR
+    // Color material mode: the property of the material that the current
+    // color replaces (IRIS GL LMC_* values)
+    switch (mode) {
+    case LMC_EMISSION:
+        glColorMaterial(GL_FRONT_AND_BACK, GL_EMISSION);
         glEnable(GL_COLOR_MATERIAL);
+        break;
+    case LMC_AMBIENT:
+        glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT);
+        glEnable(GL_COLOR_MATERIAL);
+        break;
+    case LMC_DIFFUSE:
+        glColorMaterial(GL_FRONT_AND_BACK, GL_DIFFUSE);
+        glEnable(GL_COLOR_MATERIAL);
+        break;
+    case LMC_SPECULAR:
+        glColorMaterial(GL_FRONT_AND_BACK, GL_SPECULAR);
+        glEnable(GL_COLOR_MATERIAL);
+        break;
+    case LMC_AD:
         glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
-    } else {
+        glEnable(GL_COLOR_MATERIAL);
+        break;
+    default: /* LMC_COLOR, LMC_NULL */
         glDisable(GL_COLOR_MATERIAL);
+        break;
     }
 }
 
@@ -1265,6 +1309,36 @@ void iris_glut_report_warnings(const char *fmt, va_list ap) {
     vfprintf(stderr, fmt, ap);
     fprintf(stderr, "\n");
 }
+static int iris_accum_planes;
+
+void acsize(int planes) {
+    iris_accum_planes = planes;
+}
+
+void acbuf(int op, float value) {
+    switch (op) {
+    case AC_CLEAR:
+        glClearAccum(0, 0, 0, 0);
+        glClear(GL_ACCUM_BUFFER_BIT);
+        break;
+    case AC_ACCUMULATE:
+        glAccum(GL_ACCUM, value);
+        break;
+    case AC_CLEAR_ACCUMULATE:
+        glAccum(GL_LOAD, value);
+        break;
+    case AC_RETURN:
+        glAccum(GL_RETURN, value);
+        break;
+    case AC_MULT:
+        glAccum(GL_MULT, value);
+        break;
+    case AC_ADD:
+        glAccum(GL_ADD, value);
+        break;
+    }
+}
+
 void winopen(const char *title) {
     // Initialize GLUT if not already done
     static int glut_initialized = 0;
@@ -1275,7 +1349,12 @@ void winopen(const char *title) {
         glut_initialized = 1;
     }
     
-    glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH) ;
+    glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH | (iris_accum_planes > 0 ? GLUT_ACCUM : 0)) ;
+    if (iris_accum_planes > 0 && !glutGet(GLUT_DISPLAY_MODE_POSSIBLE)) {
+        // pas de buffer d'accumulation sur cette machine
+        glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
+        iris_accum_planes = 0;
+    }
     glutInitWindowSize(window_width, window_height);
     glutInitWindowPosition(window_x, window_y);
     main_window = glutCreateWindow(title);
@@ -2767,42 +2846,30 @@ void fogvertex(int mode, float density[]) {
             break;
             
         case FG_VTX_LIN:
-            // Mode linéaire vertex fog
+        case FG_PIX_LIN:
+            // Brouillard linéaire : params = {near, far, r, g, b}
             glFogi(GL_FOG_MODE, GL_LINEAR);
             if (density) {
+                GLfloat fog_color[4] = { density[2], density[3], density[4], 1.0f };
                 glFogf(GL_FOG_START, density[0]);
                 glFogf(GL_FOG_END, density[1]);
-                
-                // Couleur si fournie
-                if (density[2] != 0.0f || density[3] != 0.0f) {
-                    GLfloat fog_color[4] = {
-                        density[1],
-                        density[2],
-                        density[3],
-                        1.0f
-                    };
-                    glFogfv(GL_FOG_COLOR, fog_color);
-                }
+                glFogfv(GL_FOG_COLOR, fog_color);
             }
-            glHint(GL_FOG_HINT, GL_NICEST);
+            glHint(GL_FOG_HINT, mode == FG_PIX_LIN ? GL_NICEST : GL_FASTEST);
             break;
-            
+
         case FG_VTX_EXP:
-            // Mode exponentiel vertex fog
-            glFogi(GL_FOG_MODE, GL_EXP);
-            if (density) {
-                glFogf(GL_FOG_DENSITY, density[0]);
-            }
-            glHint(GL_FOG_HINT, GL_NICEST);
-            break;
-            
+        case FG_PIX_EXP:
         case FG_VTX_EXP2:
-            // Mode exponentiel carré vertex fog
-            glFogi(GL_FOG_MODE, GL_EXP2);
+        case FG_PIX_EXP2:
+            // Brouillard exponentiel (carré) : params = {densité, r, g, b}
+            glFogi(GL_FOG_MODE, mode == FG_VTX_EXP || mode == FG_PIX_EXP ? GL_EXP : GL_EXP2);
             if (density) {
+                GLfloat fog_color[4] = { density[1], density[2], density[3], 1.0f };
                 glFogf(GL_FOG_DENSITY, density[0]);
+                glFogfv(GL_FOG_COLOR, fog_color);
             }
-            glHint(GL_FOG_HINT, GL_NICEST);
+            glHint(GL_FOG_HINT, mode == FG_PIX_EXP || mode == FG_PIX_EXP2 ? GL_NICEST : GL_FASTEST);
             break;
             
         default:
@@ -3067,6 +3134,232 @@ void texbind(int target, int texid) {
     current_texture_id = texid;
 
 }
+
+/*
+ * === NURBS ===
+ * The IRIS GL NURBS on the GLU NURBS. The data is given in doubles with
+ * offsets in bytes; GLU wants floats with strides in floats, and keeps the
+ * pointers until gluEndSurface / gluEndCurve: the converted arrays are freed
+ * at the end of the surface or the curve.
+ */
+static GLUnurbsObj *iris_nurbs;
+static float **nurbs_data;
+static int nurbs_ndata, nurbs_maxdata;
+static int nurbs_in_trim;
+
+static GLUnurbsObj *get_nurbs(void) {
+    if (!iris_nurbs) {
+        iris_nurbs = gluNewNurbsRenderer();
+        gluNurbsProperty(iris_nurbs, GLU_SAMPLING_TOLERANCE, 25.0f);
+        gluNurbsProperty(iris_nurbs, GLU_DISPLAY_MODE, GLU_FILL);
+    }
+    return iris_nurbs;
+}
+
+static float *nurbs_floats(const double *d, int n, int stride, int size) {
+    float *f;
+    int i, k;
+    if (n <= 0)
+        return NULL;
+    f = (float *)malloc(sizeof(float) * n * size);
+    for (i = 0; i < n; i++)
+        for (k = 0; k < size; k++)
+            f[i * size + k] = (float)d[i * stride + k];
+    if (nurbs_ndata == nurbs_maxdata) {
+        nurbs_maxdata = nurbs_maxdata ? 2 * nurbs_maxdata : 16;
+        nurbs_data = (float **)realloc(nurbs_data, sizeof(float *) * nurbs_maxdata);
+    }
+    nurbs_data[nurbs_ndata++] = f;
+    return f;
+}
+
+static void nurbs_free(void) {
+    int i;
+    for (i = 0; i < nurbs_ndata; i++)
+        free(nurbs_data[i]);
+    nurbs_ndata = 0;
+}
+
+void setnurbsproperty(int property, float value) {
+    GLUnurbsObj *n = get_nurbs();
+    switch (property) {
+    case N_PIXEL_TOLERANCE:
+        gluNurbsProperty(n, GLU_SAMPLING_TOLERANCE, value);
+        break;
+    case N_CULLING:
+        gluNurbsProperty(n, GLU_CULLING, value != 0 ? GL_TRUE : GL_FALSE);
+        break;
+    case N_DISPLAY:
+        if (value == N_OUTLINE_POLY)
+            gluNurbsProperty(n, GLU_DISPLAY_MODE, GLU_OUTLINE_POLYGON);
+        else if (value == N_OUTLINE_PATCH || value == N_ISOLINE_S)
+            gluNurbsProperty(n, GLU_DISPLAY_MODE, GLU_OUTLINE_PATCH);
+        else
+            gluNurbsProperty(n, GLU_DISPLAY_MODE, GLU_FILL);
+        break;
+    default:
+        break;
+    }
+}
+
+/* the normals of the surfaces are generated, as on IRIS GL */
+void bgnsurface(void) {
+    glPushAttrib(GL_ENABLE_BIT);
+    glEnable(GL_AUTO_NORMAL);
+    glEnable(GL_NORMALIZE);
+    gluBeginSurface(get_nurbs());
+}
+
+void endsurface(void) {
+    gluEndSurface(get_nurbs());
+    glPopAttrib();
+    nurbs_free();
+}
+
+/* size of a point of a NURBS type, and its GL map */
+static int nurbs_type(int type, int surface, GLenum *map) {
+    switch (type) {
+    case N_V3D: *map = surface ? GL_MAP2_VERTEX_3 : GL_MAP1_VERTEX_3; return 3;
+    case N_V3DR: *map = surface ? GL_MAP2_VERTEX_4 : GL_MAP1_VERTEX_4; return 4;
+    case N_T2D: *map = surface ? GL_MAP2_TEXTURE_COORD_2 : GL_MAP1_TEXTURE_COORD_2; return 2;
+    case N_T2DR: *map = surface ? GL_MAP2_TEXTURE_COORD_3 : GL_MAP1_TEXTURE_COORD_3; return 3;
+    case N_C4D: *map = surface ? GL_MAP2_COLOR_4 : GL_MAP1_COLOR_4; return 4;
+    case N_C4DR: *map = surface ? GL_MAP2_COLOR_4 : GL_MAP1_COLOR_4; return 4;
+    case N_P2D: *map = GLU_MAP1_TRIM_2; return 2;
+    case N_P2DR: *map = GLU_MAP1_TRIM_3; return 3;
+    }
+    return 0;
+}
+
+void nurbssurface(int scount, double sknot[], int tcount, double tknot[], int s_offset, int t_offset,
+                  double *ctlarray, int sorder, int torder, int type) {
+    GLenum map;
+    int size = nurbs_type(type, 1, &map);
+    int ns = scount - sorder, nt = tcount - torder, i, j, k;
+    float *sk, *tk, *ctl;
+    if (size == 0 || ns <= 0 || nt <= 0)
+        return;
+    sk = nurbs_floats(sknot, scount, 1, 1);
+    tk = nurbs_floats(tknot, tcount, 1, 1);
+    /* the control points, s varying fastest */
+    ctl = (float *)malloc(sizeof(float) * ns * nt * size);
+    for (j = 0; j < nt; j++)
+        for (i = 0; i < ns; i++)
+            for (k = 0; k < size; k++)
+                ctl[(j * ns + i) * size + k] =
+                    (float)*(double *)((char *)ctlarray + j * t_offset + i * s_offset + k * sizeof(double));
+    if (nurbs_ndata == nurbs_maxdata) {
+        nurbs_maxdata = nurbs_maxdata ? 2 * nurbs_maxdata : 16;
+        nurbs_data = (float **)realloc(nurbs_data, sizeof(float *) * nurbs_maxdata);
+    }
+    nurbs_data[nurbs_ndata++] = ctl;
+    gluNurbsSurface(get_nurbs(), scount, sk, tcount, tk, size, size * ns, ctl, sorder, torder, map);
+}
+
+void bgncurve(void) {
+    gluBeginCurve(get_nurbs());
+}
+
+void endcurve(void) {
+    gluEndCurve(get_nurbs());
+    nurbs_free();
+}
+
+void nurbscurve(int knot_count, double knots[], int offset, double *ctlarray, int order, int type) {
+    GLenum map;
+    int size = nurbs_type(type, 0, &map), n = knot_count - order;
+    float *k, *ctl;
+    if (size == 0 || n <= 0)
+        return;
+    k = nurbs_floats(knots, knot_count, 1, 1);
+    ctl = nurbs_floats(ctlarray, n, offset / (int)sizeof(double), size);
+    gluNurbsCurve(get_nurbs(), knot_count, k, size, ctl, order, map);
+}
+
+void bgntrim(void) {
+    nurbs_in_trim = 1;
+    gluBeginTrim(get_nurbs());
+}
+
+void endtrim(void) {
+    gluEndTrim(get_nurbs());
+    nurbs_in_trim = 0;
+}
+
+void pwlcurve(int n, double *data, int offset, int type) {
+    int size = type == N_P2DR ? 3 : 2;
+    float *f = nurbs_floats(data, n, offset / (int)sizeof(double), size);
+    if (f)
+        gluPwlCurve(get_nurbs(), n, f, size, size == 3 ? GLU_MAP1_TRIM_3 : GLU_MAP1_TRIM_2);
+}
+
+/*
+ * clipplane: CP_DEFINE gives the plane in the current coordinates, CP_ON and
+ * CP_OFF enable or disable it.
+ */
+void clipplane(int index, int mode, float params[]) {
+    GLenum plane;
+    GLint max = 6;
+
+    glGetIntegerv(GL_MAX_CLIP_PLANES, &max);
+    if (index < 0 || index >= max)
+        return;
+    plane = GL_CLIP_PLANE0 + index;
+    switch (mode) {
+    case CP_DEFINE:
+        if (params) {
+            GLdouble eq[4] = { params[0], params[1], params[2], params[3] };
+            glClipPlane(plane, eq);
+        }
+        break;
+    case CP_ON:
+        glEnable(plane);
+        break;
+    default:
+        glDisable(plane);
+        break;
+    }
+}
+
+/*
+ * texgen: TG_LINEAR uses a plane in object coordinates, TG_CONTOUR a plane
+ * in eye coordinates (transformed by the current matrix), TG_SPHEREMAP a
+ * sphere map; TG_ON and TG_OFF enable or disable the generation.
+ */
+void texgen(int coord, int mode, float params[]) {
+    GLenum c, gen;
+
+    if (coord < TX_S || coord > TX_Q)
+        return;
+    c = GL_S + coord;
+    gen = GL_TEXTURE_GEN_S + coord;
+    switch (mode) {
+    case TG_OFF:
+        glDisable(gen);
+        break;
+    case TG_ON:
+        glEnable(gen);
+        break;
+    case TG_LINEAR:
+        glTexGeni(c, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
+        if (params)
+            glTexGenfv(c, GL_OBJECT_PLANE, params);
+        break;
+    case TG_CONTOUR:
+        glTexGeni(c, GL_TEXTURE_GEN_MODE, GL_EYE_LINEAR);
+        if (params)
+            glTexGenfv(c, GL_EYE_PLANE, params);
+        break;
+    case TG_SPHEREMAP:
+        if (coord == TX_S || coord == TX_T)
+            glTexGeni(c, GL_TEXTURE_GEN_MODE, GL_SPHERE_MAP);
+        break;
+    case TG_REFRACTMAP:
+    default:
+        break;
+    }
+}
+
 void tevbind(int target, int texid) {
     (void)target;
     

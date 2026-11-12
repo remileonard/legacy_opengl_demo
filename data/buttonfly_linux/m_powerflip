@@ -1,0 +1,50 @@
+Beethoven
+	./interactive/powerflip data/powerflip/beethoven.ydl
+
+Doughnut
+	./interactive/powerflip data/powerflip/doughnut.ydl
+
+Logo
+	./interactive/powerflip data/powerflip/logo.ydl
+
+Martini
+	./interactive/powerflip data/powerflip/martini.ydl
+
+Porsche
+	./interactive/powerflip data/powerflip/porsche.ydl
+
+Ranger
+	./interactive/powerflip data/powerflip/ranger.ydl
+
+Shell
+	./interactive/powerflip data/powerflip/shell.ydl
+
+Space
+	./interactive/powerflip data/powerflip/space.ydl
+
+Triceratops
+	./interactive/powerflip data/powerflip/tricera.ydl
+
+X29
+	./interactive/powerflip data/powerflip/x29.ydl
+
+X29 env map
+	./interactive/powerflip data/powerflip/x29_envmap.ydl
+
+F15 wire
+	./interactive/powerflip data/powerflip/f15_wire.defs
+
+Can
+	./interactive/powerflip data/powerflip/re_can.ydl
+
+Nurbs
+	./interactive/powerflip data/powerflip/nurb.defs
+
+Space (stars)
+	./interactive/powerflip -b data/powerflip/stars.defs data/powerflip/space.ydl
+
+Beethoven (background)
+	./interactive/powerflip -b data/powerflip/background1.defs data/powerflip/beethoven.ydl
+
+Doughnut and martini (fog, clipping)
+	./interactive/powerflip -F 0.6 -C data/powerflip/doughnut.ydl data/powerflip/martini.ydl

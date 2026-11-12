@@ -56,7 +56,13 @@ typedef struct {
 	float er[4];	/* Cumulative rotation */
 	float espin[4];	/* Incremental rotation to spin */
 	float trans[3];	/* Translation */
+	int wire;	/* Only lines (YAODL): drawn as lines without lighting */
+	float wirecolor[3];	/* Color of these lines */
 } flipobj;
 
 flipobj *readflipobj();
+
+/* YAODL files of powerflip (.ydl, .defs), see yaodl.c */
+int is_yaodl_file(const char *name);
+flipobj *readyaodl(const char *name);
 

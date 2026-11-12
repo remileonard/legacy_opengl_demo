@@ -1,0 +1,38 @@
+cmake_minimum_required(VERSION 3.26)
+
+if(NOT DEFINED PACKAGE_DIR OR NOT IS_DIRECTORY "${PACKAGE_DIR}")
+    message(FATAL_ERROR "Pass -DPACKAGE_DIR=<extracted package directory>")
+endif()
+
+set(required_files
+    @WINDOWS_PACKAGE_EXECUTABLES@
+    Start-Demos.cmd README.md menu
+    licenses/freeglut/copyright)
+file(GLOB_RECURSE data_files RELATIVE "@CMAKE_SOURCE_DIR@" "@CMAKE_SOURCE_DIR@/data/*")
+list(APPEND required_files ${data_files})
+foreach(path IN LISTS required_files)
+    if(NOT EXISTS "${PACKAGE_DIR}/${path}")
+        message(FATAL_ERROR "Missing packaged file: ${path}")
+    endif()
+endforeach()
+
+# Every Windows menu command must point to a shipped executable.
+file(GLOB menus "${PACKAGE_DIR}/data/buttonfly/*")
+foreach(menu IN LISTS menus)
+    file(STRINGS "${menu}" commands REGEX "^[ \t]*[./a-zA-Z0-9_-]+\\.exe")
+    foreach(command IN LISTS commands)
+        string(REGEX MATCH "[./a-zA-Z0-9_-]+\\.exe" executable "${command}")
+        if(NOT EXISTS "${PACKAGE_DIR}/${executable}")
+            message(FATAL_ERROR "Menu ${menu} references missing ${executable}")
+        endif()
+    endforeach()
+endforeach()
+file(GLOB_RECURSE debug_files "${PACKAGE_DIR}/*.pdb" "${PACKAGE_DIR}/*.ilk")
+if(debug_files)
+    message(FATAL_ERROR "Unexpected debug files: ${debug_files}")
+endif()
+file(GLOB_RECURSE runtime_dlls "${PACKAGE_DIR}/*.dll")
+if(runtime_dlls)
+    message(FATAL_ERROR "Unexpected runtime DLLs in static package: ${runtime_dlls}")
+endif()
+message(STATUS "Windows package contents verified")
