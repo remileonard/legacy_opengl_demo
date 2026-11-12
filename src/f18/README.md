@@ -35,11 +35,25 @@ the model, next to the model, in `../textures` and in `textures`, with
 the extensions `.rgb`, `.rgba`, `.int`, `.inta` and `.bw` when the name
 has none.
 
-Most images of the demo were encrypted for its distribution: their SGI
-header is valid but a word after the colormap (offset 0x6c) is 4 for the
-verbatim images and 5 for the run-length encoded ones, and the pixels are
-scrambled. They are recognized and not drawn: the textured polygons of the
-terrains are then white. Their decryption is the next step.
+### Encrypted textures
+
+Most images of the demo were encrypted for its distribution, and the demo
+loads its textures with `mypfLoadTexFile`, which decrypts them
+(`ScrambleImageToImage`, `InitScrambleSeeds`, `ScrambleImageRow` in the
+executable). The loader decrypts them the same way:
+
+- an encrypted image is a verbatim SGI image (storage 0) whose header has
+  4 in the word at 0x6c, after the colormap word; the run-length encoded
+  images (such as `hl_road.rgb.unenc`) and the other values (9 or 10 for
+  the smoke and exhaust images) are plain;
+- the pixels are XORed with a table of 1633 seeds: seed 0 is 0x67 and seed
+  i is 103 × seed i−1 modulo 256;
+- the rows are taken from the bottom up and the pixel i of a row uses the
+  next seed of the table (back to the first after the last) for the pixel
+  i of the channels 0 and 2 and for the pixel width−1−i of the channels 1
+  and 3.
+
+XOR is its own inverse: the same function encrypts and decrypts.
 
 ## The Designer's Workbench format
 

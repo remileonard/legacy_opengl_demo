@@ -14,7 +14,7 @@
 /* statistics of the last file loaded */
 typedef struct DwbStats {
     int groups, lods, layers, polygons, vertices;
-    int textures, textures_loaded, textures_encrypted, materials;
+    int textures, textures_loaded, textures_encrypted, materials; /* encrypted: decrypted */
     float version;
 } DwbStats;
 

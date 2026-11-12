@@ -249,7 +249,7 @@ static void display(void)
                 nfiles ? files[cur] : "no file", st->version, 2 * radius, dist);
         text(10, win_h - 20, buf);
         sprintf(buf, "%d groups  %d LODs  %d layers  %d polygons  %d vertices  "
-                "%d materials  %d/%d textures loaded (%d encrypted)%s",
+                "%d materials  %d/%d textures loaded (%d decrypted)%s",
                 st->groups, st->lods, st->layers, st->polygons, st->vertices,
                 st->materials, st->textures_loaded, st->textures, st->textures_encrypted,
                 lods ? "" : "  (LOD: always the most detailed)");

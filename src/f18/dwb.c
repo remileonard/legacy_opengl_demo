@@ -143,9 +143,22 @@ static int file_exists(const char *path)
     return 1;
 }
 
-/* the images of the demo were encrypted for the distribution: their SGI
- * header has a non zero word at 0x6c, after the colormap word (4 for the
- * verbatim images, 5 for the run-length encoded ones) */
+/*
+ * The images of the demo were encrypted for its distribution, and the demo
+ * loads its textures with mypfLoadTexFile, which decrypts them
+ * (ScrambleImageToImage).  An encrypted image is a verbatim SGI image whose
+ * header has 4 in the word at 0x6c, after the colormap word; the run-length
+ * encoded images and the other values are plain images.
+ *
+ * The pixels are XORed with a table of 1633 seeds: seed 0 is 0x67 and seed
+ * i is 103 times seed i - 1, modulo 256.  The rows are read from the bottom
+ * up, and the pixel i of a row uses the next seed of the table (going back
+ * to the first one after the last) for the pixel i of the channels 0 and 2
+ * and for the pixel width - 1 - i of the channels 1 and 3.  XOR is its own
+ * inverse: the same function encrypts and decrypts.
+ */
+#define SCRAMBLE_SEEDS 0x661
+
 static int is_encrypted(const char *path)
 {
     unsigned char h[112];
@@ -155,7 +168,40 @@ static int is_encrypted(const char *path)
         return 0;
     n = (int)fread(h, 1, sizeof(h), fp);
     fclose(fp);
-    return n == (int)sizeof(h) && be16(h) == 474 && be32(h + 0x6c) != 0;
+    return n == (int)sizeof(h) && be16(h) == 474 && h[2] == 0 && be32(h + 0x6c) == 4;
+}
+
+/* decrypts the RGBA image of a texture loaded by pfLoadTexFile, where the
+ * channels 0 and 1 of the images of one or two channels are luminance
+ * (copied to red, green and blue) and alpha */
+static void unscramble_texture(pfTexture *t)
+{
+    static unsigned char seed[SCRAMBLE_SEEDS];
+    unsigned char *img = (unsigned char *)t->image;
+    int x, y, i, n = 0, w = t->xsize, zs = t->comps;
+    seed[0] = 0x67;
+    for (i = 1; i < SCRAMBLE_SEEDS; i++)
+        seed[i] = (unsigned char)(seed[i - 1] * 103);
+    for (y = 0; y < t->ysize; y++) {
+        unsigned char *row = img + (size_t)y * w * 4;
+        for (x = 0; x < w; x++) {
+            unsigned char s = seed[n];
+            unsigned char *a = row + 4 * x, *b = row + 4 * (w - 1 - x);
+            if (zs < 3) {
+                a[0] ^= s;
+                a[1] = a[2] = a[0];
+                if (zs == 2)
+                    b[3] ^= s;
+            } else {
+                a[0] ^= s;
+                b[1] ^= s;
+                a[2] ^= s;
+                if (zs == 4)
+                    b[3] ^= s;
+            }
+            n = (n + 1) % SCRAMBLE_SEEDS;
+        }
+    }
 }
 
 static const char *base_name(const char *path)
@@ -188,19 +234,17 @@ static pfTexture *load_texture(Loader *L, const char *name)
                 continue;
             for (k = 0; k < ncache; k++)
                 if (strcmp(cache_name[k], path) == 0) {
-                    if (!cache[k] && is_encrypted(path))
+                    if (cache[k] && is_encrypted(path))
                         stats.textures_encrypted++;
                     return cache[k];
                 }
-            t = NULL;
-            if (is_encrypted(path)) {
+            t = pfNewTex(NULL);
+            if (!pfLoadTexFile(t, path)) {
+                free(t);
+                t = NULL;
+            } else if (is_encrypted(path)) {
+                unscramble_texture(t);
                 stats.textures_encrypted++;
-            } else {
-                t = pfNewTex(NULL);
-                if (!pfLoadTexFile(t, path)) {
-                    free(t);
-                    t = NULL;
-                }
             }
             cache = (pfTexture **)xrealloc(cache, sizeof(*cache) * (ncache + 1));
             cache_name = (char **)xrealloc(cache_name, sizeof(*cache_name) * (ncache + 1));
