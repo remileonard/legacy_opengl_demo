@@ -40,6 +40,7 @@ add_subdirectory(src/insect)
 add_subdirectory(src/cycles)
 add_subdirectory(src/objviewer)
 add_subdirectory(src/flip)
+add_subdirectory(src/powerflip)
 add_subdirectory(src/space)
 add_subdirectory(src/flight)
 add_subdirectory(src/iris)
@@ -65,6 +66,7 @@ set(LEGACY_INTERACTIVE
     mekton
     mekton_view
     objviewer
+    powerflip
     road
     smooth
     space

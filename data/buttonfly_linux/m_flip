@@ -15,3 +15,9 @@ X29 (YAODL)
 
 F15 wire (YAODL)
 	./interactive/flip data/flip/f15_wire.defs
+
+Powerflip X29
+	./interactive/powerflip data/flip/x29.ydl
+
+Powerflip F15 wire
+	./interactive/powerflip data/flip/f15_wire.defs

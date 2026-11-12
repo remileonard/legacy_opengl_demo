@@ -176,6 +176,8 @@ void init_texture_system(void);
 void cpack(uint32_t color);
 void mapcolor(Colorindex index, RGBvalue r, RGBvalue g, RGBvalue b);
 void RGBcolor(RGBvalue r, RGBvalue g, RGBvalue b);
+void c3f(const float c[3]);
+void c4f(const float c[4]);
 
 // color() is a macro for indexed color mode
 #define color(i) iris_set_color_index(i)
@@ -280,6 +282,15 @@ void setpattern(int id);
 void lmdef(int deftype, int index, int np, float props[]);
 void lmbind(int target, int index);
 void lmcolor(int mode);
+
+/* lmcolor modes: the material property that follows the current color */
+#define LMC_COLOR    0
+#define LMC_EMISSION 1
+#define LMC_AMBIENT  2
+#define LMC_DIFFUSE  3
+#define LMC_SPECULAR 4
+#define LMC_AD       5
+#define LMC_NULL     6
 
 // === Font Management ===
 typedef void* fmfonthandle;

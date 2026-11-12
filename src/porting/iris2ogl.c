@@ -127,6 +127,14 @@ void iris_set_color_index(int index) {
     }
 }
 
+void c3f(const float c[3]) {
+    glColor3fv(c);
+}
+
+void c4f(const float c[4]) {
+    glColor4fv(c);
+}
+
 void cpack(uint32_t color) {
     // Convert packed RGB (0xRRGGBB) to float components
     float b = ((color >> 16) & 0xFF) / 255.0f;
@@ -1047,12 +1055,32 @@ void lmbind(int target, int index) {
 }
 
 void lmcolor(int mode) {
-    // Color material mode - stub
-    if (mode == 1) { // LMC_COLOR
+    // Color material mode: the property of the material that the current
+    // color replaces (IRIS GL LMC_* values)
+    switch (mode) {
+    case LMC_EMISSION:
+        glColorMaterial(GL_FRONT_AND_BACK, GL_EMISSION);
         glEnable(GL_COLOR_MATERIAL);
+        break;
+    case LMC_AMBIENT:
+        glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT);
+        glEnable(GL_COLOR_MATERIAL);
+        break;
+    case LMC_DIFFUSE:
+        glColorMaterial(GL_FRONT_AND_BACK, GL_DIFFUSE);
+        glEnable(GL_COLOR_MATERIAL);
+        break;
+    case LMC_SPECULAR:
+        glColorMaterial(GL_FRONT_AND_BACK, GL_SPECULAR);
+        glEnable(GL_COLOR_MATERIAL);
+        break;
+    case LMC_AD:
         glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
-    } else {
+        glEnable(GL_COLOR_MATERIAL);
+        break;
+    default: /* LMC_COLOR, LMC_NULL */
         glDisable(GL_COLOR_MATERIAL);
+        break;
     }
 }
 
