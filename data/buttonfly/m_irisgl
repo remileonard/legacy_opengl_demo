@@ -15,3 +15,5 @@ Flight
 	.menu. data/buttonfly/m_flight
 Flip
 	.menu. ./data/buttonfly/m_flip
+Powerflip
+	.menu. ./data/buttonfly/m_powerflip

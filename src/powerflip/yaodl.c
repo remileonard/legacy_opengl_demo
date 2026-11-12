@@ -585,13 +585,16 @@ static int def_texture(const char *name)
         if (same(texture_names[i], name))
             return i + 1;
     image = readImageRGB(name, &w, &h);
-    if (!image && model_dir[0] && name[0] != '/') {
-        snprintf(path, sizeof(path), "%s/%s", model_dir, name);
+    if (!image) {
+        /* in the directory of the model, also for the IRIX absolute paths
+           (/usr/demos/...) of the original files */
+        const char *base = name[0] == '/' ? strrchr(name, '/') + 1 : name;
+        snprintf(path, sizeof(path), "%s%s%s", model_dir, model_dir[0] ? "/" : "", base);
         image = readImageRGB(path, &w, &h);
     }
     if (!image) {
-        fprintf(stderr, "YAODL: Error: Can't load texture file %s\n", name);
-        return 0;
+        fprintf(stderr, "YAODL: Error: Can't load texture file %s, drawn without it\n", name);
+        return -1;
     }
     texture_names = (char **)grow(texture_names, &maxtextures, ntextures, sizeof(char *));
     texture_names[ntextures++] = strdup(name);
@@ -611,8 +614,9 @@ static Yobj *create_textures(const YClass *cls, Yobj **args, int nargs)
             fprintf(stderr, "YAODL: Error: Expecting a list of texture file names\n");
             return NULL;
         }
-        if ((o->iv[k] = def_texture(args[k]->str)) == 0)
-            return NULL;
+        /* a texture that cannot be read is replaced by no texture */
+        if ((o->iv[k] = def_texture(args[k]->str)) < 0)
+            o->iv[k] = 0;
     }
     o->ni = o->count = nargs;
     return o;

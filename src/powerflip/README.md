@@ -77,9 +77,22 @@ Polygons and lines are compiled in display lists, as in the original.
 
 1. scene engine: groups, transformations, polygons, lines, colors, normals - **done**
 2. textures, texture coordinates, `regularMesh`, `subdivides` - **done**
-3. YAODL lights
+3. lights: the light sources and lighting models are options of the menus,
+   the same as in flip (the binary has the same names: White Infinite, Red
+   Local...); the YAODL classes `light`, `lightPosition`, `lightColor`,
+   `lightAmbient`, `spotlight`, `spotdirection` are used by none of the
+   models and are parsed and ignored
 4. NURBS and trimming curves
 5. animation (`advanceTime`, `seconds`, `spline`, `transVector`, `rotVector`)
 6. the menus and options of powerflip (fog, motion blur, clipping planes...)
 
 The classes of the later steps are parsed and ignored with a message.
+
+## Data
+
+The models and images of powerflip are in `data/powerflip` (the
+`background*.defs` files are the backgrounds of the `-b` option, step 6).
+`bignose.defs` and `marble.defs` are fragments using definitions of
+another file, and `re_can.ydl` uses `re_coke.rgb`, which is missing: it is
+drawn without its texture. The textures given with an IRIX absolute path
+(`/usr/demos/...`) are searched in the directory of the model.

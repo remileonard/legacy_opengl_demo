@@ -15,15 +15,3 @@ X29 (YAODL)
 
 F15 wire (YAODL)
 	./interactive/flip.exe data/flip/f15_wire.defs
-
-Powerflip X29
-	./interactive/powerflip.exe data/flip/x29.ydl
-
-Powerflip F15 wire
-	./interactive/powerflip.exe data/flip/f15_wire.defs
-
-Powerflip Ranger
-	./interactive/powerflip.exe data/flip/ranger.ydl
-
-Powerflip X29 env map
-	./interactive/powerflip.exe data/flip/x29_envmap.ydl
