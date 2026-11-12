@@ -94,6 +94,15 @@ static void apply_fog(void)
     fogvertex(FG_ON, params);
 }
 
+/* suspends the fog (FALSE) and sets it back (TRUE), for the texts */
+void pf_fog(int on)
+{
+    if (on)
+        apply_fog();
+    else
+        fogvertex(FG_OFF, NULL);
+}
+
 unsigned long pf_clear_color(void)
 {
     const float *c = fog_type == CLEAR_AIR ? bg_color : fog_rgb;

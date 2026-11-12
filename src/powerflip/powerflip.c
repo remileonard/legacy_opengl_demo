@@ -357,10 +357,16 @@ void draw_rate(int n)
     pushmatrix();
     loadmatrix(idmat);
 
-    cmov2i(3, 3);
+    /* Always white: the color is taken at cmov2i, without lighting nor fog */
+    lmbind(LMODEL, 0);
+    pf_fog(FALSE);
     cpack(0xffffffff);
+    cmov2i(3, 3);
     if (getgdesc(GD_BITS_NORM_SNG_RED) != 3)
         charstr(s);
+    pf_fog(TRUE);
+    if (!pf_nolighting)
+        resetmodel();
 
     mmode(MPROJECTION);
     loadmatrix(tm);

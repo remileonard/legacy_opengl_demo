@@ -29,6 +29,8 @@ void pf_title_message(void);
 /* fog, clipping planes, background, once the window is opened */
 void pf_init_scene(void);
 
+/* suspends the fog (FALSE) and sets it back (TRUE), for the texts */
+void pf_fog(int on);
 /* the clear color, packed for czclear */
 unsigned long pf_clear_color(void);
 void pf_draw_background(void);
