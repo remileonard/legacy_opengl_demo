@@ -18,5 +18,8 @@ Drt *drtLoad(const char *file);
 /* draws it in the current OpenGL frame (Y up, the faces toward +Z), with
  * the variables at vars */
 void drtDraw(Drt *d, const float *vars, int nvars);
+/* draws the gray colors of the file (white, grays) in a color, keeping
+ * their intensity: the green of a head up display */
+void drtSetTint(Drt *d, float r, float g, float b);
 
 #endif

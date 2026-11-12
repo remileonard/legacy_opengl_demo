@@ -44,8 +44,8 @@ is a list of statements ended by `;`, with `#` comments and `%ifdef`,
 The functions named by a script are found by name, as the original found
 the symbols of the executable: the program registers them with
 `esRegisterFunction`. The functions of the demo that are not rebuilt yet
-(the radar display, the
-weather `esInitEnv`, the trails, the sound...) are reported
+(the weather `esInitEnv`,
+the trails, the sound...) are reported
 once by the interpreter, which goes on. Without `initFlight`, the eye
 would be moved with the mouse (left drag: turn, right drag or wheel:
 speed, middle drag: slide).
@@ -73,7 +73,7 @@ script (60 Hz): `f18` calls the app modules at that rate.
 | `F` | the airplane 20 lengths behind an enemy chosen at random |
 | `N` | the enemies at their lowest speed |
 | `R` | the head up display (HUD) on and off |
-| Page Up / Page Down, `+` / `-` | range of the radar (the up and down arrows of the scripts) |
+| Page Up / Page Down, `+` / `-` | range of the radar, 1 to 50 km (the up and down arrows of the scripts) |
 | left button, Enter | fires a missile at the enemy locked |
 | left / right Alt, `1` / `2` | explodes the left / right missile |
 | `C` | the missiles fly straight to their target (cheat) |
@@ -158,6 +158,16 @@ The sizes, speeds and durations of the explosions are double precision
 constants of the IRIX code not all recovered: they are chosen to look like
 the demo.
 
+### The radar
+
+`plusRadar` and `minusRadar` change the range of the radar (30 km at
+start, from 1 to 50 km by 1 km) and `dispFlight` reads it with the
+position and the heading of the airplane, but draws nothing with them:
+the radar display was taken out of this version of the demo. `f18` draws
+one from these values in the lower right corner, heading up, the airplane
+in the middle: the enemies in red (a circle around the one locked),
+orange when hit, gray crosses for the wrecks, the missiles in white.
+
 ### The head up display
 
 The Long Beach script loads the HUD of the demo, `myf18.drt` (the San
@@ -170,7 +180,9 @@ speed, the height above the ground, the enemy locked (-1 when both missiles fly)
 color of the two missiles (10 and green when loaded, counting the frames
 in red while loading) and the "in range" light (not set by the demo
 functions rebuilt). The HUD shows the pitch ladder turning with the roll, the heading
-tape, the speed, the altitude and the missiles.
+tape, the speed, the altitude and the missiles. The file draws it with
+the white of its color table; `f18` draws the grays of the file in green
+(`drtSetTint`), as a HUD, and keeps the red and green of the missiles.
 
 `.drt` files ("runtime" files of Designer's Workbench) are `.dwb` files
 with links: rotations, translations, scales, visibility, colors and texts

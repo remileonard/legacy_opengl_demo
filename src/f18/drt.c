@@ -92,6 +92,8 @@ typedef struct Node {
 
 struct Drt {
     Node *root;
+    int has_tint;
+    float tint[3];
     float palette[160][3];
     int npalette;
 };
@@ -468,6 +470,13 @@ static void draw_node(const Drt *d, const Node *n, const float *vars, int nvars,
             break;
         }
     }
+    if (d->has_tint && fabs(rgb[0] - rgb[1]) < 0.02f && fabs(rgb[1] - rgb[2]) < 0.02f) {
+        /* a gray of the file: the tint at its intensity (243 is full) */
+        float in = rgb[0] / (243 / 255.0f);
+        rgb[0] = d->tint[0] * in;
+        rgb[1] = d->tint[1] * in;
+        rgb[2] = d->tint[2] * in;
+    }
     glColor3fv(rgb);
     if (n->kind == N_FACE && n->v && n->nv > 0) {
         glBegin(n->nv < 3 || n->mode == 3 ? GL_LINE_STRIP : n->mode == 2 ? GL_LINE_LOOP : GL_POLYGON);
@@ -484,6 +493,16 @@ static void draw_node(const Drt *d, const Node *n, const float *vars, int nvars,
     for (i = 0; i < n->nkids; i++)
         draw_node(d, n->kids[i], vars, nvars, depth + 1);
     glPopMatrix();
+}
+
+void drtSetTint(Drt *d, float r, float g, float b)
+{
+    if (!d)
+        return;
+    d->has_tint = 1;
+    d->tint[0] = r;
+    d->tint[1] = g;
+    d->tint[2] = b;
 }
 
 void drtDraw(Drt *d, const float *vars, int nvars)

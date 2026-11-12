@@ -52,7 +52,10 @@
  * makes explosions on the enemy in the sight, without damage, as in the
  * demo.
  *
- * Not rebuilt yet: the trails, the weather, the sound and the radar.
+ * The radar display was taken out of this version of the demo: the one of
+ * draw_radar is drawn from the values dispFlight reads.
+ *
+ * Not rebuilt yet: the trails, the weather and the sound.
  */
 #ifdef __APPLE__
 #include <OpenGL/gl.h>
@@ -74,6 +77,7 @@
 #include "escene.h"
 #include "flight.h"
 #include "effects.h"
+#include "drt.h"
 
 F18Mouse f18_mouse;
 
@@ -1201,6 +1205,112 @@ static void text(float x, float y, const char *s)
         glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, *s++);
 }
 
+/*
+ * The radar. dispFlight of the executable reads the position and the
+ * heading of the airplane and the range of the radar (plusRadar and
+ * minusRadar: 30 km at start, 1 to 50 km), but draws nothing with them:
+ * the radar display was taken out of this version of the demo. This one is
+ * drawn from the same values: heading up, the airplane in the middle, the
+ * enemies in red (a circle around the one locked), orange when hit, gray
+ * crosses for the wrecks, the missiles flying in white.
+ */
+static void radar_point(float cx, float cy, float rad, const float *xyz, float *sx, float *sy, int *in)
+{
+    float sh, ch, dx = xyz[0] - F.plane->xyz[0], dy = xyz[1] - F.plane->xyz[1], fwd, side;
+    pfSinCos(F.plane->hpr[0], &sh, &ch);
+    fwd = -dx * sh + dy * ch;
+    side = dx * ch + dy * sh;
+    *sx = cx + side / F.radar * rad;
+    *sy = cy + fwd / F.radar * rad;
+    *in = (*sx - cx) * (*sx - cx) + (*sy - cy) * (*sy - cy) <= rad * rad;
+}
+
+static void draw_radar(float w, float h)
+{
+    float rad = PF_MIN(w, h) * 0.12f, cx = w / 2 - rad - 20, cy = -h / 2 + rad + 20;
+    char buf[64];
+    int i, k;
+    /* the scope */
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glColor4f(0, 0.12f, 0.03f, 0.55f);
+    glBegin(GL_POLYGON);
+    for (i = 0; i < 48; i++)
+        glVertex2f(cx + rad * (float)cos(i * PF_DEG2RAD(7.5)), cy + rad * (float)sin(i * PF_DEG2RAD(7.5)));
+    glEnd();
+    glColor3f(0.25f, 1, 0.3f);
+    for (k = 1; k <= 2; k++) {
+        glBegin(GL_LINE_LOOP);
+        for (i = 0; i < 48; i++)
+            glVertex2f(cx + rad * k / 2 * (float)cos(i * PF_DEG2RAD(7.5)),
+                       cy + rad * k / 2 * (float)sin(i * PF_DEG2RAD(7.5)));
+        glEnd();
+    }
+    glBegin(GL_LINES);
+    glVertex2f(cx, cy - rad);
+    glVertex2f(cx, cy + rad);
+    glVertex2f(cx - rad, cy);
+    glVertex2f(cx + rad, cy);
+    glEnd();
+    /* the airplane */
+    glBegin(GL_TRIANGLES);
+    glVertex2f(cx, cy + 6);
+    glVertex2f(cx - 4, cy - 4);
+    glVertex2f(cx + 4, cy - 4);
+    glEnd();
+    /* the enemies */
+    for (i = 0; i < F.nenemies; i++) {
+        const Enemy *e = &F.enemy[i];
+        float sx, sy;
+        int in;
+        radar_point(cx, cy, rad, e->obj->xyz, &sx, &sy, &in);
+        if (!in)
+            continue;
+        if (e->dead) {
+            glColor3f(0.6f, 0.6f, 0.6f);
+            glBegin(GL_LINES);
+            glVertex2f(sx - 3, sy - 3); glVertex2f(sx + 3, sy + 3);
+            glVertex2f(sx - 3, sy + 3); glVertex2f(sx + 3, sy - 3);
+            glEnd();
+            continue;
+        }
+        if (e->hit)
+            glColor3f(1, 0.6f, 0.1f);
+        else
+            glColor3f(1, 0.15f, 0.1f);
+        glBegin(GL_QUADS);
+        glVertex2f(sx - 3, sy - 3); glVertex2f(sx + 3, sy - 3);
+        glVertex2f(sx + 3, sy + 3); glVertex2f(sx - 3, sy + 3);
+        glEnd();
+        if (i == F.target) {
+            glBegin(GL_LINE_LOOP);
+            for (k = 0; k < 16; k++)
+                glVertex2f(sx + 7 * (float)cos(k * PF_DEG2RAD(22.5)), sy + 7 * (float)sin(k * PF_DEG2RAD(22.5)));
+            glEnd();
+        }
+    }
+    /* the missiles */
+    glColor3f(1, 1, 1);
+    glPointSize(3);
+    glBegin(GL_POINTS);
+    for (i = 0; i < 2; i++)
+        if (F.fired[i]) {
+            float sx, sy;
+            int in;
+            radar_point(cx, cy, rad, F.missile[i].obj->xyz, &sx, &sy, &in);
+            if (in)
+                glVertex2f(sx, sy);
+        }
+    glEnd();
+    glPointSize(1);
+    glDisable(GL_BLEND);
+    glColor3f(0.25f, 1, 0.3f);
+    sprintf(buf, "%.0f km", F.radar / 1000);
+    glRasterPos2f(cx - rad, cy - rad - 2);
+    for (i = 0; buf[i]; i++)
+        glutBitmapCharacter(GLUT_BITMAP_HELVETICA_12, buf[i]);
+}
+
 static void dispFlight(const char *arg)
 {
     GLint vp[4];
@@ -1208,7 +1318,7 @@ static void dispFlight(const char *arg)
     float w, h;
     (void)arg;
     /* on the main channel only */
-    if (F.cockpit || es.current_channel != 0)
+    if (es.current_channel != 0)
         return;
     glGetIntegerv(GL_VIEWPORT, vp);
     w = (float)vp[2];
@@ -1223,6 +1333,15 @@ static void dispFlight(const char *arg)
     glDisable(GL_DEPTH_TEST);
     glDisable(GL_LIGHTING);
     glDisable(GL_TEXTURE_2D);
+    draw_radar(w, h);
+    if (F.cockpit) {
+        glEnable(GL_DEPTH_TEST);
+        glMatrixMode(GL_PROJECTION);
+        glPopMatrix();
+        glMatrixMode(GL_MODELVIEW);
+        glPopMatrix();
+        return;
+    }
     /* the cross of the gun sight, and a circle when an enemy is locked */
     glColor3f(1, 0, 0);
     if (F.target >= 0) {
@@ -1298,6 +1417,8 @@ static void initFlight(const char *arg)
         if (hud) {
             esSetHud(hud, 1, 0, 0, -2.5f);
             esSetDrtBaseAddr(hud, hudVars, HV_N);
+            /* the white of the file drawn in the green of a HUD */
+            drtSetTint(hud->drt, 0.25f, 1, 0.3f);
         }
     }
     loadMissiles();
