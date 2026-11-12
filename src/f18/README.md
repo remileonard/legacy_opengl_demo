@@ -192,6 +192,7 @@ of their groups, faces and strings, driven by functions of the variables.
 
 | Opcode | Record | Fields used |
 |---|---|---|
+| `0x1772` | group | `+0x34` flags `0x40000000` and `0x20000000`: the children are clipped to the rectangle of the corners at `+0x40` and `+0x4c` (the pitch ladder in the middle box, the heading tape in its box) |
 | `0x1775` | face | `+0x0a` 1 filled, 2 closed outline, 3 open line |
 | `0x17c0` | string | `+0x04` color index (high 16 bits), `+0x10` font width, `+0x14` font height, `+0x20` alignment (2 centered), `+0x58` position |
 | `0x179a`, `0x1799` | its text, its font (`olddwb.vfn`, polylines in a cell) |

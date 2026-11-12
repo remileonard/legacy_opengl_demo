@@ -12,6 +12,9 @@
  *                     +0x14 font height, +0x20 horizontal alignment
  *                     (2 center), +0x58 position x y z
  *  0x179a             its text, 0x1799 its font
+ *  0x1772 group       +0x34 flags 0x40000000 and 0x20000000: its children
+ *                     are clipped to the rectangle of the corners at +0x40
+ *                     and +0x4c (the pitch ladder, the heading tape)
  *
  * The links follow the record they change:
  *
@@ -88,6 +91,9 @@ typedef struct Node {
     char text[64];
     float fw, fh, pos[3];
     int halign;
+    /* groups: the children are clipped to a rectangle */
+    int clip;
+    float clip_rect[4];         /* xmin ymin xmax ymax */
 } Node;
 
 struct Drt {
@@ -257,6 +263,16 @@ Drt *drtLoad(const char *file)
         case 0x1772:
             last = new_node(cur, N_GROUP);
             face = NULL;
+            /* flags 0x40000000 a clipping rectangle (two corners at +0x40
+             * and +0x4c), 0x20000000 on */
+            if (len >= 0x58 && (be32(b + 0x34) & 0x60000000U) == 0x60000000U) {
+                float x0 = bef(b + 0x40), y0 = bef(b + 0x44), x1 = bef(b + 0x4c), y1 = bef(b + 0x50);
+                last->clip = 1;
+                last->clip_rect[0] = x0 < x1 ? x0 : x1;
+                last->clip_rect[1] = y0 < y1 ? y0 : y1;
+                last->clip_rect[2] = x0 < x1 ? x1 : x0;
+                last->clip_rect[3] = y0 < y1 ? y1 : y0;
+            }
             break;
         case 0x1775:
             if (len < 0x30)
@@ -409,6 +425,55 @@ static float map(float v, float lo, float hi, float start, float end, int limits
     return start + (v - lo) / (hi - lo) * (end - start);
 }
 
+/* the clipping rectangles in force, nested ones are intersected */
+static float clip_stack[16][4];
+static int clip_depth;
+
+static void set_clip(const float *r)
+{
+    double eq[4][4] = {
+        { 1, 0, 0, 0 }, { -1, 0, 0, 0 }, { 0, 1, 0, 0 }, { 0, -1, 0, 0 }
+    };
+    int k;
+    eq[0][3] = -r[0];
+    eq[1][3] = r[2];
+    eq[2][3] = -r[1];
+    eq[3][3] = r[3];
+    for (k = 0; k < 4; k++) {
+        glClipPlane(GL_CLIP_PLANE0 + k, eq[k]);
+        glEnable(GL_CLIP_PLANE0 + k);
+    }
+}
+
+static void push_clip(const float *r)
+{
+    float c[4];
+    memcpy(c, r, sizeof(c));
+    if (clip_depth > 0) {
+        const float *o = clip_stack[clip_depth - 1];
+        if (o[0] > c[0]) c[0] = o[0];
+        if (o[1] > c[1]) c[1] = o[1];
+        if (o[2] < c[2]) c[2] = o[2];
+        if (o[3] < c[3]) c[3] = o[3];
+    }
+    if (clip_depth < 16)
+        memcpy(clip_stack[clip_depth++], c, sizeof(c));
+    set_clip(c);
+}
+
+static void pop_clip(void)
+{
+    int k;
+    if (clip_depth > 0)
+        clip_depth--;
+    if (clip_depth > 0) {
+        set_clip(clip_stack[clip_depth - 1]);
+    } else {
+        for (k = 0; k < 4; k++)
+            glDisable(GL_CLIP_PLANE0 + k);
+    }
+}
+
 static void draw_node(const Drt *d, const Node *n, const float *vars, int nvars, int depth)
 {
     char text[64];
@@ -418,6 +483,9 @@ static void draw_node(const Drt *d, const Node *n, const float *vars, int nvars,
         return;
     memcpy(rgb, n->rgb, sizeof(rgb));
     strcpy(text, n->text);
+    /* the rectangle is in the frame of the group, before its links */
+    if (n->clip)
+        push_clip(n->clip_rect);
     glPushMatrix();
     for (i = 0; i < n->nlinks; i++) {
         const Link *l = &n->links[i];
@@ -438,6 +506,8 @@ static void draw_node(const Drt *d, const Node *n, const float *vars, int nvars,
         case L_VISIBLE:
             if (v < 0) {
                 glPopMatrix();
+                if (n->clip)
+                    pop_clip();
                 return;
             }
             break;
@@ -493,6 +563,8 @@ static void draw_node(const Drt *d, const Node *n, const float *vars, int nvars,
     for (i = 0; i < n->nkids; i++)
         draw_node(d, n->kids[i], vars, nvars, depth + 1);
     glPopMatrix();
+    if (n->clip)
+        pop_clip();
 }
 
 void drtSetTint(Drt *d, float r, float g, float b)
