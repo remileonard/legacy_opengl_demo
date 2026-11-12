@@ -58,6 +58,7 @@ set(LEGACY_INTERACTIVE
     cycles
     distort
     enterprise
+    f18
     f18_view
     flight
     flip
