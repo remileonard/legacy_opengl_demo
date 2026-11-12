@@ -16,6 +16,7 @@ typedef struct DwbStats {
     int groups, lods, layers, polygons, vertices;
     int textures, textures_loaded, textures_encrypted, materials; /* encrypted: decrypted */
     float version;
+    int y_up;               /* made with Y up, turned to Z up */
 } DwbStats;
 
 /* reads a .dwb file, NULL on error; the textures are searched next to the

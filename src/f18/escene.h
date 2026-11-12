@@ -40,7 +40,8 @@ typedef struct esObject {
     int is_terrain;         /* type terrain */
     pfNode *model;          /* the loaded model */
     pfNode *node;           /* its DCS (or group for static objects) in the scene */
-    pfVec3 xyz, hpr;        /* position and orientation of the DCS */
+    pfVec3 xyz, hpr;        /* position (Performer) and orientation (EasyScene:
+                             * the roll turns the other way) */
     float radius;           /* bounding sphere of the model */
     pfVec3 center;
 } esObject;
@@ -83,6 +84,7 @@ typedef struct esScene {
     esKeyBinding *keys;
     int nkeys;
     int configured;
+    int current_channel;    /* the channel being drawn */
 } esScene;
 
 extern esScene es;
@@ -100,6 +102,8 @@ int esLoadScript(const char *file, void (*configure_cb)(void));
 
 /* calls the modules of a phase */
 void esRunPhase(int phase);
+/* adds a module from the application (esAddModule of the demo) */
+void esAddModuleFunc(const char *name, int phase, esFunc f);
 
 esObject *esFindObject(const char *name);
 esChannel *esFindChannel(const char *name);
@@ -110,6 +114,11 @@ void esObjectPos(esObject *o, float x, float y, float z, float h, float p, float
 /* the viewing matrix of a channel, for glLoadMatrixf: Performer looks along
  * +Y with Z up */
 void esChannelViewMatrix(const esChannel *c, float m[16]);
+
+/* the ground under a point: the height of the highest triangle of the
+ * terrain objects at x, y not above z (Performer coordinates), -1e30 if
+ * none; the most detailed level of detail of the terrain is used */
+float esGroundHeight(float x, float y, float z);
 
 /* the binding of an IRIS GL device name, NULL if none */
 esKeyBinding *esFindKey(const char *device);

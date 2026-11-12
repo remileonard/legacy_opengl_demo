@@ -137,6 +137,18 @@ static Module *find_module(const char *name)
     return NULL;
 }
 
+void esAddModuleFunc(const char *name, int phase, esFunc f)
+{
+    Module *m = find_module(name);
+    if (!m) {
+        modules = (Module *)realloc(modules, sizeof(Module) * (nmodules + 1));
+        m = &modules[nmodules++];
+        memset(m, 0, sizeof(*m));
+        m->name = dupstr(name);
+    }
+    m->f[phase] = f;
+}
+
 void esRunPhase(int phase)
 {
     int i;
@@ -188,8 +200,9 @@ void esObjectPos(esObject *o, float x, float y, float z, float h, float p, float
     pfSetVec3(o->xyz, x, y, z);
     pfSetVec3(o->hpr, h, p, r);
     if (o->node && o->node->type == PFNODE_DCS) {
+        /* the roll of EasyScene turns the other way (360 - r) */
         pfDCSTrans(o->node, x, y, z);
-        pfDCSRot(o->node, h, p, r);
+        pfDCSRot(o->node, h, p, -r);
     }
 }
 
@@ -201,7 +214,7 @@ void esChannelViewMatrix(const esChannel *c, float m[16])
     pfMakeIdentMat(eye);
     if (c->attach) {
         pfCopyVec3(co.xyz, c->attach->xyz);
-        pfCopyVec3(co.hpr, c->attach->hpr);
+        pfSetVec3(co.hpr, c->attach->hpr[0], c->attach->hpr[1], -c->attach->hpr[2]);
         pfMakeCoordMat(eye, &co);
     }
     pfCopyVec3(co.xyz, c->viewpos);
@@ -245,6 +258,148 @@ static void bounds(pfNode *n, pfMatrix m, pfVec3 lo, pfVec3 hi, int depth)
     }
     for (i = 0; i < n->nchildren; i++)
         bounds(n->children[i], mm, lo, hi, depth + 1);
+}
+
+/* --- ground ----------------------------------------------------------------
+ * The triangles of the terrain objects, in the cells of a grid, for the
+ * height of the ground under the airplanes (the intersection segments of
+ * EasyScene pointing down). */
+
+typedef struct GroundTri {
+    float v[9];
+} GroundTri;
+
+#define GRID 256
+static GroundTri *gtris;
+static int ngtris, maxgtris;
+static int *cell_start, *cell_list;
+static float glo[2], ghi[2], gcell[2];
+static int ground_built;
+
+static void collect_ground(pfNode *n, pfMatrix m, int depth)
+{
+    int i, j, k;
+    pfMatrix mm;
+    if (!n || depth > 64)
+        return;
+    if (n->type == PFNODE_DCS || n->type == PFNODE_SCS)
+        pfMultMat(mm, n->mat, m);
+    else
+        pfCopyMat(mm, m);
+    /* the most detailed level: the one switched in from the eye */
+    if (n->type == PFNODE_LOD && n->nranges > 0 && n->ranges[0] > 0)
+        return;
+    for (i = 0; i < n->ngsets; i++) {
+        pfGeoSet *g = n->gsets[i];
+        const int *tris;
+        int nt = pfGetGSetTris(g, &tris);
+        const float *co = (const float *)g->attr[PFGS_COORD3];
+        if (!co)
+            continue;
+        for (j = 0; j < nt; j++) {
+            GroundTri *t;
+            if (ngtris == maxgtris) {
+                maxgtris = maxgtris ? 2 * maxgtris : 4096;
+                gtris = (GroundTri *)realloc(gtris, sizeof(GroundTri) * maxgtris);
+            }
+            t = &gtris[ngtris++];
+            for (k = 0; k < 3; k++)
+                pfXformPt3(t->v + 3 * k, co + 3 * tris[3 * j + k], mm);
+        }
+    }
+    for (i = 0; i < n->nchildren; i++)
+        collect_ground(n->children[i], mm, depth + 1);
+}
+
+static void cell_range(const GroundTri *t, int *x0, int *x1, int *y0, int *y1)
+{
+    float lx = PF_MIN(t->v[0], PF_MIN(t->v[3], t->v[6])), hx = PF_MAX(t->v[0], PF_MAX(t->v[3], t->v[6]));
+    float ly = PF_MIN(t->v[1], PF_MIN(t->v[4], t->v[7])), hy = PF_MAX(t->v[1], PF_MAX(t->v[4], t->v[7]));
+    *x0 = (int)((lx - glo[0]) / gcell[0]);
+    *x1 = (int)((hx - glo[0]) / gcell[0]);
+    *y0 = (int)((ly - glo[1]) / gcell[1]);
+    *y1 = (int)((hy - glo[1]) / gcell[1]);
+    if (*x0 < 0) *x0 = 0;
+    if (*y0 < 0) *y0 = 0;
+    if (*x1 >= GRID) *x1 = GRID - 1;
+    if (*y1 >= GRID) *y1 = GRID - 1;
+}
+
+static void build_ground(void)
+{
+    pfMatrix ident;
+    int i, x, y, x0, x1, y0, y1, total = 0;
+    int *count;
+    ground_built = 1;
+    pfMakeIdentMat(ident);
+    for (i = 0; i < es.nobjects; i++)
+        if (es.objects[i]->is_terrain || strcmp(es.objects[i]->name, "ground") == 0)
+            collect_ground(es.objects[i]->node, ident, 0);
+    if (ngtris == 0)
+        return;
+    glo[0] = glo[1] = 1e30f;
+    ghi[0] = ghi[1] = -1e30f;
+    for (i = 0; i < ngtris; i++)
+        for (x = 0; x < 3; x++) {
+            glo[0] = PF_MIN(glo[0], gtris[i].v[3 * x]);
+            ghi[0] = PF_MAX(ghi[0], gtris[i].v[3 * x]);
+            glo[1] = PF_MIN(glo[1], gtris[i].v[3 * x + 1]);
+            ghi[1] = PF_MAX(ghi[1], gtris[i].v[3 * x + 1]);
+        }
+    gcell[0] = (ghi[0] - glo[0]) / GRID + 1e-3f;
+    gcell[1] = (ghi[1] - glo[1]) / GRID + 1e-3f;
+    count = (int *)calloc(GRID * GRID + 1, sizeof(int));
+    for (i = 0; i < ngtris; i++) {
+        cell_range(&gtris[i], &x0, &x1, &y0, &y1);
+        for (y = y0; y <= y1; y++)
+            for (x = x0; x <= x1; x++)
+                count[y * GRID + x]++, total++;
+    }
+    cell_start = (int *)malloc(sizeof(int) * (GRID * GRID + 1));
+    cell_list = (int *)malloc(sizeof(int) * (total + 1));
+    cell_start[0] = 0;
+    for (i = 0; i < GRID * GRID; i++)
+        cell_start[i + 1] = cell_start[i] + count[i];
+    memset(count, 0, sizeof(int) * GRID * GRID);
+    for (i = 0; i < ngtris; i++) {
+        cell_range(&gtris[i], &x0, &x1, &y0, &y1);
+        for (y = y0; y <= y1; y++)
+            for (x = x0; x <= x1; x++) {
+                int c = y * GRID + x;
+                cell_list[cell_start[c] + count[c]++] = i;
+            }
+    }
+    free(count);
+}
+
+float esGroundHeight(float px, float py, float pz)
+{
+    float best = -1e30f;
+    int cx, cy, c, k;
+    if (!ground_built)
+        build_ground();
+    if (ngtris == 0 || px < glo[0] || px > ghi[0] || py < glo[1] || py > ghi[1])
+        return best;
+    cx = (int)((px - glo[0]) / gcell[0]);
+    cy = (int)((py - glo[1]) / gcell[1]);
+    if (cx >= GRID) cx = GRID - 1;
+    if (cy >= GRID) cy = GRID - 1;
+    c = cy * GRID + cx;
+    for (k = cell_start[c]; k < cell_start[c + 1]; k++) {
+        const float *v = gtris[cell_list[k]].v;
+        float d = (v[4] - v[7]) * (v[0] - v[6]) + (v[6] - v[3]) * (v[1] - v[7]);
+        float a, b, z;
+        if (d > -1e-12f && d < 1e-12f)
+            continue;
+        a = ((v[4] - v[7]) * (px - v[6]) + (v[6] - v[3]) * (py - v[7])) / d;
+        b = ((v[7] - v[1]) * (px - v[6]) + (v[0] - v[6]) * (py - v[7])) / d;
+        if (a < -1e-5f || b < -1e-5f || a + b > 1 + 1e-5f)
+            continue;
+        z = a * v[2] + b * v[5] + (1 - a - b) * v[8];
+        if (z <= pz + 0.01f && z > best)
+            best = z;
+    }
+    return best;
 }
 
 /* the models loaded once, cloned for the other objects */

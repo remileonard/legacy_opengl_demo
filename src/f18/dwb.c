@@ -5,7 +5,8 @@
  * and from the files of the demo.  A file is a sequence of big-endian
  * records: a 16-bit opcode, a 16-bit length, then the data.
  *
- *  0x1771 header      +0x04 float version, +0x110 short units
+ *  0x1771 header      +0x00 short units, +0x04 float version, +0x86 short
+ *                     up axis (2: Y up, the loader turns the model to Z up)
  *  0x1772 group       +0x34 flags, bit 26: the children are decals on the
  *                     first one (layer)
  *  0x1773 LOD         +0x08 switch out, +0x0c switch in, +0x10 center
@@ -482,7 +483,7 @@ pfNode *pfdLoadFile_dwb(const char *file)
     pfNode *root, *last = NULL;
     Level last_level;
     long size, p;
-    int depth = 0, last_is_poly = 0, last_tex = -1;
+    int depth = 0, last_is_poly = 0, last_tex = -1, y_up = 0;
     FILE *fp = fopen(file, "rb");
 
     memset(&stats, 0, sizeof(stats));
@@ -522,8 +523,10 @@ pfNode *pfdLoadFile_dwb(const char *file)
         case OP_HEADER:
             if (len >= 8)
                 stats.version = bef(b + 4);
-            if (len >= 0x112)
-                L.scale = units_scale(sbe16(b + 0x110));
+            if (len >= 2)
+                L.scale = units_scale(sbe16(b));
+            if (len >= 0x88)
+                y_up = sbe16(b + 0x86) == 2;
             break;
         case OP_GROUP: {
             unsigned int flags = len >= 0x38 ? be32(b + 0x34) : 0;
@@ -649,5 +652,17 @@ pfNode *pfdLoadFile_dwb(const char *file)
     finish_batches(&L);
     free(data);
     free(L.tex);
+    stats.y_up = y_up;
+    if (y_up) {
+        /* the models made with Y up (the airplanes) are turned to the Z up
+         * of Performer, as pfdLoad_dwb does with an SCS of pitch 90 */
+        pfNode *top = pfNewGroup(), *rot = pfNewDCS();
+        top->name = root->name;
+        root->name = NULL;
+        pfDCSRot(rot, 0, 90, 0);
+        pfAddChild(rot, root);
+        pfAddChild(top, rot);
+        root = top;
+    }
     return root;
 }

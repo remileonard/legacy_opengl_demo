@@ -27,6 +27,7 @@
 #include <string.h>
 
 #include "escene.h"
+#include "flight.h"
 
 static int win_w = 1024, win_h = 768;
 static int wireframe, textures = 1, show_stats, show_help;
@@ -51,6 +52,7 @@ static void register_functions(void)
     esRegisterFunction("textureToggle", textureToggle);
     esRegisterFunction("statsToggle", statsToggle);
     esRegisterFunction("help", help);
+    flight_register();
 }
 
 /* --- devices ------------------------------------------------------------------ */
@@ -280,19 +282,33 @@ static void overlay(void)
             text(10, y, buf);
         }
         y -= 8;
-        text(10, y, "mouse: left drag turn the eye, right drag or wheel speed, middle drag slide, Esc quit");
+        text(10, y, free_eye ? "mouse: left drag turn the eye, right drag or wheel speed, middle drag slide, Esc quit"
+                             : "mouse: from the middle of the window, roll and pitch; right button faster, middle slower; Esc quit");
     }
     glEnable(GL_DEPTH_TEST);
 }
 
 static void display(void)
 {
+    static double app_time = -1;
     double t = pfGetTime();
-    int i;
+    int i, ticks = 0;
     if (last_time > 0) {
         move_eye((float)(t - last_time));
         frames++;
     }
+    /* the app modules run at the frame rate of the script, as the demo
+     * moves its objects by a step per frame */
+    if (app_time < 0)
+        app_time = t;
+    while (app_time <= t && ticks < 8) {
+        esRunPhase(ES_PREAPP);
+        esRunPhase(ES_POSTAPP);
+        app_time += 1.0 / es.framerate;
+        ticks++;
+    }
+    if (app_time < t)
+        app_time = t;
     if (frames >= 20) {
         static double t0;
         if (t0 > 0)
@@ -302,13 +318,13 @@ static void display(void)
     }
     last_time = t;
     pfFrameTime(t);
-    esRunPhase(ES_PREAPP);
-    esRunPhase(ES_POSTAPP);
 
     glClearColor(0.45f, 0.6f, 0.85f, 1);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    for (i = 0; i < es.nchannels; i++)
+    for (i = 0; i < es.nchannels; i++) {
+        es.current_channel = i;
         draw_channel(&es.channels[i]);
+    }
     esRunPhase(ES_POSTRENDER);
     overlay();
     glutSwapBuffers();
@@ -318,6 +334,15 @@ static void reshape(int w, int h)
 {
     win_w = w;
     win_h = h > 0 ? h : 1;
+    f18_mouse.w = win_w;
+    f18_mouse.h = win_h;
+}
+
+static void passive(int x, int y)
+{
+    f18_mouse.x = x;
+    f18_mouse.y = y;
+    f18_mouse.inside = 1;
 }
 
 static void idle(void) { glutPostRedisplay(); }
@@ -341,6 +366,12 @@ static void special(int k, int x, int y)
 
 static void mouse(int b, int state, int x, int y)
 {
+    passive(x, y);
+    if (b == GLUT_LEFT_BUTTON) f18_mouse.left = state == GLUT_DOWN;
+    if (b == GLUT_MIDDLE_BUTTON) f18_mouse.middle = state == GLUT_DOWN;
+    if (b == GLUT_RIGHT_BUTTON) f18_mouse.right = state == GLUT_DOWN;
+    if (!free_eye)
+        return;
     if (state == GLUT_DOWN) {
         if (b == 3) { eye_speed += 20; return; }
         if (b == 4) { eye_speed -= 20; return; }
@@ -356,6 +387,7 @@ static void motion(int x, int y)
 {
     esObject *eye = eye_object();
     int dx = x - drag_x, dy = y - drag_y;
+    passive(x, y);
     drag_x = x;
     drag_y = y;
     if (!eye || !free_eye)
@@ -373,6 +405,13 @@ static void motion(int x, int y)
         esObjectPos(eye, eye->xyz[0] - ch * dx * s, eye->xyz[1] - sh * dx * s, eye->xyz[2] + dy * s,
                     eye->hpr[0], eye->hpr[1], eye->hpr[2]);
     }
+}
+
+static void entry(int state)
+{
+    /* the airplane flies straight while the pointer is out */
+    if (state == GLUT_LEFT)
+        f18_mouse.inside = 0;
 }
 
 /* the "configure" statement: the pipes are defined, the window is opened */
@@ -394,6 +433,8 @@ static void configure(void)
     }
     win_w = w;
     win_h = h;
+    f18_mouse.w = w;
+    f18_mouse.h = h;
     glutInitWindowSize(w, h);
     glutCreateWindow(p->name);
     glutDisplayFunc(display);
@@ -402,6 +443,8 @@ static void configure(void)
     glutSpecialFunc(special);
     glutMouseFunc(mouse);
     glutMotionFunc(motion);
+    glutPassiveMotionFunc(passive);
+    glutEntryFunc(entry);
     glutIdleFunc(idle);
 }
 
@@ -441,10 +484,11 @@ int main(int argc, char **argv)
     }
     /* no module of the demo flies the eye yet */
     free_eye = esFindFunction("initFlight") == NULL;
-    if (free_eye)
+    if (free_eye) {
         place_eye();
-    show_help = 1;
-    show_stats = 1;
+        show_help = 1;
+        show_stats = 1;
+    }
     glutMainLoop();
     return 0;
 }

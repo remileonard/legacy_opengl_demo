@@ -43,14 +43,57 @@ is a list of statements ended by `;`, with `#` comments and `%ifdef`,
 
 The functions named by a script are found by name, as the original found
 the symbols of the executable: the program registers them with
-`esRegisterFunction`. `wireframeToggle`, `textureToggle`, `statsToggle`
-and `help` are there; the functions of the demo itself (the flight,
-`initFlight`, the HUD, the radar, the missiles, the weather `esInitEnv`,
-the smoke, the trails, the sound...) are not rebuilt yet: the interpreter
-reports each missing function once and goes on, and the eye is moved with
-the mouse (left drag: turn, right drag or wheel: speed, middle drag:
-slide). The objects stay at the origin until the flight places them, and
-the cockpit (`myf18.drt`) is in a format not read yet.
+`esRegisterFunction`. The functions of the demo that are not rebuilt yet
+(the missiles, the gun, the HUD of the cockpit, the radar display, the
+weather `esInitEnv`, the smoke, the trails, the sound...) are reported
+once by the interpreter, which goes on. Without `initFlight`, the eye
+would be moved with the mouse (left drag: turn, right drag or wheel:
+speed, middle drag: slide).
+
+### The flight
+
+`flight.c` is rebuilt from the functions of the executable named by the
+scripts and from the ones they call (`initFlight`, `updateFlight`,
+`planeCrash`, `dispFlight`, `eyeFlight`, `watchEnemy`, `toggleWingman`,
+`noSpeeding`, `restartFlight`, `toggleHud`, `plusRadar`, `readRoute`,
+`initEnemy`, `updateEnemy`) and from the "wingman" views of EasyScene
+(`esWingmanFollow`, `esWingmanTether`, `esWingmanTether2`).
+
+The demo moves its objects by a step per frame at the frame rate of the
+script (60 Hz): `f18` calls the app modules at that rate.
+
+| Input | Action |
+|---|---|
+| mouse position | from the middle of the window: roll (5°/frame at the edge) and pitch (1°/frame); the pitch turns the airplane around its wings |
+| right / middle button | faster / slower (1 m/s per frame, 100 to 1000 m/s) |
+| `E` | the views around the airplane in turn: tether (fixed side), tether 2 (turning with the airplane), follow (the place of the airplane 30 frames ago, the view at start) |
+| `P` | the view of each enemy in turn, then the cockpit |
+| `F` | the airplane 20 lengths behind an enemy chosen at random |
+| `N` | the enemies at their lowest speed |
+| `R` | the head up display of the cockpit (not drawn yet) |
+| up / down arrows | range of the radar |
+| space | after a crash, starts again at once (in flight: the gun, not rebuilt yet) |
+| `W`, `T`, `S`, `H` | wireframe, textures, statistics, list of the keys |
+
+The ground is tested under the airplane every 20 frames, every frame below
+500 m: below 5 m the airplane crashes ("You just died...Attempting to
+restart mission"), goes up 500 m and starts again 5 seconds later. The
+display shows the sight (a circle when an enemy is within 2 degrees of the
+nose: "Locked on Enemy N"), the messages, the speed, the heading and the
+height above the ground ("hat").
+
+The five enemies start at fixed places (Enemy0 at 2000 m over the origin,
+the others at the corners of the terrain) and replay recorded flights:
+`N.route` files of 12-byte records (per frame: the roll rate, the pitch
+rate and the speed, big-endian floats, the format in which the demo
+records the flight of the player in `rec.pos`). They leave their route to
+stay between 1000 and 3000 m above the ground (wings level, climb or dive
+to 1250 m, nose level, roll back) and inside the terrain (roll 90 degrees
+and turn to the origin). A crashed enemy turns into its wreck
+(`Broken%d.dwb`) and comes back 30 seconds later. The `.route` files are
+not in the data of the demo: `f18` makes routes up from turns, climbs and
+straight lines when they are missing, and reads `N.route` files found in
+the path.
 
 ## The viewer
 
@@ -107,7 +150,7 @@ enclose the children of the record before them.
 
 | Opcode | Record | Fields used |
 |---|---|---|
-| `0x1771` | header (320 bytes) | `+0x04` float version, `+0x08` date, `+0x110` short units (0 m, 1 ft, 2 in, 3 cm, 4 nautical miles...) |
+| `0x1771` | header (320 bytes) | `+0x00` short units (0 m, 1 ft, 2 in, 3 cm, 4 nautical miles...), `+0x04` float version, `+0x08` date, `+0x86` short up axis: 2 for the models made with Y up (the airplanes, nose along -Z), turned to the Z up of Performer by a pitch of 90 degrees, as `pfdLoad_dwb` does |
 | `0x1772` | group (160 bytes) | `+0x34` flags: bit 26, the children are decals on the first child (`pfLayer`) |
 | `0x1773` | level of detail (96 bytes) | `+0x08` switch out, `+0x0c` switch in, `+0x10` center |
 | `0x1775` | polygon (76 bytes) | `+0x00` color index, `+0x04` vertices, `+0x10` texture (-1 none), `+0x2c` color `0xAABBGGRR`, `+0x36` material (-1 none) |
