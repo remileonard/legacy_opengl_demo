@@ -14,6 +14,7 @@ typedef struct F18Mouse {
     int wheel;              /* wheel steps since the last frame */
     int up, down, kleft, kright; /* the arrow keys are held (flight) */
     int no_steer;           /* the mouse does not fly the airplane (M) */
+    int fire;               /* presses of the fire key (Enter) or of the left button */
     int inside;             /* the pointer was seen in the window */
 } F18Mouse;
 

@@ -286,6 +286,8 @@ static void overlay(void)
             y -= 16;
             text(10, y, "A / Z         faster / slower (or right / middle button, or wheel)");
             y -= 16;
+            text(10, y, "Enter         fire a missile at the enemy locked (or left button)");
+            y -= 16;
             text(10, y, f18_mouse.no_steer ? "M             the mouse flies the airplane (off)"
                                           : "M             the mouse flies the airplane (on)");
             y -= 16;
@@ -398,6 +400,10 @@ static void keyboard(unsigned char k, int x, int y)
         f18_mouse.slower = 1;
         return;
     }
+    if (!free_eye && (k == 13 || k == 10)) {
+        f18_mouse.fire++;
+        return;
+    }
     if (!free_eye && (k == 'm' || k == 'M')) {
         f18_mouse.no_steer = !f18_mouse.no_steer;
         return;
@@ -488,7 +494,11 @@ static void special_up(int k, int x, int y)
 static void mouse(int b, int state, int x, int y)
 {
     passive(x, y);
-    if (b == GLUT_LEFT_BUTTON) f18_mouse.left = state == GLUT_DOWN;
+    if (b == GLUT_LEFT_BUTTON) {
+        f18_mouse.left = state == GLUT_DOWN;
+        if (state == GLUT_DOWN && !free_eye)
+            f18_mouse.fire++;
+    }
     if (b == GLUT_MIDDLE_BUTTON) f18_mouse.middle = state == GLUT_DOWN;
     if (b == GLUT_RIGHT_BUTTON) f18_mouse.right = state == GLUT_DOWN;
     if (!free_eye) {

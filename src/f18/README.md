@@ -44,7 +44,7 @@ is a list of statements ended by `;`, with `#` comments and `%ifdef`,
 The functions named by a script are found by name, as the original found
 the symbols of the executable: the program registers them with
 `esRegisterFunction`. The functions of the demo that are not rebuilt yet
-(the missiles, the gun, the radar display, the
+(the gun, the radar display, the
 weather `esInitEnv`, the smoke, the trails, the sound...) are reported
 once by the interpreter, which goes on. Without `initFlight`, the eye
 would be moved with the mouse (left drag: turn, right drag or wheel:
@@ -74,7 +74,9 @@ script (60 Hz): `f18` calls the app modules at that rate.
 | `N` | the enemies at their lowest speed |
 | `R` | the head up display (HUD) on and off |
 | Page Up / Page Down, `+` / `-` | range of the radar (the up and down arrows of the scripts) |
-| left / right Alt, `1` / `2` | the left / right missile (not rebuilt yet) |
+| left button, Enter | fires a missile at the enemy locked |
+| left / right Alt, `1` / `2` | explodes the left / right missile |
+| `C` | the missiles fly straight to their target (cheat) |
 | space | after a crash, starts again at once (in flight: the gun, not rebuilt yet) |
 | `W`, `T`, `S`, `H` | wireframe, textures, statistics, list of the keys |
 | Esc | quit |
@@ -104,6 +106,30 @@ and turn to the origin). A crashed enemy turns into its wreck
 flight. When a route file is missing, `f18` makes a route up from turns,
 climbs and straight lines.
 
+### The missiles
+
+Two missiles (`missile.dwb`) hang under the wings. The left button (or
+Enter) fires the left one, then the right one (again the right one when
+both fly), at the enemy locked within 2 degrees of the nose. A missile
+leaves 10 m/s faster than the airplane, gains 5 m/s a frame up to
+600 m/s and turns by 0.3 degree a frame toward its target until it goes
+past it; then it flies straight on. Its segments (20 m ahead of its nose
+and 10 m across it) are tested against its target every 2 frames. It
+explodes on its target, after 60 seconds, or with the Alt keys (`1` and
+`2`), and is back under its wing, loaded again 10 frames later ("Ready",
+the bars of the HUD turn red then green). `C` turns the missiles straight
+toward their target.
+
+The enemy hit goes on along its heading, falling and rolling, and
+crashes as its wreck; it comes back 30 seconds later. An enemy with a
+missile on its tail evades: it rolls to a random angle up to 70 degrees
+and pulls (climbing first when it is low). The missile turns slowly
+(about 1.9 km of radius at 600 m/s), so it hits a turning enemy only from
+close behind, as in the demo; `F` puts the airplane right behind an enemy.
+
+`F18_LOG=1` prints the messages of the display (fired, hit, went past,
+crashed...) on the error output.
+
 ### The head up display
 
 The Long Beach script loads the HUD of the demo, `myf18.drt` (the San
@@ -112,9 +138,10 @@ that follows the main channel, 2.5 m in front of the eye (`esSetHud`),
 without depth, over every view; `updateHudValues` fills its variables
 (`hudVars`, in the order of `easyScene.vars`): the position in EasyScene
 coordinates, the pitch and the roll, the heading in tenths of degrees, the
-speed, the height above the ground, the enemy locked, the loading and the
-color of the two missiles (10 and green when loaded) and the "in range"
-light. The HUD shows the pitch ladder turning with the roll, the heading
+speed, the height above the ground, the enemy locked (-1 when both missiles fly), the loading and the
+color of the two missiles (10 and green when loaded, counting the frames
+in red while loading) and the "in range" light (not set by the demo
+functions rebuilt). The HUD shows the pitch ladder turning with the roll, the heading
 tape, the speed, the altitude and the missiles.
 
 `.drt` files ("runtime" files of Designer's Workbench) are `.dwb` files

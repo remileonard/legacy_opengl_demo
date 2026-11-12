@@ -529,6 +529,28 @@ static int load_object(esObject *o)
     return 1;
 }
 
+static esObject *new_object(const char *name, const char *file, int is_static)
+{
+    esObject *o = (esObject *)calloc(1, sizeof(esObject));
+    o->name = dupstr(name);
+    o->file = dupstr(file);
+    o->is_static = is_static;
+    o->isect_mask = 0xffffffffU;
+    es.objects = (esObject **)realloc(es.objects, sizeof(esObject *) * (es.nobjects + 1));
+    es.objects[es.nobjects++] = o;
+    load_object(o);
+    return o;
+}
+
+esObject *esAddObj(const char *file)
+{
+    char name[64];
+    esObject *o;
+    sprintf(name, "%.40s#%d", file, es.nobjects);
+    o = new_object(name, file, 0);
+    return o->node ? o : NULL;
+}
+
 /* --- tokens --------------------------------------------------------------- */
 
 enum { T_END, T_WORD, T_STRING, T_NUMBER, T_PUNCT };
@@ -890,14 +912,7 @@ static void stmt_object(Stmt *s)
                 warn(s, "object already exists:", name);
                 return;
             }
-            o = (esObject *)calloc(1, sizeof(esObject));
-            o->name = dupstr(name);
-            o->file = dupstr(file);
-            o->is_static = st;
-            o->isect_mask = 0xffffffffU;
-            es.objects = (esObject **)realloc(es.objects, sizeof(esObject *) * (es.nobjects + 1));
-            es.objects[es.nobjects++] = o;
-            load_object(o);
+            o = new_object(name, file, st);
         } else if (!o) {
             warn(s, "object not loaded yet:", name);
             return;

@@ -34,8 +34,19 @@
  * script; when one is missing, a route is made up from turns, climbs and
  * straight lines.
  *
- * Not rebuilt yet: the missiles (left button, Alt keys, C key), the gun
- * (space bar in flight), the explosions, the smoke, the sound and the radar.
+ * The missiles (loadMissiles, initMissile, updateMissile, cbMissile,
+ * explodeMissile) hang under the wings; the left button fires the left one
+ * (then the right one) at the enemy locked: 10 m/s faster than the
+ * airplane, 5 m/s faster each frame up to 600 m/s, turning by 0.3 degree a
+ * frame toward its target until it goes past it (C: straight to it), its
+ * segments (20 m ahead of the nose, 10 m across) tested every 2 frames
+ * against its target; it explodes on its target, after 60 seconds, or with
+ * the Alt keys, and is back under its wing, reloaded in 10 frames. The
+ * enemy hit falls along its heading, rolling, and crashes as a wreck; an
+ * enemy with a missile on its tail rolls to a random angle and pulls.
+ *
+ * Not rebuilt yet: the gun (space bar in flight), the explosions, the
+ * smoke and the trails, the sound and the radar.
  */
 #ifdef __APPLE__
 #include <OpenGL/gl.h>
@@ -97,6 +108,19 @@ typedef struct Enemy {
     int isect_period, isect_count;
 } Enemy;
 
+/* the two missiles under the wings (EasyScene: 32 bytes from +0xc0 of the
+ * flight) */
+typedef struct Missile {
+    esObject *obj;
+    long fire_frame;        /* the frame it was fired, 0 not flying */
+    int passed;             /* went past its target: no more a threat */
+    int locked;             /* guided to its target */
+    int target;             /* enemy, -1 none */
+    long reload_frame;      /* reloading since, 0 none */
+    float speed;
+    int isect_count;
+} Missile;
+
 typedef struct Flight {
     esObject *camera, *plane;
     float speed;            /* m/s */
@@ -113,7 +137,13 @@ typedef struct Flight {
     int nenemies;
     float enemy_speed;      /* shared by the enemies, as in the demo */
     long frame;
+    Missile missile[2];
+    int fired[2];           /* the missile is flying */
+    int cheat;              /* C: the missiles fly straight to their target */
 } Flight;
+
+static void fire_missile(void);
+static void updateMissile(const char *arg);
 
 static Flight F;
 
@@ -390,11 +420,28 @@ static void updateHudValues(const char *arg)
     hudVars[HV_ROLL] = signed_angle(p->hpr[2]);
     hudVars[HV_VELOCITY] = F.speed;
     hudVars[HV_HOT] = F.height < 1e5f ? F.height : 0;
-    hudVars[HV_ASL] = (float)F.target;
-    hudVars[HV_LEFT] = 10;
-    hudVars[HV_LCOL] = 600;
-    hudVars[HV_RIGHT] = 10;
-    hudVars[HV_RCOL] = 600;
+    hudVars[HV_ASL] = F.fired[0] && F.fired[1] ? -1.0f : (float)F.target;
+    {
+        int i;
+        for (i = 0; i < 2; i++) {
+            Missile *m = &F.missile[i];
+            float *load = &hudVars[i ? HV_RIGHT : HV_LEFT], *col = &hudVars[i ? HV_RCOL : HV_LCOL];
+            if (m->reload_frame) {
+                /* loading for 10 frames, red, then "Ready" and green */
+                *load = (float)(F.frame - m->reload_frame);
+                *col = 250;
+                if (*load >= 10) {
+                    strcpy(F.message, "Ready");
+                    m->reload_frame = 0;
+                    *col = 600;
+                    *load = 10;
+                }
+            } else {
+                *col = 600;
+                *load = F.fired[i] ? 0.0f : 10.0f;
+            }
+        }
+    }
     hudVars[HV_INRANGE] = -1;
 }
 
@@ -494,6 +541,17 @@ static void updateFlight(const char *arg)
     float roll_rate = 0, pitch_rate = 0;
     (void)arg;
     F.frame++;
+    /* F18_LOG: the messages of the display on the error output */
+    {
+        static char last[128];
+        static int log = -1;
+        if (log < 0)
+            log = getenv("F18_LOG") != NULL;
+        if (log && strcmp(last, F.message) != 0) {
+            strcpy(last, F.message);
+            fprintf(stderr, "[%ld] %s (target %d)\n", F.frame, F.message, F.target);
+        }
+    }
     if (F.crashed) {
         /* "You just died...": 5 seconds before starting again */
         if (++F.crashed > es.framerate * 5)
@@ -522,6 +580,12 @@ static void updateFlight(const char *arg)
     if (F.speed >= 1000) F.speed = 1000;
     else if (F.speed <= 100) F.speed = 100;
     fly(F.plane, roll_rate, pitch_rate, F.speed);
+    /* the left button (or Enter) fires a missile at the enemy locked: the
+     * presses are counted, a quick tap falls between two frames */
+    if (f18_mouse.fire > 0) {
+        fire_missile();
+        f18_mouse.fire = 0;
+    }
     if (F.isect_on && ++F.isect_count >= F.isect_period) {
         F.isect_count = 0;
         planeCrash();
@@ -685,7 +749,6 @@ static void enemy_ground(Enemy *e, int n)
         e->speed = 0;
         message(e->hit ? "Enemy %d is a dead duck" : "Enemy %d crashed", n + 1);
         fprintf(stderr, "%s\n", F.message);
-        fprintf(stderr, "%s\n", F.message);
         e->dead_frame = (int)F.frame;
         e->saved_x = e->obj->xyz[0];
         e->saved_h = e->obj->hpr[0];
@@ -716,17 +779,40 @@ static void updateEnemy(const char *arg)
             continue;
         }
         if (e->hit) {
-            /* hit by a missile: falls along its heading, turning */
-            int t = ++e->fall_frame;
-            float v = e->speed / es.framerate, sh, ch, z;
+            /* hit by a missile: goes on along its heading, falling and
+             * rolling, explosions after 1.5 and 4.5 seconds at 60 Hz */
+            int t = e->fall_frame++;
+            float fr = es.framerate, v = e->speed / fr, sp, cp, sh, ch, vz, z;
+            pfSinCos(p, &sp, &cp);
+            vz = v * sp - 10.0f * t / (fr * fr);
             pfSinCos(h - 180, &sh, &ch);
-            z = e->fall[2] + v * (float)sin(PF_DEG2RAD(p)) * t - 5.0f * t * t / (es.framerate * es.framerate);
-            if (z - e->ground <= 0)
+            z = e->fall[2] + vz * t - 5.0f * t * t / (fr * fr);
+            if (e->height <= o->xyz[2] - z)
                 z = e->ground + 2;
             esObjectPos(o, e->fall[0] + v * t * sh, e->fall[1] - v * t * ch, z, h, p, r + 5);
         } else {
-            if (e->state == 2)
-                e->pitch_rate = 0;
+            /* a missile coming: evade (roll to a random angle and pull),
+             * or climb first when low */
+            if (e->state == 0 || e->state == 2 || e->state == 3 || e->state == 4) {
+                int k, threat = 0;
+                for (k = 0; k < 2; k++)
+                    if (F.fired[k] && F.missile[k].target == i && !F.missile[k].passed)
+                        threat = 1;
+                if (threat) {
+                    e->dir = rand() % 2 ? 1 : -1;
+                    if (e->saved_roll == -1)
+                        e->saved_roll = r;
+                    e->rand_angle = (float)(rand() % 70);
+                    if (e->state == 2)
+                        e->pitch_rate = 0.3f;
+                    else if (e->height > 2000)
+                        e->state = 1;
+                    else
+                        e->state = 7;
+                } else if (e->state == 2) {
+                    e->pitch_rate = 0;
+                }
+            }
             switch (e->state) {
             case 0: {
                 const float *rt = e->route + 3 * e->idx;
@@ -799,6 +885,18 @@ static void updateEnemy(const char *arg)
                     e->state = 6;
                 }
                 break;
+            case 7: { /* evade a missile */
+                float to = e->rand_angle * -e->dir;
+                pitch_rate = -0.7f;
+                roll_rate = e->dir * 3.0f;
+                if (r <= to + 3 && r >= to - 3) {
+                    r = to;
+                    roll_rate = 0;
+                    pitch_rate = 0;
+                    e->state = 4;
+                }
+                break;
+            }
             case 6: { /* turn to the origin */
                 float to = (float)PF_RAD2DEG(atan2(ex, ez));
                 pitch_rate = -1;
@@ -819,6 +917,221 @@ static void updateEnemy(const char *arg)
         if (++e->isect_count >= e->isect_period) {
             e->isect_count = 0;
             enemy_ground(e, i);
+        }
+    }
+}
+
+/* --- the missiles ------------------------------------------------------------------- */
+
+/* positionMissile: under the wing, (-4, -0.45, 0) and (4, -0.45, 0) from the
+ * airplane in EasyScene coordinates */
+static void attach_missile(int i)
+{
+    pfMatrix m;
+    pfCoord c;
+    pfVec3 off, p;
+    pfSetVec3(off, i ? 4.0f : -4.0f, 0, -0.45f);
+    pfCopyVec3(c.xyz, F.plane->xyz);
+    pfSetVec3(c.hpr, F.plane->hpr[0], F.plane->hpr[1], -F.plane->hpr[2]);
+    pfMakeCoordMat(m, &c);
+    pfXformPt3(p, off, m);
+    esObjectPos(F.missile[i].obj, p[0], p[1], p[2], F.plane->hpr[0], F.plane->hpr[1], F.plane->hpr[2]);
+}
+
+static void loadMissiles(void)
+{
+    int i;
+    for (i = 0; i < 2; i++) {
+        memset(&F.missile[i], 0, sizeof(Missile));
+        F.missile[i].target = -1;
+        if ((F.missile[i].obj = esAddObj("missile.dwb")) == NULL) {
+            fprintf(stderr, "Couldn't find missile\n");
+            exit(1);
+        }
+        attach_missile(i);
+    }
+    esAddModuleFunc("updateMissile", ES_PREAPP, updateMissile);
+}
+
+/* initMissile: leaves the wing with the orientation of the airplane, 10 m/s
+ * faster, toward the enemy locked */
+static void initMissile(int i)
+{
+    Missile *m = &F.missile[i];
+    F.fired[i] = 1;
+    esObjectPos(m->obj, m->obj->xyz[0], m->obj->xyz[1], m->obj->xyz[2],
+                F.plane->hpr[0], F.plane->hpr[1], F.plane->hpr[2]);
+    m->speed = F.speed + 10;
+    m->fire_frame = F.frame;
+    m->passed = 0;
+    m->isect_count = 0;
+}
+
+static void fire_missile(void)
+{
+    /* the left one, the right one when the left one is flying (again when
+     * both are flying, as the demo did) */
+    int i = F.fired[0] ? 1 : 0;
+    F.missile[i].target = F.target;
+    F.missile[i].locked = F.target >= 0;
+    initMissile(i);
+    message("Fired missile %d", i + 1);
+}
+
+/* explodeMissile: back under its wing, reloaded in 10 frames */
+static void explodeMissile(int i)
+{
+    Missile *m = &F.missile[i];
+    F.fired[i] = 0;
+    m->locked = 0;
+    m->fire_frame = 0;
+    m->speed = 0;
+    m->reload_frame = F.frame;
+    F.target = 0;
+    attach_missile(i);
+}
+
+static void explodeLeftMissile(const char *arg)
+{
+    (void)arg;
+    strcpy(F.message, "Exploding missile 1");
+    if (F.fired[0])
+        explodeMissile(0);
+}
+
+static void explodeRightMissile(const char *arg)
+{
+    (void)arg;
+    strcpy(F.message, "Exploding missile 2");
+    if (F.fired[1])
+        explodeMissile(1);
+}
+
+/* C: the missiles turn at once toward their target */
+static void cheatMissile(const char *arg)
+{
+    (void)arg;
+    F.cheat = !F.cheat;
+    sprintf(F.message, "cheatMode: %s", F.cheat ? "on" : "off");
+}
+
+/* cbMissile: the segments of the missile (20 m ahead of its nose, 10 m
+ * across it, up and sideways) against its target */
+static int missile_hits(Missile *m, esObject *target)
+{
+    static const float seg[3][7] = {
+        /* EasyScene (0,0,-3) along -Z, (0,-5,-3) along Y, (-5,0,-3) along X */
+        { 0, 3, 0, 0, 1, 0, 20 }, { 0, 3, -5, 0, 0, 1, 10 }, { -5, 3, 0, 1, 0, 0, 10 }
+    };
+    pfSegSet ss;
+    pfHit **hits[PFIS_MAX_SEGS];
+    pfMatrix mat;
+    pfCoord c;
+    int k;
+    if (!target || !target->node)
+        return 0;
+    memset(&ss, 0, sizeof(ss));
+    pfCopyVec3(c.xyz, m->obj->xyz);
+    pfSetVec3(c.hpr, m->obj->hpr[0], m->obj->hpr[1], -m->obj->hpr[2]);
+    pfMakeCoordMat(mat, &c);
+    for (k = 0; k < 3; k++) {
+        pfXformPt3(ss.segs[k].pos, seg[k], mat);
+        pfXformVec3(ss.segs[k].dir, seg[k] + 3, mat);
+        ss.segs[k].length = seg[k][6];
+    }
+    ss.activeMask = 7;
+    ss.isectMask = 0xffffffffU;
+    return pfNodeIsectSegs(target->node, &ss, hits) > 0;
+}
+
+static void cbMissile(int i)
+{
+    Missile *m = &F.missile[i];
+    Enemy *e;
+    if (m->target < 0 || m->target >= F.nenemies)
+        return;
+    e = &F.enemy[m->target];
+    if (e->dead || e->hit || !missile_hits(m, e->obj))
+        return;
+    sprintf(F.message, "Missile %d hit Enemy %d", i + 1, m->target + 1);
+    fprintf(stderr, "%s\n", F.message);
+    /* the enemy falls from there, a wreck */
+    e->hit = 1;
+    e->fall_frame = 1;
+    pfCopyVec3(e->fall, m->obj->xyz);
+    if (e->sw)
+        pfSwitchVal(e->sw, 1);
+    e->isect_period = 1;
+    explodeMissile(i);
+}
+
+static float wrap_to(float want, float h)
+{
+    if (h <= 0 && want >= 0) return want - 360;
+    if (h >= 0 && want <= 0) return want + 360;
+    return want;
+}
+
+/* updateMissile: faster up to 600 m/s, turning by 0.3 degree a frame toward
+ * the target until it goes past it, exploding after 60 seconds */
+static void updateMissile(const char *arg)
+{
+    int i;
+    (void)arg;
+    for (i = 0; i < 2; i++) {
+        Missile *m = &F.missile[i];
+        esObject *o = m->obj;
+        float h = o->hpr[0], p = o->hpr[1], d0 = 0;
+        pfVec3 d;
+        if (!F.fired[i]) {
+            attach_missile(i);
+            continue;
+        }
+        if (m->fire_frame && F.frame - m->fire_frame >= 60 * es.framerate) {
+            m->fire_frame = 0;
+            explodeMissile(i);
+            message("Auto detonating missile %d", i + 1);
+            continue;
+        }
+        if (m->speed <= 600)
+            m->speed += 5;
+        if (m->locked && m->target >= 0) {
+            const esObject *t = F.enemy[m->target].obj;
+            float dx = t->xyz[0] - o->xyz[0], dy = t->xyz[1] - o->xyz[1], dz = t->xyz[2] - o->xyz[2];
+            float want_h = (float)PF_RAD2DEG(-atan2(dx, dy));
+            float want_p = (float)PF_RAD2DEG(atan2(dz, sqrt(dx * dx + dy * dy)));
+            d0 = dx * dx + dy * dy + dz * dz;
+            if (F.cheat) {
+                h = want_h;
+                p = want_p;
+            } else {
+                float dh = wrap_to(want_h, h) - h, dp = want_p - p;
+                /* as the demo: below 0.3 degree away on the negative side
+                 * the missile turns the wrong way, then back by 0.3 */
+                if (dh > 0) h += dh >= 0.3f ? 0.3f : dh;
+                else h -= dh <= -0.3f ? 0.3f : dh;
+                if (dp > 0) p += dp >= 0.3f ? 0.3f : dp;
+                else p -= dp <= -0.3f ? 0.3f : dp;
+            }
+        }
+        polar(d, h, p);
+        esObjectPos(o, o->xyz[0] + d[0] * m->speed / es.framerate, o->xyz[1] + d[1] * m->speed / es.framerate,
+                    o->xyz[2] + d[2] * m->speed / es.framerate, h, p, o->hpr[2]);
+        if (m->locked && m->target >= 0) {
+            const esObject *t = F.enemy[m->target].obj;
+            pfVec3 v;
+            pfSubVec3(v, t->xyz, o->xyz);
+            if (d0 < pfDotVec3(v, v)) {
+                m->locked = 0;
+                m->passed = 1;
+                if (getenv("F18_LOG"))
+                    fprintf(stderr, "[%ld] missile %d went past enemy %d\n", F.frame, i + 1, m->target + 1);
+            }
+        }
+        /* its segments are tested every 2 frames */
+        if (++m->isect_count >= 2) {
+            m->isect_count = 0;
+            cbMissile(i);
         }
     }
 }
@@ -931,6 +1244,7 @@ static void initFlight(const char *arg)
             esSetDrtBaseAddr(hud, hudVars, HV_N);
         }
     }
+    loadMissiles();
     readRoute();
     esAddModuleFunc("updateEnemy", ES_PREAPP, updateEnemy);
     esAddModuleFunc("updateEye", ES_POSTAPP, updateEye);
@@ -950,6 +1264,9 @@ void flight_register(void)
     esRegisterFunction("plusRadar", plusRadar);
     esRegisterFunction("minusRadar", minusRadar);
     esRegisterFunction("restartFlight", restartFlight);
+    esRegisterFunction("explodeLeftMissile", explodeLeftMissile);
+    esRegisterFunction("explodeRightMissile", explodeRightMissile);
+    esRegisterFunction("cheatMissile", cheatMissile);
     esRegisterFunction("toggleBeeBox", toggleBeeBox);
     esRegisterFunction("setFadeDistance", setFadeDistance);
     esRegisterFunction("updateHudValues", updateHudValues);

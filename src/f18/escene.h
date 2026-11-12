@@ -115,6 +115,8 @@ void esRunPhase(int phase);
 void esAddModuleFunc(const char *name, int phase, esFunc f);
 
 esObject *esFindObject(const char *name);
+/* loads an object from the application (esAddObj), NULL on error */
+esObject *esAddObj(const char *file);
 esChannel *esFindChannel(const char *name);
 
 /* the HUD of an object (esSetHud) and its variables (esSetDrtBaseAddr) */
