@@ -29,6 +29,10 @@ powerflip [-rsSCwWLRDhM] [-B blurfactor] [-Fdensity] [-f r,g,b]
 | `-T text` | a line of the message shown while loading |
 | `-S`, `-M`, `-R`, `-D`, `-z` | stereo, no multisampling, root window, debug, undocumented: accepted, no effect here |
 
+Mouse: unlike flip, the left button rotates the selected objects (virtual
+trackball) and the middle button moves them; both together zoom; the
+right button opens the menu (`ui_swap_buttons` of libdemo).
+
 The menu of flip gets the entries of powerflip:
 
 - **Fog**: clear air, fog (grey or `-f`), haze, black fog (depthcue); the

@@ -121,6 +121,7 @@ void main(int argc, char **argv) {
      * handling REDRAW inside ui.c will happen before the draw_scene
      * specified above.  This is also why the anything_moving code works.
      */
+    ui_swap_buttons(TRUE); /* Rotations with the left button */
     ui(remember_view); /* Time is spent in ui, interacting */
     gexit();
     exit(0);
