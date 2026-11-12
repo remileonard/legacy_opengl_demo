@@ -561,6 +561,15 @@ static Yobj *create_unknown(const YClass *cls, Yobj **args, int nargs)
 }
 
 
+/* the last '/' of a path, or '\\' on Windows, NULL when there is none */
+static const char *last_separator(const char *path)
+{
+    const char *s = strrchr(path, '/'), *b = strrchr(path, '\\');
+    if (!s || !b)
+        return s ? s : b;
+    return b > s ? b : s;
+}
+
 /* --- textures ------------------------------------------------------------------------ */
 
 static char **texture_names;
@@ -585,11 +594,15 @@ static int def_texture(const char *name)
         if (same(texture_names[i], name))
             return i + 1;
     image = readImageRGB(name, &w, &h);
-    if (!image) {
-        /* in the directory of the model, also for the IRIX absolute paths
-           (/usr/demos/...) of the original files */
-        const char *base = name[0] == '/' ? strrchr(name, '/') + 1 : name;
-        snprintf(path, sizeof(path), "%s%s%s", model_dir, model_dir[0] ? "/" : "", base);
+    if (!image && model_dir[0] && name[0] != '/' && name[0] != '\\') {
+        /* in the directory of the model */
+        snprintf(path, sizeof(path), "%s/%s", model_dir, name);
+        image = readImageRGB(path, &w, &h);
+    }
+    if (!image && last_separator(name)) {
+        /* by its name in the directory of the model, for the IRIX absolute
+           paths (/usr/demos/...) of the original files */
+        snprintf(path, sizeof(path), "%s%s%s", model_dir, model_dir[0] ? "/" : "", last_separator(name) + 1);
         image = readImageRGB(path, &w, &h);
     }
     if (!image) {
@@ -1503,7 +1516,7 @@ YModel *yaodl_read(const char *file)
     fclose(f);
 
     {
-        const char *slash = strrchr(file, '/');
+        const char *slash = last_separator(file);
         size_t n = slash ? (size_t)(slash - file) : 0;
         if (n >= sizeof(model_dir))
             n = 0;
