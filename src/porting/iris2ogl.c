@@ -3095,6 +3095,45 @@ void texbind(int target, int texid) {
     current_texture_id = texid;
 
 }
+/*
+ * texgen: TG_LINEAR uses a plane in object coordinates, TG_CONTOUR a plane
+ * in eye coordinates (transformed by the current matrix), TG_SPHEREMAP a
+ * sphere map; TG_ON and TG_OFF enable or disable the generation.
+ */
+void texgen(int coord, int mode, float params[]) {
+    GLenum c, gen;
+
+    if (coord < TX_S || coord > TX_Q)
+        return;
+    c = GL_S + coord;
+    gen = GL_TEXTURE_GEN_S + coord;
+    switch (mode) {
+    case TG_OFF:
+        glDisable(gen);
+        break;
+    case TG_ON:
+        glEnable(gen);
+        break;
+    case TG_LINEAR:
+        glTexGeni(c, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
+        if (params)
+            glTexGenfv(c, GL_OBJECT_PLANE, params);
+        break;
+    case TG_CONTOUR:
+        glTexGeni(c, GL_TEXTURE_GEN_MODE, GL_EYE_LINEAR);
+        if (params)
+            glTexGenfv(c, GL_EYE_PLANE, params);
+        break;
+    case TG_SPHEREMAP:
+        if (coord == TX_S || coord == TX_T)
+            glTexGeni(c, GL_TEXTURE_GEN_MODE, GL_SPHERE_MAP);
+        break;
+    case TG_REFRACTMAP:
+    default:
+        break;
+    }
+}
+
 void tevbind(int target, int texid) {
     (void)target;
     

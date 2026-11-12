@@ -821,6 +821,21 @@ void tevdef(int texid, int nc, float props[]);
 void texbind(int target, int texid);
 void tevbind(int target, int texid);
 
+/* texture coordinate generation */
+#define TX_S 0
+#define TX_T 1
+#define TX_R 2
+#define TX_Q 3
+
+#define TG_OFF       0
+#define TG_ON        1
+#define TG_CONTOUR   2
+#define TG_LINEAR    3
+#define TG_SPHEREMAP 4
+#define TG_REFRACTMAP 5
+
+void texgen(int coord, int mode, float params[]);
+
 // Color map functions
 void gflush(void);
 void getmcolor(Colorindex index, RGBvalue* r, RGBvalue* g, RGBvalue* b);

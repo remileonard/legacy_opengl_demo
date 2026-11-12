@@ -48,6 +48,10 @@ struct Yobj {
     int *isize, **ilist;
     /* compiled display lists, one per drawing style */
     long dlist[2];
+    /* textures and contours: state saved by Push */
+    int flag;
+    void *saved;
+    struct YContour *contours;
 };
 
 /* the drawing style of the polygons: 0 filled, 3 wireframe (closed lines) */

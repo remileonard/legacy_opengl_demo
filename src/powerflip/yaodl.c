@@ -26,11 +26,13 @@
  */
 #include <ctype.h>
 #include <math.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "porting/iris2ogl.h"
+#include "image.h"
 #include "yaodl.h"
 
 int YAODL_DrawStyle = 0;
@@ -43,6 +45,9 @@ int indexpolygons_NumPolygonsDrawn = 0;
 static Matrix identity = { { 1, 0, 0, 0 }, { 0, 1, 0, 0 }, { 0, 0, 1, 0 }, { 0, 0, 0, 1 } };
 static Matrix view_matrix;
 static int have_view;
+
+/* the directory of the model being read, where its textures are searched */
+static char model_dir[512];
 
 /* measure mode: no drawing, the vertices are transformed to find the size */
 static int measuring;
@@ -177,6 +182,8 @@ static int class_width(const char *name)
         return 3;
     if (same(name, "colors4f") || same(name, "rotates"))
         return 4;
+    if (same(name, "texcoords"))
+        return 2;
     return 0;
 }
 
@@ -553,6 +560,314 @@ static Yobj *create_unknown(const YClass *cls, Yobj **args, int nargs)
     return o;
 }
 
+
+/* --- textures ------------------------------------------------------------------------ */
+
+static char **texture_names;
+static int ntextures, maxtextures;
+static int current_texture;
+
+/* textures::def_texture: each file is read once, as a texture of 4
+   components modulating the lit color */
+static int def_texture(const char *name)
+{
+    static float tevprops[] = { TV_MODULATE, TV_NULL };
+    static float texprops[] = { TX_MINFILTER, TX_MIPMAP_TRILINEAR, TX_MAGFILTER, TX_BILINEAR, TX_NULL };
+    unsigned char *image;
+    char path[1024];
+    int i, w, h;
+
+    if (ntextures == 0) {
+        tevdef(1, 0, tevprops);
+        tevbind(TV_ENV0, 1);
+    }
+    for (i = 0; i < ntextures; i++)
+        if (same(texture_names[i], name))
+            return i + 1;
+    image = readImageRGB(name, &w, &h);
+    if (!image && model_dir[0] && name[0] != '/') {
+        snprintf(path, sizeof(path), "%s/%s", model_dir, name);
+        image = readImageRGB(path, &w, &h);
+    }
+    if (!image) {
+        fprintf(stderr, "YAODL: Error: Can't load texture file %s\n", name);
+        return 0;
+    }
+    texture_names = (char **)grow(texture_names, &maxtextures, ntextures, sizeof(char *));
+    texture_names[ntextures++] = strdup(name);
+    texdef2d(ntextures, 4, w, h, image, 0, texprops);
+    free(image);
+    return ntextures;
+}
+
+/* "Expecting a list of texture file names" */
+static Yobj *create_textures(const YClass *cls, Yobj **args, int nargs)
+{
+    Yobj *o = new_obj(cls);
+    int k;
+    o->iv = (int *)malloc(sizeof(int) * (nargs ? nargs : 1));
+    for (k = 0; k < nargs; k++) {
+        if (args[k]->cls != &ystring_class) {
+            fprintf(stderr, "YAODL: Error: Expecting a list of texture file names\n");
+            return NULL;
+        }
+        if ((o->iv[k] = def_texture(args[k]->str)) == 0)
+            return NULL;
+    }
+    o->ni = o->count = nargs;
+    return o;
+}
+
+/* a texture bound by an enclosing object wins over the inner ones */
+static void textures_executeN(Yobj *o, int i)
+{
+    if (o->flag || measuring || o->count == 0)
+        return;
+    current_texture = o->iv[clamp(i, o->count)];
+    texbind(TX_TEXTURE_0, current_texture);
+}
+
+static void textures_push(Yobj *o, int full)
+{
+    if (current_texture)
+        o->flag = 1;
+    if (full)
+        o->saved = (void *)(intptr_t)current_texture;
+}
+
+static void textures_pop(Yobj *o, int full)
+{
+    int saved = (int)(intptr_t)o->saved;
+    if (o->flag || !full || measuring)
+        return;
+    if (saved != current_texture) {
+        texbind(TX_TEXTURE_0, saved);
+        current_texture = saved;
+    }
+}
+
+static void texcoords_executeN(Yobj *o, int i)
+{
+    if (current_texture && !measuring)
+        t2f(element(o, i));
+}
+
+/* --- sContours, tContours: texture coordinate generation ------------------------------ */
+
+typedef struct YContour {
+    int mode;               /* TG_CONTOUR, TG_LINEAR, TG_SPHEREMAP or TG_OFF */
+    int eye;                /* plane in eye coordinates, else object */
+    float plane[4];
+} YContour;
+
+static YContour *current_contour[2];
+
+static int contour_coord(Yobj *o)
+{
+    return same(o->cls->name, "tContours") ? TX_T : TX_S;
+}
+
+/* "(sContours mode, space, plane, ...)": mode contour, linear, spheremap or
+   off, space eye or object, a plane of 4 floats except for spheremap */
+static Yobj *create_contours(const YClass *cls, Yobj **args, int nargs)
+{
+    Yobj *o = new_obj(cls);
+    int k = 0, n = 0;
+    o->contours = (YContour *)calloc(nargs ? nargs : 1, sizeof(YContour));
+    while (k < nargs) {
+        YContour *e = &o->contours[n];
+        const char *m;
+        if (args[k]->cls != &ystring_class) {
+            fprintf(stderr, "YAODL: Error: Expecting a contour mode string\n");
+            return NULL;
+        }
+        m = args[k++]->str;
+        if (same(m, "contour"))
+            e->mode = TG_CONTOUR;
+        else if (same(m, "linear"))
+            e->mode = TG_LINEAR;
+        else if (same(m, "spheremap"))
+            e->mode = TG_SPHEREMAP;
+        else if (same(m, "off"))
+            e->mode = TG_OFF;
+        else {
+            fprintf(stderr, "YAODL: Error: Expecting contour, linear, or off\n");
+            return NULL;
+        }
+        if (k >= nargs || args[k]->cls != &ystring_class) {
+            fprintf(stderr, "YAODL: Error: Expecting a contour transformation space\n");
+            return NULL;
+        }
+        if (same(args[k]->str, "eye"))
+            e->eye = 1;
+        else if (!same(args[k]->str, "object")) {
+            fprintf(stderr, "YAODL: Error: Expecting either eye or object\n");
+            return NULL;
+        }
+        k++;
+        if (e->mode != TG_SPHEREMAP && e->mode != TG_OFF) {
+            int j;
+            Yobj *pl = k < nargs ? args[k] : NULL;
+            if (!pl || (pl->cls == &yfloat_class ? pl->nf : pl->cls == &yint_class ? pl->ni : 0) != 4) {
+                fprintf(stderr, "YAODL: Error: Expecting a plane specification\n");
+                return NULL;
+            }
+            for (j = 0; j < 4; j++)
+                e->plane[j] = pl->cls == &yfloat_class ? pl->f[j] : (float)pl->iv[j];
+            k++;
+        }
+        n++;
+    }
+    o->count = n;
+    return o;
+}
+
+/* contourBase::activate: in eye space, the plane is given with the identity
+   as viewing matrix */
+static void contour_activate(Yobj *o, YContour *e)
+{
+    int coord = contour_coord(o);
+    if (measuring)
+        return;
+    if (e->mode == TG_OFF) {
+        texgen(coord, TG_OFF, NULL);
+    } else {
+        if (e->eye) {
+            pushmatrix();
+            loadmatrix(identity);
+        }
+        texgen(coord, e->mode, e->plane);
+        texgen(coord, TG_ON, NULL);
+        if (e->eye)
+            popmatrix();
+    }
+    current_contour[coord] = e;
+}
+
+static void contours_executeN(Yobj *o, int i)
+{
+    if (o->count)
+        contour_activate(o, &o->contours[clamp(i, o->count)]);
+}
+
+static void contours_push(Yobj *o, int full)
+{
+    if (full)
+        o->saved = current_contour[contour_coord(o)];
+}
+
+static void contours_pop(Yobj *o, int full)
+{
+    int coord = contour_coord(o);
+    if (!full || measuring)
+        return;
+    if (o->saved) {
+        contour_activate(o, (YContour *)o->saved);
+    } else {
+        texgen(coord, TG_OFF, NULL);
+        current_contour[coord] = NULL;
+    }
+}
+
+/* --- subdivides: the screen subdivision of IRIX, not needed here ---------------------- */
+
+static Yobj *create_subdivides(const YClass *cls, Yobj **args, int nargs)
+{
+    Yobj *o = new_obj(cls);
+    o->count = 1;
+    return o;
+}
+
+/* --- regularMesh: "(regularMesh columns rows (vertices ...))" ------------------------- */
+
+static Yobj *create_regularmesh(const YClass *cls, Yobj **args, int nargs)
+{
+    Yobj *o;
+    if (nargs != 2 || args[0]->cls != &yint_class || !same(args[1]->cls->name, "vertices")) {
+        fprintf(stderr, "YAODL: Regular mesh expects integer dimensions, vertices\n");
+        return NULL;
+    }
+    if (args[0]->ni != 2) {
+        fprintf(stderr, "YAODL: Regular mesh expects 2 integer dimensions, vertices\n");
+        return NULL;
+    }
+    if (args[0]->iv[0] * args[0]->iv[1] != args[1]->count) {
+        fprintf(stderr, "YAODL: Regular mesh: expected %d*%d vertices, received %d\n", args[0]->iv[0],
+                args[0]->iv[1], args[1]->count);
+        return NULL;
+    }
+    o = create_group(cls, args + 1, 1);
+    o->width = args[0]->iv[0];
+    o->ni = args[0]->iv[1];
+    o->count = 1;
+    return o;
+}
+
+static void mesh_vertex(Yobj *verts, int v, int first)
+{
+    if (!first) {
+        list_pop(verts->assoc, verts->nassoc, 0);
+        list_push(verts->assoc, verts->nassoc, 0);
+    }
+    list_executeN(verts->assoc, verts->nassoc, v);
+    vertices_executeN(verts, v);
+}
+
+/* strips between two rows, or the lines of the rows and columns */
+static void regularmesh_elements(Yobj *o)
+{
+    Yobj *verts = o->kids[0];
+    int w = o->width, h = o->ni, r, c;
+    list_push(verts->assoc, verts->nassoc, 1);
+    if (measuring) {
+        for (r = 0; r < w * h; r++)
+            vertices_executeN(verts, r);
+        measure_polys += 2 * (w - 1) * (h - 1);
+    } else if (YAODL_DrawStyle == 3) {
+        for (r = 0; r < h; r++) {
+            bgnline();
+            for (c = 0; c < w; c++)
+                mesh_vertex(verts, r * w + c, c == 0);
+            endline();
+        }
+        for (c = 0; c < w; c++) {
+            bgnline();
+            for (r = 0; r < h; r++)
+                mesh_vertex(verts, r * w + c, r == 0);
+            endline();
+        }
+    } else {
+        for (r = 0; r + 1 < h; r++) {
+            bgntmesh();
+            for (c = 0; c < w; c++) {
+                mesh_vertex(verts, r * w + c, c == 0);
+                mesh_vertex(verts, (r + 1) * w + c, 0);
+            }
+            endtmesh();
+        }
+    }
+    list_pop(verts->assoc, verts->nassoc, 1);
+}
+
+static void regularmesh_execute(Yobj *o)
+{
+    int s = YAODL_DrawStyle == 3;
+    list_push(o->assoc, o->nassoc, 1);
+    list_executeN(o->assoc, o->nassoc, 0);
+    if (measuring) {
+        regularmesh_elements(o);
+    } else {
+        if (o->dlist[s] == 0) {
+            o->dlist[s] = genobj();
+            makeobj(o->dlist[s]);
+            regularmesh_elements(o);
+            closeobj();
+        }
+        callobj(o->dlist[s]);
+    }
+    list_pop(o->assoc, o->nassoc, 1);
+}
+
 static const YClass classes[] = {
     { "group", create_group, NULL, group_executeN, group_push, group_pop },
     { "lines", create_vertices_group, lines_execute, lines_executeN, group_push, group_pop },
@@ -568,12 +883,17 @@ static const YClass classes[] = {
     { "rotates", create_nfloats, NULL, rotates_executeN, push_matrix, pop_matrix },
     { "untransform", create_noargs, NULL, NULL, untransform_push, untransform_pop },
     { "nofliplighting", create_noargs, NULL, NULL, nofliplighting_push, nofliplighting_pop },
+    { "textures", create_textures, NULL, textures_executeN, textures_push, textures_pop },
+    { "texcoords", create_nfloats, NULL, texcoords_executeN, NULL, NULL },
+    { "sContours", create_contours, NULL, contours_executeN, contours_push, contours_pop },
+    { "tContours", create_contours, NULL, contours_executeN, contours_push, contours_pop },
+    { "subdivides", create_subdivides, NULL, NULL, NULL, NULL },
+    { "regularMesh", create_regularmesh, regularmesh_execute, NULL, group_push, group_pop },
 };
 
 /* names of the classes still to do (textures, nurbs, lights, animation) */
 static const char *later[] = {
-    "textures", "texcoords", "sContours", "tContours", "subdivides", "nurbs", "trimcurves", "regularMesh",
-    "light", "lightPosition", "lightAmbient", "lightColor", "spotlight", "spotdirection", "transVector",
+    "nurbs", "trimcurves", "light", "lightPosition", "lightAmbient", "lightColor", "spotlight", "spotdirection", "transVector",
     "rotVector", "floatValue", "floatValues", "intValue", "advanceTime", "seconds", "spline",
 };
 
@@ -704,6 +1024,16 @@ static Yobj *find_def(Parser *p, const char *name)
     return NULL;
 }
 
+static void define(Parser *p, const char *name, Yobj *o)
+{
+    if (!o)
+        return;
+    p->defs = (Ydef *)grow(p->defs, &p->maxdefs, p->ndefs, sizeof(Ydef));
+    strncpy(p->defs[p->ndefs].name, name, sizeof(p->defs[0].name) - 1);
+    p->defs[p->ndefs].name[sizeof(p->defs[0].name) - 1] = 0;
+    p->defs[p->ndefs++].obj = o;
+}
+
 /* a run of numbers up to a comma or something else: Yint, or Yfloat when one
    of them has a point or an exponent */
 static Yobj *read_numbers(Parser *p)
@@ -818,7 +1148,7 @@ static Yobj *parse_item(Parser *p, int bare_ok);
    attributes after ':' go to assoc */
 static void parse_args(Parser *p, int bare, Yobj ***args, int *nargs, Yobj ***assoc, int *nassoc)
 {
-    int maxargs = 0, maxassoc = 0;
+    int maxargs = 0, maxassoc = 0, attributes = 0;
     for (;;) {
         int c = peek(p, !bare);
         if (c < 0) {
@@ -834,16 +1164,17 @@ static void parse_args(Parser *p, int bare, Yobj ***args, int *nargs, Yobj ***as
         if (bare && c == ',')
             return;
         if (c == ':') {
-            Yobj *a;
+            /* the items after ':' are attributes of the object */
             p->pos++;
-            a = parse_item(p, 1);
-            if (a) {
+            attributes = 1;
+            continue;
+        }
+        {
+            Yobj *a = parse_item(p, attributes);
+            if (a && attributes) {
                 *assoc = (Yobj **)grow(*assoc, &maxassoc, *nassoc, sizeof(Yobj *));
                 (*assoc)[(*nassoc)++] = a;
-            }
-        } else {
-            Yobj *a = parse_item(p, 0);
-            if (a) {
+            } else if (a) {
                 *args = (Yobj **)grow(*args, &maxargs, *nargs, sizeof(Yobj *));
                 (*args)[(*nargs)++] = a;
             }
@@ -915,6 +1246,12 @@ static Yobj *parse_item(Parser *p, int bare_ok)
     if (is_word_start(c)) {
         Yobj *d;
         read_word(p, word, sizeof(word));
+        if (peek(p, 0) == '=') {
+            /* a definition inside a list ("cat file.ydl" in a group) */
+            p->pos++;
+            define(p, word, parse_item(p, 1));
+            return NULL;
+        }
         if ((d = find_def(p, word)) != NULL)
             return d;
         if (bare_ok)
@@ -945,12 +1282,7 @@ static void parse_file(Parser *p, YModel *m)
             read_word(p, name, sizeof(name));
             if (peek(p, 0) == '=') {
                 p->pos++;
-                o = parse_item(p, 1);
-                if (o) {
-                    p->defs = (Ydef *)grow(p->defs, &p->maxdefs, p->ndefs, sizeof(Ydef));
-                    strcpy(p->defs[p->ndefs].name, name);
-                    p->defs[p->ndefs++].obj = o;
-                }
+                define(p, name, parse_item(p, 1));
                 continue;
             }
             p->pos = save;
@@ -998,6 +1330,14 @@ YModel *yaodl_read(const char *file)
     }
     fclose(f);
 
+    {
+        const char *slash = strrchr(file, '/');
+        size_t n = slash ? (size_t)(slash - file) : 0;
+        if (n >= sizeof(model_dir))
+            n = 0;
+        memcpy(model_dir, file, n);
+        model_dir[n] = 0;
+    }
     memset(&p, 0, sizeof(p));
     p.s = buf;
     p.len = len;

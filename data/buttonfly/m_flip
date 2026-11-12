@@ -21,3 +21,9 @@ Powerflip X29
 
 Powerflip F15 wire
 	./interactive/powerflip.exe data/flip/f15_wire.defs
+
+Powerflip Ranger
+	./interactive/powerflip.exe data/flip/ranger.ydl
+
+Powerflip X29 env map
+	./interactive/powerflip.exe data/flip/x29_envmap.ydl

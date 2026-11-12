@@ -23,6 +23,7 @@ add_executable(powerflip
     powerflip.c
     pfobj.c
     yaodl.c
+    image.c
     light.c
 )
 
