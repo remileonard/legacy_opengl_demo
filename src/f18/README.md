@@ -90,10 +90,11 @@ records the flight of the player in `rec.pos`). They leave their route to
 stay between 1000 and 3000 m above the ground (wings level, climb or dive
 to 1250 m, nose level, roll back) and inside the terrain (roll 90 degrees
 and turn to the origin). A crashed enemy turns into its wreck
-(`Broken%d.dwb`) and comes back 30 seconds later. The `.route` files are
-not in the data of the demo: `f18` makes routes up from turns, climbs and
-straight lines when they are missing, and reads `N.route` files found in
-the path.
+(`Broken%d.dwb`) and comes back 30 seconds later. The route files are
+`data/f18/0.route` to `4.route` (the demo opened them in its directory,
+`./` in the path of the scripts); `0.route` and `2.route` are the same
+flight. When a route file is missing, `f18` makes a route up from turns,
+climbs and straight lines.
 
 ## The viewer
 

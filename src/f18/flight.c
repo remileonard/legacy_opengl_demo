@@ -29,8 +29,10 @@
  * the player in rec.pos), and leave them to keep between 1000 and 3000 m
  * above the ground (roll level, climb or dive to 1250 m, level, roll back)
  * and inside the area of the terrain (roll 90 degrees and turn to the
- * origin).  The route files are not in the data of the demo: when they are
- * missing, routes are made up from turns, climbs and straight lines.
+ * origin).  The route files (data/f18/N.route, in the directory of the
+ * demo as the original opened them) are found through the path of the
+ * script; when one is missing, a route is made up from turns, climbs and
+ * straight lines.
  *
  * Not rebuilt yet: the missiles (left button, Alt keys, C key), the gun
  * (space bar in flight), the explosions, the smoke, the sound, the HUD of
@@ -543,6 +545,7 @@ static void read_route(Enemy *e, int n)
     int i;
     sprintf(name, "%d.route", n);
     if (!pfFindFile(name, path, 4) || (fp = fopen(path, "rb")) == NULL) {
+        fprintf(stderr, "f18: no route for enemy %d (%s), a route is made up\n", n, name);
         make_route(e, n);
         return;
     }
@@ -628,6 +631,8 @@ static void enemy_ground(Enemy *e, int n)
         e->dead = 1;
         e->speed = 0;
         message(e->hit ? "Enemy %d is a dead duck" : "Enemy %d crashed", n + 1);
+        fprintf(stderr, "%s\n", F.message);
+        fprintf(stderr, "%s\n", F.message);
         e->dead_frame = (int)F.frame;
         e->saved_x = e->obj->xyz[0];
         e->saved_h = e->obj->hpr[0];
@@ -652,6 +657,7 @@ static void updateEnemy(const char *arg)
                 continue;
             /* "reincarnating enemy": at the altitude of its start, where
              * it crashed */
+            fprintf(stderr, "reincarnating enemy %d\n", i + 1);
             initEnemy(i);
             esObjectPos(o, e->saved_x, e->saved_y, o->xyz[2], e->saved_h, o->hpr[1], o->hpr[2]);
             continue;
