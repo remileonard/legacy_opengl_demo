@@ -9,3 +9,9 @@ Logo
 
 VW
 	./interactive/flip.exe data/flip/vw.bin
+
+X29 (YAODL)
+	./interactive/flip.exe data/flip/x29.ydl
+
+F15 wire (YAODL)
+	./interactive/flip.exe data/flip/f15_wire.defs
