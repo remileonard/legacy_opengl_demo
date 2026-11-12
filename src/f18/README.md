@@ -80,8 +80,8 @@ script (60 Hz): `f18` calls the app modules at that rate.
 | Esc | quit |
 
 The keys of the scripts come first, except `A`, `Z` and the arrows, which
-fly the airplane in `f18` (`Z` toggles the textures in the 3-screen
-script, `T` too).
+fly the airplane in `f18`: in the 3-screen script, where `Z` toggled the
+textures, the textures have no key.
 
 The ground is tested under the airplane every 20 frames, every frame below
 500 m: below 5 m the airplane crashes ("You just died...Attempting to
