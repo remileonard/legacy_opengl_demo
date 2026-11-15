@@ -1,0 +1,2910 @@
+// Vega Application Definition File
+
+system {
+	notify	fatal;
+	mpmode	0;
+	appcpu	-1;
+	apppri	-1;
+	isectcpu	-1;
+	isectpri	-1;
+	syscpu	-1;
+	framerate	30;
+	phase	lock;
+	fperror	on;
+	exitkey	0;
+	awnotify	fatal;
+	awmpmode	off;
+	imgcpu	-1;
+	imgpri	-1;
+	audioEnabled	off;
+}
+
+
+path {
+	pathname	../data/audio_data/;
+}
+
+
+channel Main {
+	window	Main;
+	viewport	0	1	0	1;
+	nearfar	4	3500;
+	clear	1	1	0	0;
+	fov	45	-1;
+	gfx	default;
+	clearclr	1	1	1;
+	skew	0	0	0	0	0	0;
+}
+
+
+channel CockPit {
+	window	Main;
+	viewport	0	1	0	1;
+	nearfar	1	20;
+	clear	0	0	0	0;
+	fov	45	36;
+	skew	0	0	0	0	0	0;
+}
+
+
+gfx default {
+	texture	on;
+	lighting	on;
+	fog	on;
+	transparency	on;
+	zbuffer	on;
+	backface	off;
+	fade	on;
+	faderange	50;
+	lodscale	1;
+	frontface	on;
+}
+
+
+gfx CockPit {
+	texture	on;
+	lighting	off;
+	fog	off;
+	transparency	on;
+	zbuffer	off;
+	backface	off;
+	fade	off;
+	faderange	100;
+	lodscale	1;
+	frontface	on;
+}
+
+
+object Terrain {
+	file	terrain.fst;
+	loader	0;
+	loaderflags	0x0	255;
+	convt	2;
+	cs	0;
+	optim	0x0;
+	isclass	0x1;
+	divisions	10;
+	upvol	on;
+	parts	on;
+	autorange	-1;
+	pos	0	0	0	0	0	0;
+	represent	0x0;
+	temp	-1;
+	parttemp	""	0	-1;
+	dis	off;
+	capabilities	0x0;
+	entityid	0	0	0	0	0	0	0	0;
+	markings	0	"";
+	appear	0x0;
+	deadrec	0;
+	tflod_state	on;
+	tflod_depth	1;
+	immediate	1;
+	tflod_fortype	0;
+	tflod_elevscale	disable;
+	triggerFltSounds	off;
+	recvEnabled	off;
+	entitytypeid	0	0	0	0	0	0	0;
+	enableFltSounds	off;
+}
+
+
+object FuelBalloon {
+	file	balloon_fuel.fst;
+	loader	0;
+	loaderflags	0x0	255;
+	convt	1;
+	cs	1;
+	optim	0x3;
+	isclass	0x1;
+	divisions	10;
+	upvol	on;
+	parts	on;
+	autorange	-1;
+	pos	0	0	0	0	0	0;
+	represent	0x0;
+	temp	-1;
+	parttemp	""	0	-1;
+	dis	off;
+	capabilities	0x0;
+	entityid	0	0	0	0	0	0	0	0;
+	markings	0	"";
+	appear	0x0;
+	deadrec	0;
+	tflod_state	off;
+	tflod_depth	1;
+	immediate	1;
+	triggerFltSounds	off;
+	recvEnabled	off;
+	entitytypeid	0	0	0	0	0	0	0;
+	enableFltSounds	off;
+}
+
+
+object AmmoBalloon {
+	file	balloon_ammo.fst;
+	loader	0;
+	loaderflags	0x0	255;
+	convt	1;
+	cs	1;
+	optim	0x3;
+	isclass	0x1;
+	divisions	10;
+	upvol	on;
+	parts	on;
+	autorange	-1;
+	pos	0	0	0	0	0	0;
+	represent	0x0;
+	temp	-1;
+	parttemp	""	0	-1;
+	dis	off;
+	capabilities	0x0;
+	entityid	0	0	0	0	0	0	0	0;
+	markings	0	"";
+	appear	0x0;
+	deadrec	0;
+	tflod_state	off;
+	tflod_depth	1;
+	immediate	1;
+	triggerFltSounds	off;
+	recvEnabled	off;
+	entitytypeid	0	0	0	0	0	0	0;
+	enableFltSounds	off;
+}
+
+
+object HealthBalloon {
+	file	balloon_health.fst;
+	loader	0;
+	loaderflags	0x0	255;
+	convt	1;
+	cs	1;
+	optim	0x3;
+	isclass	0x1;
+	divisions	10;
+	upvol	on;
+	parts	on;
+	autorange	-1;
+	pos	0	0	0	0	0	0;
+	represent	0x0;
+	temp	-1;
+	parttemp	""	0	-1;
+	dis	off;
+	capabilities	0x0;
+	entityid	0	0	0	0	0	0	0	0;
+	markings	0	"";
+	appear	0x0;
+	deadrec	0;
+	tflod_state	off;
+	tflod_depth	1;
+	immediate	1;
+	triggerFltSounds	off;
+	recvEnabled	off;
+	entitytypeid	0	0	0	0	0	0	0;
+	enableFltSounds	off;
+}
+
+
+object Bomb {
+	file	bomb.fst;
+	loader	0;
+	loaderflags	0x0	255;
+	convt	1;
+	cs	1;
+	optim	0x3;
+	isclass	0x1;
+	divisions	10;
+	upvol	on;
+	parts	on;
+	autorange	-1;
+	pos	0	0	0	0	0	0;
+	represent	0x0;
+	temp	-1;
+	parttemp	""	0	-1;
+	dis	off;
+	capabilities	0x0;
+	entityid	0	0	0	0	0	0	0	0;
+	markings	0	"";
+	appear	0x0;
+	deadrec	0;
+	tflod_state	off;
+	tflod_depth	1;
+	immediate	1;
+	triggerFltSounds	off;
+	recvEnabled	on;
+	entitytypeid	0	0	0	0	0	0	0;
+	enableFltSounds	off;
+}
+
+
+object Fokker {
+	file	fokker.fst;
+	loader	0;
+	loaderflags	0x0	255;
+	convt	1;
+	cs	1;
+	optim	0x3;
+	isclass	0x10000;
+	divisions	10;
+	upvol	on;
+	parts	on;
+	autorange	-1;
+	pos	0	0	0	0	0	0;
+	represent	0x0;
+	temp	-1;
+	parttemp	""	0	-1;
+	dis	off;
+	capabilities	0x0;
+	entityid	2	1	2	0	0	0	0	1;
+	markings	0	"";
+	appear	0x0;
+	deadrec	0;
+	tflod_state	off;
+	tflod_depth	1;
+	immediate	1;
+	triggerFltSounds	off;
+	recvEnabled	on;
+	entitytypeid	0	0	0	0	0	0	0;
+	enableFltSounds	off;
+}
+
+
+object Albatros {
+	file	ab.fst;
+	loader	0;
+	loaderflags	0x0	255;
+	convt	1;
+	cs	1;
+	optim	0x3;
+	isclass	0x10000;
+	divisions	10;
+	upvol	on;
+	parts	on;
+	autorange	-1;
+	pos	0	0	0	0	0	0;
+	represent	0x0;
+	temp	-1;
+	parttemp	""	0	-1;
+	dis	off;
+	capabilities	0x0;
+	entityid	2	1	2	0	0	0	0	2;
+	markings	0	"";
+	appmap	smoke	1	dummy	1	24	0	0	""	""	"";
+	appear	0x0;
+	deadrec	0;
+	tflod_state	off;
+	tflod_depth	1;
+	immediate	1;
+	triggerFltSounds	off;
+	recvEnabled	on;
+	entitytypeid	0	0	0	0	0	0	0;
+	enableFltSounds	off;
+}
+
+
+object RedBaron {
+	file	redbarron.fst;
+	loader	0;
+	loaderflags	0x0	255;
+	convt	1;
+	cs	1;
+	optim	0x3;
+	isclass	0x10000;
+	divisions	10;
+	upvol	on;
+	parts	on;
+	autorange	-1;
+	pos	0	0	0	0	0	0;
+	represent	0x0;
+	temp	-1;
+	parttemp	""	0	-1;
+	dis	off;
+	capabilities	0x0;
+	entityid	2	1	2	0	0	0	0	3;
+	markings	0	"";
+	appear	0x0;
+	deadrec	0;
+	tflod_state	off;
+	tflod_depth	1;
+	immediate	1;
+	triggerFltSounds	off;
+	recvEnabled	on;
+	entitytypeid	0	0	0	0	0	0	0;
+	enableFltSounds	off;
+}
+
+
+object Sopwith {
+	file	sopwith.fst;
+	loader	0;
+	loaderflags	0x0	255;
+	convt	1;
+	cs	1;
+	optim	0x3;
+	isclass	0x10000;
+	divisions	10;
+	upvol	on;
+	parts	on;
+	autorange	-1;
+	pos	0	0	0	0	0	0;
+	represent	0x0;
+	temp	-1;
+	parttemp	""	0	-1;
+	dis	off;
+	capabilities	0x0;
+	entityid	1	1	2	0	0	0	0	5;
+	markings	0	"";
+	appear	0x0;
+	deadrec	0;
+	tflod_state	off;
+	tflod_depth	1;
+	immediate	1;
+	triggerFltSounds	off;
+	recvEnabled	on;
+	entitytypeid	0	0	0	0	0	0	0;
+	enableFltSounds	off;
+}
+
+
+object FokkerShadow {
+	file	shadow_fokker.fst;
+	loader	0;
+	convt	1;
+	cs	1;
+	optim	0x3;
+	isclass	0x10000;
+	divisions	10;
+	upvol	on;
+	parts	on;
+	autorange	-1;
+	pos	0	0	0	0	0	0;
+	represent	0x0;
+	loaderflags	0x0	255;
+	temp	-1;
+	parttemp	""	0	-1;
+	dis	off;
+	capabilities	0x0;
+	entityid	0	0	0	0	0	0	0	0;
+	markings	0	"";
+	appear	0x0;
+	deadrec	0;
+	tflod_state	off;
+	tflod_depth	1;
+	immediate	1;
+	triggerFltSounds	off;
+	recvEnabled	off;
+	entitytypeid	0	0	0	0	0	0	0;
+	enableFltSounds	off;
+}
+
+
+object RedBaronShadow {
+	file	shadow_redbarron.fst;
+	loader	0;
+	convt	1;
+	cs	1;
+	optim	0x3;
+	isclass	0x10000;
+	divisions	10;
+	upvol	on;
+	parts	on;
+	autorange	-1;
+	pos	0	0	0	0	0	0;
+	represent	0x0;
+	loaderflags	0x0	255;
+	temp	-1;
+	parttemp	""	0	-1;
+	dis	off;
+	capabilities	0x0;
+	entityid	0	0	0	0	0	0	0	0;
+	markings	0	"";
+	appear	0x0;
+	deadrec	0;
+	tflod_state	off;
+	tflod_depth	1;
+	immediate	1;
+	triggerFltSounds	off;
+	recvEnabled	off;
+	entitytypeid	0	0	0	0	0	0	0;
+	enableFltSounds	off;
+}
+
+
+object Fe2bShadow {
+	file	shadow_fe2b.fst;
+	loader	0;
+	convt	1;
+	cs	1;
+	optim	0x3;
+	isclass	0x10000;
+	divisions	10;
+	upvol	on;
+	parts	on;
+	autorange	-1;
+	pos	0	0	0	0	0	0;
+	represent	0x0;
+	loaderflags	0x0	255;
+	temp	-1;
+	parttemp	""	0	-1;
+	dis	off;
+	capabilities	0x0;
+	entityid	0	0	0	0	0	0	0	0;
+	markings	0	"";
+	appear	0x0;
+	deadrec	0;
+	tflod_state	off;
+	tflod_depth	1;
+	immediate	1;
+	triggerFltSounds	off;
+	recvEnabled	off;
+	entitytypeid	0	0	0	0	0	0	0;
+	enableFltSounds	off;
+}
+
+
+object SopwithShadow {
+	file	shadow_sopwith.fst;
+	loader	0;
+	convt	1;
+	cs	1;
+	optim	0x3;
+	isclass	0x10000;
+	divisions	10;
+	upvol	on;
+	parts	on;
+	autorange	-1;
+	pos	0	0	0	0	0	0;
+	represent	0x0;
+	loaderflags	0x0	255;
+	temp	-1;
+	parttemp	""	0	-1;
+	dis	off;
+	capabilities	0x0;
+	entityid	0	0	0	0	0	0	0	0;
+	markings	0	"";
+	appear	0x0;
+	deadrec	0;
+	tflod_state	off;
+	tflod_depth	1;
+	immediate	1;
+	triggerFltSounds	off;
+	recvEnabled	off;
+	entitytypeid	0	0	0	0	0	0	0;
+	enableFltSounds	off;
+}
+
+
+object AlbatrosShadow {
+	file	shadow_albatros.fst;
+	loader	0;
+	convt	1;
+	cs	1;
+	optim	0x3;
+	isclass	0x10000;
+	divisions	10;
+	upvol	on;
+	parts	on;
+	autorange	-1;
+	pos	0	0	0	0	0	0;
+	represent	0x0;
+	loaderflags	0x0	255;
+	temp	-1;
+	parttemp	""	0	-1;
+	dis	off;
+	capabilities	0x0;
+	entityid	0	0	0	0	0	0	0	0;
+	markings	0	"";
+	appear	0x0;
+	deadrec	0;
+	tflod_state	off;
+	tflod_depth	1;
+	immediate	1;
+	triggerFltSounds	off;
+	recvEnabled	off;
+	entitytypeid	0	0	0	0	0	0	0;
+	enableFltSounds	off;
+}
+
+
+object AmericanShadow {
+	file	shadow_standard.fst;
+	loader	0;
+	convt	1;
+	cs	1;
+	optim	0x3;
+	isclass	0x10000;
+	divisions	10;
+	upvol	on;
+	parts	on;
+	autorange	-1;
+	pos	0	0	0	0	0	0;
+	represent	0x0;
+	loaderflags	0x0	255;
+	temp	-1;
+	parttemp	""	0	-1;
+	dis	off;
+	capabilities	0x0;
+	entityid	0	0	0	0	0	0	0	0;
+	markings	0	"";
+	appear	0x0;
+	deadrec	0;
+	tflod_state	off;
+	tflod_depth	1;
+	immediate	1;
+	triggerFltSounds	off;
+	recvEnabled	off;
+	entitytypeid	0	0	0	0	0	0	0;
+	enableFltSounds	off;
+}
+
+
+object SelectionTile {
+	file	selectionTile.fst;
+	loader	0;
+	loaderflags	0x0	255;
+	convt	1;
+	cs	0;
+	optim	0x3;
+	isclass	0x1;
+	divisions	10;
+	upvol	on;
+	parts	on;
+	autorange	-1;
+	pos	0	0	0	0	0	0;
+	represent	0x0;
+	temp	-1;
+	parttemp	""	0	-1;
+	dis	off;
+	capabilities	0x0;
+	entityid	0	0	0	0	0	0	0	0;
+	markings	0	"";
+	appear	0x0;
+	deadrec	0;
+	tflod_state	off;
+	tflod_depth	1;
+	immediate	1;
+	triggerFltSounds	off;
+	recvEnabled	off;
+	entitytypeid	0	0	0	0	0	0	0;
+	enableFltSounds	off;
+}
+
+
+object American {
+	file	standard.fst;
+	loader	0;
+	loaderflags	0x0	255;
+	convt	1;
+	cs	1;
+	optim	0x3;
+	isclass	0x10000;
+	divisions	10;
+	upvol	on;
+	parts	on;
+	autorange	-1;
+	pos	0	0	0	0	0	0;
+	represent	0x0;
+	temp	-1;
+	parttemp	""	0	-1;
+	dis	off;
+	capabilities	0x0;
+	entityid	1	1	2	0	0	0	0	6;
+	markings	0	Standard;
+	appear	0x0;
+	deadrec	4;
+	tflod_state	off;
+	tflod_depth	1;
+	immediate	1;
+	triggerFltSounds	off;
+	recvEnabled	on;
+	entitytypeid	0	0	0	0	0	0	0;
+	enableFltSounds	off;
+}
+
+
+object BigGndExplosion {
+	file	boom4.fst;
+	loader	0;
+	loaderflags	0x0	255;
+	convt	1;
+	cs	1;
+	optim	0x3;
+	isclass	0x0;
+	divisions	10;
+	upvol	on;
+	parts	on;
+	autorange	-1;
+	pos	0	0	0	0	0	0;
+	represent	0x0;
+	temp	-1;
+	parttemp	""	0	-1;
+	dis	off;
+	capabilities	0x0;
+	entityid	0	0	0	0	0	0	0	0;
+	markings	0	"";
+	appear	0x0;
+	deadrec	0;
+	tflod_state	off;
+	tflod_depth	1;
+	immediate	1;
+	triggerFltSounds	off;
+	recvEnabled	off;
+	entitytypeid	0	0	0	0	0	0	0;
+	enableFltSounds	off;
+}
+
+
+object CockPitSel {
+	file	cockpit_cell.fst;
+	loader	0;
+	loaderflags	0x0	255;
+	convt	1;
+	cs	0;
+	optim	0x3;
+	isclass	0x0;
+	divisions	10;
+	upvol	on;
+	parts	on;
+	autorange	-1;
+	pos	0	0	0	0	0	0;
+	represent	0x0;
+	temp	-1;
+	parttemp	""	0	-1;
+	dis	off;
+	capabilities	0x0;
+	entityid	0	0	0	0	0	0	0	0;
+	markings	0	"";
+	appear	0x0;
+	deadrec	0;
+	tflod_state	off;
+	tflod_depth	1;
+	immediate	1;
+	triggerFltSounds	off;
+	recvEnabled	off;
+	entitytypeid	0	0	0	0	0	0	0;
+	enableFltSounds	off;
+}
+
+
+object CockPit {
+	file	cockpit.fst;
+	loader	0;
+	loaderflags	0x0	255;
+	convt	1;
+	cs	1;
+	optim	0x0;
+	isclass	0x0;
+	divisions	10;
+	upvol	on;
+	parts	on;
+	autorange	-1;
+	pos	0	0	0	0	0	0;
+	represent	0x0;
+	temp	-1;
+	parttemp	""	0	-1;
+	dis	off;
+	capabilities	0x0;
+	entityid	0	0	0	0	0	0	0	0;
+	markings	0	"";
+	appear	0x0;
+	deadrec	0;
+	tflod_state	off;
+	tflod_depth	1;
+	immediate	1;
+	triggerFltSounds	off;
+	recvEnabled	off;
+	entitytypeid	0	0	0	0	0	0	0;
+	enableFltSounds	off;
+}
+
+
+object SmallGndExplosion {
+	file	groundexplo.fst;
+	loader	0;
+	loaderflags	0x0	255;
+	convt	1;
+	cs	1;
+	optim	0x3;
+	isclass	0x0;
+	divisions	10;
+	upvol	on;
+	parts	on;
+	autorange	-1;
+	pos	0	0	0	0	0	0;
+	represent	0x0;
+	temp	-1;
+	parttemp	""	0	-1;
+	dis	off;
+	capabilities	0x0;
+	entityid	0	0	0	0	0	0	0	0;
+	markings	0	"";
+	appear	0x0;
+	deadrec	0;
+	tflod_state	off;
+	tflod_depth	1;
+	immediate	1;
+	triggerFltSounds	off;
+	recvEnabled	off;
+	entitytypeid	0	0	0	0	0	0	0;
+	enableFltSounds	off;
+}
+
+
+object AirExplosion {
+	file	boom4_air.fst;
+	loader	0;
+	loaderflags	0x0	255;
+	convt	1;
+	cs	1;
+	optim	0x3;
+	isclass	0x0;
+	divisions	10;
+	upvol	on;
+	parts	on;
+	autorange	-1;
+	pos	0	0	0	0	0	0;
+	represent	0x0;
+	temp	-1;
+	parttemp	""	0	-1;
+	dis	off;
+	capabilities	0x0;
+	entityid	0	0	0	0	0	0	0	0;
+	markings	0	"";
+	appear	0x0;
+	deadrec	0;
+	tflod_state	off;
+	tflod_depth	1;
+	immediate	1;
+	triggerFltSounds	off;
+	recvEnabled	off;
+	entitytypeid	0	0	0	0	0	0	0;
+	enableFltSounds	off;
+}
+
+
+object FokkerDCS {
+	file	fokker_dof.fst;
+	loader	0;
+	loaderflags	0x0	255;
+	convt	2;
+	cs	1;
+	optim	0x3;
+	isclass	0x10000;
+	divisions	10;
+	upvol	on;
+	parts	on;
+	autorange	-1;
+	pos	0	0	0	0	0	0;
+	represent	0x0;
+	temp	-1;
+	parttemp	""	0	-1;
+	dis	off;
+	capabilities	0x0;
+	entityid	2	1	2	0	0	0	0	1;
+	markings	0	Fokker;
+	appear	0x0;
+	deadrec	4;
+	tflod_state	off;
+	tflod_depth	1;
+	immediate	1;
+	appmap	prop	1	seqnce3	1	4194304	4194304	0	""	""	"";
+	appmap	prop	1	propel	1	4194304	0	0	""	""	"";
+	appmap	smoke	1	dummy	1	24	0	0	""	""	"";
+	appmap	smoke	1	seqnce1	1	24	24	0	""	""	"";
+	triggerFltSounds	off;
+	recvEnabled	off;
+	entitytypeid	0	0	0	0	0	0	0;
+	enableFltSounds	off;
+}
+
+
+object AmericanDCS {
+	file	standard_dof.fst;
+	loader	0;
+	loaderflags	0x0	255;
+	convt	2;
+	cs	1;
+	optim	0x3;
+	isclass	0x10000;
+	divisions	10;
+	upvol	on;
+	parts	on;
+	autorange	-1;
+	pos	0	0	0	0	0	0;
+	represent	0x0;
+	temp	-1;
+	parttemp	""	0	-1;
+	dis	off;
+	capabilities	0x0;
+	entityid	1	1	2	0	0	0	0	6;
+	markings	0	Standard;
+	appear	0x0;
+	deadrec	4;
+	tflod_state	off;
+	tflod_depth	1;
+	immediate	1;
+	appmap	prop	1	propel	1	4194304	0	0	""	""	"";
+	appmap	prop	1	seqnce3	1	4194304	4194304	0	""	""	"";
+	appmap	smoke	1	dummy	1	24	0	0	""	""	"";
+	appmap	smoke	1	seqnce1	1	24	24	0	""	""	"";
+	triggerFltSounds	off;
+	recvEnabled	off;
+	entitytypeid	0	0	0	0	0	0	0;
+	enableFltSounds	off;
+}
+
+
+object AlbatrosDCS {
+	file	ab_dof.fst;
+	loader	0;
+	loaderflags	0x0	255;
+	convt	2;
+	cs	1;
+	optim	0x3;
+	isclass	0x10000;
+	divisions	10;
+	upvol	on;
+	parts	on;
+	autorange	-1;
+	pos	0	0	0	0	0	0;
+	represent	0x0;
+	temp	-1;
+	parttemp	""	0	-1;
+	dis	off;
+	capabilities	0x0;
+	entityid	2	1	2	0	0	0	0	2;
+	markings	0	Albatros;
+	appear	0x0;
+	deadrec	4;
+	tflod_state	off;
+	tflod_depth	1;
+	immediate	1;
+	appmap	prop	1	propel	1	4194304	0	0	""	""	"";
+	appmap	prop	1	seqnce3	1	4194304	4194304	0	""	""	"";
+	appmap	smoke	1	seqnce1	1	24	24	0	""	""	"";
+	appmap	smoke	1	dummy	1	24	0	0	""	""	"";
+	triggerFltSounds	off;
+	recvEnabled	off;
+	entitytypeid	0	0	0	0	0	0	0;
+	enableFltSounds	off;
+}
+
+
+object RedBaronDCS {
+	file	redbarron_dof.fst;
+	loader	0;
+	loaderflags	0x0	255;
+	convt	2;
+	cs	1;
+	optim	0x3;
+	isclass	0x10000;
+	divisions	10;
+	upvol	on;
+	parts	on;
+	autorange	-1;
+	pos	0	0	0	0	0	0;
+	represent	0x0;
+	temp	-1;
+	parttemp	""	0	-1;
+	dis	off;
+	capabilities	0x0;
+	entityid	2	1	2	0	0	0	0	3;
+	markings	0	RedBaron;
+	appear	0x0;
+	deadrec	4;
+	tflod_state	off;
+	tflod_depth	1;
+	immediate	1;
+	appmap	prop	1	propel	1	4194304	0	0	""	""	"";
+	appmap	smoke	1	dummy	1	24	0	0	""	""	"";
+	appmap	smoke	1	seqnce1	1	24	24	0	""	""	"";
+	appmap	prop	1	seqnce3	1	4194304	4194304	0	""	""	"";
+	triggerFltSounds	off;
+	recvEnabled	off;
+	entitytypeid	0	0	0	0	0	0	0;
+	enableFltSounds	off;
+}
+
+
+object SopwithDCS {
+	file	sopwith_dof.fst;
+	loader	0;
+	loaderflags	0x0	255;
+	convt	2;
+	cs	1;
+	optim	0x3;
+	isclass	0x10000;
+	divisions	10;
+	upvol	on;
+	parts	on;
+	autorange	-1;
+	pos	0	0	0	0	0	0;
+	represent	0x0;
+	temp	-1;
+	parttemp	""	0	-1;
+	dis	off;
+	capabilities	0x0;
+	entityid	1	1	2	0	0	0	0	5;
+	markings	0	Sopwith;
+	appear	0x0;
+	deadrec	4;
+	tflod_state	off;
+	tflod_depth	1;
+	immediate	1;
+	appmap	prop	1	propel	1	4194304	0	0	""	""	"";
+	appmap	prop	1	seqnce3	1	4194304	4194304	0	""	""	"";
+	appmap	smoke	1	seqnce1	1	24	24	0	""	""	"";
+	appmap	smoke	1	dummy	1	24	0	0	""	""	"";
+	triggerFltSounds	off;
+	recvEnabled	off;
+	entitytypeid	0	0	0	0	0	0	0;
+	enableFltSounds	off;
+}
+
+
+object Fe2b {
+	file	fe2b.fst;
+	loader	0;
+	loaderflags	0x0	255;
+	convt	1;
+	cs	1;
+	optim	0x3;
+	isclass	0x10000;
+	divisions	10;
+	upvol	on;
+	parts	on;
+	autorange	-1;
+	pos	0	0	0	0	0	0;
+	represent	0x0;
+	temp	-1;
+	parttemp	""	0	-1;
+	dis	off;
+	capabilities	0x0;
+	entityid	1	1	2	0	0	0	0	4;
+	markings	0	"";
+	appear	0x0;
+	deadrec	0;
+	tflod_state	off;
+	tflod_depth	1;
+	immediate	1;
+	triggerFltSounds	off;
+	recvEnabled	off;
+	entitytypeid	0	0	0	0	0	0	0;
+	enableFltSounds	off;
+}
+
+
+object Fe2bDCS {
+	file	fe2b_dof.fst;
+	loader	0;
+	loaderflags	0x0	255;
+	convt	2;
+	cs	1;
+	optim	0x3;
+	isclass	0x10000;
+	divisions	10;
+	upvol	on;
+	parts	on;
+	autorange	-1;
+	pos	0	0	0	0	0	0;
+	represent	0x0;
+	temp	-1;
+	parttemp	""	0	-1;
+	dis	off;
+	capabilities	0x0;
+	entityid	1	1	2	0	0	0	0	4;
+	markings	0	Fe2B;
+	appear	0x0;
+	deadrec	4;
+	tflod_state	off;
+	tflod_depth	1;
+	immediate	1;
+	appmap	prop	1	propel	1	4194304	0	0	""	""	"";
+	appmap	prop	1	seqnce3	1	4194304	4194304	0	""	""	"";
+	appmap	smoke	1	dummy	1	24	0	0	""	""	"";
+	appmap	smoke	1	seqnce1	1	24	24	0	""	""	"";
+	triggerFltSounds	off;
+	recvEnabled	off;
+	entitytypeid	0	0	0	0	0	0	0;
+	enableFltSounds	off;
+}
+
+
+object Engine {
+	file	train.fst;
+	loader	0;
+	loaderflags	0x0	255;
+	convt	2;
+	cs	1;
+	optim	0x3;
+	isclass	0x0;
+	divisions	10;
+	upvol	on;
+	parts	on;
+	autorange	-1;
+	pos	0	0	0	0	0	0;
+	represent	0x0;
+	temp	-1;
+	parttemp	""	0	-1;
+	dis	off;
+	capabilities	0x0;
+	entityid	2	1	1	0	0	0	0	10;
+	markings	0	Engine;
+	appear	0x0;
+	deadrec	3;
+	tflod_state	off;
+	tflod_depth	1;
+	immediate	1;
+	appmap	damage	1	dam	1	24	24	0	""	""	"";
+	appmap	damage	1	undam	1	24	0	0	""	""	"";
+	appmap	onoff	1	wheels	1	4194304	4194304	0	""	""	"";
+	appmap	onoff	1	still	1	4194304	0	0	""	""	"";
+	triggerFltSounds	off;
+	recvEnabled	off;
+	entitytypeid	0	0	0	0	0	0	0;
+	enableFltSounds	off;
+}
+
+
+object CoalCar {
+	file	train_coalcar.fst;
+	loader	0;
+	loaderflags	0x0	255;
+	convt	2;
+	cs	1;
+	optim	0x3;
+	isclass	0x0;
+	divisions	10;
+	upvol	on;
+	parts	on;
+	autorange	-1;
+	pos	0	0	0	90	0	0;
+	represent	0x0;
+	temp	-1;
+	parttemp	""	0	-1;
+	dis	off;
+	capabilities	0x0;
+	entityid	2	1	1	0	0	0	0	11;
+	markings	0	CoalCar;
+	appear	0x0;
+	deadrec	3;
+	tflod_state	off;
+	tflod_depth	1;
+	immediate	1;
+	triggerFltSounds	off;
+	recvEnabled	off;
+	entitytypeid	0	0	0	0	0	0	0;
+	enableFltSounds	off;
+}
+
+
+object Car1 {
+	file	jtrain_car01.fst;
+	loader	0;
+	loaderflags	0x0	255;
+	convt	2;
+	cs	1;
+	optim	0x3;
+	isclass	0x0;
+	divisions	10;
+	upvol	on;
+	parts	on;
+	autorange	-1;
+	pos	0	0	0	0	0	0;
+	represent	0x0;
+	temp	-1;
+	parttemp	""	0	-1;
+	dis	off;
+	capabilities	0x0;
+	entityid	2	1	1	0	0	0	0	12;
+	markings	0	Car1;
+	appear	0x0;
+	deadrec	3;
+	tflod_state	off;
+	tflod_depth	1;
+	immediate	1;
+	appmap	damage	1	dam	1	24	24	0	""	""	"";
+	appmap	damage	1	undam	1	24	0	0	""	""	"";
+	triggerFltSounds	off;
+	recvEnabled	off;
+	entitytypeid	0	0	0	0	0	0	0;
+	enableFltSounds	off;
+}
+
+
+object Car2 {
+	file	jtrain_car02.fst;
+	loader	0;
+	loaderflags	0x0	255;
+	convt	2;
+	cs	1;
+	optim	0x3;
+	isclass	0x0;
+	divisions	10;
+	upvol	on;
+	parts	on;
+	autorange	-1;
+	pos	0	0	0	0	0	0;
+	represent	0x0;
+	temp	-1;
+	parttemp	""	0	-1;
+	dis	off;
+	capabilities	0x0;
+	entityid	2	1	1	0	0	0	0	13;
+	markings	0	Car2;
+	appear	0x0;
+	deadrec	3;
+	tflod_state	off;
+	tflod_depth	1;
+	immediate	1;
+	appmap	damage	1	dam	1	24	24	0	""	""	"";
+	appmap	damage	1	undam	1	24	0	0	""	""	"";
+	triggerFltSounds	off;
+	recvEnabled	off;
+	entitytypeid	0	0	0	0	0	0	0;
+	enableFltSounds	off;
+}
+
+
+object Car3 {
+	file	jtrain_car03.fst;
+	loader	0;
+	loaderflags	0x0	255;
+	convt	2;
+	cs	1;
+	optim	0x3;
+	isclass	0x0;
+	divisions	10;
+	upvol	on;
+	parts	on;
+	autorange	-1;
+	pos	0	0	0	0	0	0;
+	represent	0x0;
+	temp	-1;
+	parttemp	""	0	-1;
+	dis	off;
+	capabilities	0x0;
+	entityid	2	1	1	0	0	0	0	14;
+	markings	0	Car3;
+	appear	0x0;
+	deadrec	3;
+	tflod_state	off;
+	tflod_depth	1;
+	immediate	1;
+	appmap	damage	1	dam	1	24	24	0	""	""	"";
+	appmap	damage	1	undam	1	24	0	0	""	""	"";
+	triggerFltSounds	off;
+	recvEnabled	off;
+	entitytypeid	0	0	0	0	0	0	0;
+	enableFltSounds	off;
+}
+
+
+object Car4 {
+	file	jtrain_car04.fst;
+	loader	0;
+	loaderflags	0x0	255;
+	convt	2;
+	cs	1;
+	optim	0x3;
+	isclass	0x0;
+	divisions	10;
+	upvol	on;
+	parts	on;
+	autorange	-1;
+	pos	0	0	0	0	0	0;
+	represent	0x0;
+	temp	-1;
+	parttemp	""	0	-1;
+	dis	off;
+	capabilities	0x0;
+	entityid	2	1	1	0	0	0	0	15;
+	markings	0	Car4;
+	appear	0x0;
+	deadrec	3;
+	tflod_state	off;
+	tflod_depth	1;
+	immediate	1;
+	appmap	damage	1	dam	1	24	24	0	""	""	"";
+	appmap	damage	1	undam	1	24	0	0	""	""	"";
+	triggerFltSounds	off;
+	recvEnabled	off;
+	entitytypeid	0	0	0	0	0	0	0;
+	enableFltSounds	off;
+}
+
+
+object Caboose {
+	file	jtrain_caboo.fst;
+	loader	0;
+	loaderflags	0x0	255;
+	convt	2;
+	cs	1;
+	optim	0x3;
+	isclass	0x0;
+	divisions	10;
+	upvol	on;
+	parts	on;
+	autorange	-1;
+	pos	0	0	0	0	0	0;
+	represent	0x0;
+	temp	-1;
+	parttemp	""	0	-1;
+	dis	off;
+	capabilities	0x0;
+	entityid	2	1	1	0	0	0	0	17;
+	markings	0	Caboose;
+	appear	0x0;
+	deadrec	3;
+	tflod_state	off;
+	tflod_depth	1;
+	immediate	1;
+	appmap	damage	1	dam	1	24	24	0	""	""	"";
+	appmap	damage	1	undam	1	24	0	0	""	""	"";
+	triggerFltSounds	off;
+	recvEnabled	off;
+	entitytypeid	0	0	0	0	0	0	0;
+	enableFltSounds	off;
+}
+
+
+object ArtilCar {
+	file	jtrain_weap.fst;
+	loader	0;
+	loaderflags	0x0	255;
+	convt	2;
+	cs	1;
+	optim	0x3;
+	isclass	0x0;
+	divisions	10;
+	upvol	on;
+	parts	on;
+	autorange	-1;
+	pos	0	0	0	0	0	0;
+	represent	0x0;
+	temp	-1;
+	parttemp	""	0	-1;
+	dis	off;
+	capabilities	0x0;
+	entityid	2	1	1	0	0	0	0	16;
+	markings	0	Artil;
+	appear	0x0;
+	deadrec	3;
+	tflod_state	off;
+	tflod_depth	1;
+	immediate	1;
+	appmap	damage	1	dam	1	24	24	0	""	""	"";
+	appmap	damage	1	undam	1	24	0	0	""	""	"";
+	triggerFltSounds	off;
+	recvEnabled	off;
+	entitytypeid	0	0	0	0	0	0	0;
+	enableFltSounds	off;
+}
+
+
+object Blimp {
+	file	blimp.fst;
+	loader	0;
+	loaderflags	0x0	255;
+	convt	2;
+	cs	1;
+	optim	0x3;
+	isclass	0x0;
+	divisions	10;
+	upvol	on;
+	parts	on;
+	autorange	-1;
+	pos	0	0	0	0	0	0;
+	represent	0x0;
+	temp	-1;
+	parttemp	""	0	-1;
+	dis	off;
+	capabilities	0x0;
+	entityid	2	1	2	0	0	0	0	9;
+	markings	0	Blimp;
+	appear	0x0;
+	deadrec	3;
+	tflod_state	off;
+	tflod_depth	1;
+	immediate	1;
+	triggerFltSounds	off;
+	recvEnabled	off;
+	entitytypeid	0	0	0	0	0	0	0;
+	enableFltSounds	off;
+}
+
+
+object Ship1 {
+	file	skiff1_brit.fst;
+	loader	0;
+	loaderflags	0x0	255;
+	convt	1;
+	cs	1;
+	optim	0x3;
+	isclass	0x0;
+	divisions	10;
+	upvol	on;
+	parts	on;
+	autorange	-1;
+	pos	0	0	0	0	0	0;
+	represent	0x0;
+	temp	-1;
+	parttemp	""	0	-1;
+	dis	off;
+	capabilities	0x0;
+	entityid	1	1	3	0	0	0	0	40;
+	markings	0	Ship1;
+	appear	0x0;
+	deadrec	3;
+	tflod_state	off;
+	tflod_depth	1;
+	immediate	1;
+	triggerFltSounds	off;
+	recvEnabled	off;
+	entitytypeid	0	0	0	0	0	0	0;
+	enableFltSounds	off;
+}
+
+
+object Ship2 {
+	file	skiff2_brit.fst;
+	loader	0;
+	loaderflags	0x0	255;
+	convt	1;
+	cs	1;
+	optim	0x3;
+	isclass	0x0;
+	divisions	10;
+	upvol	on;
+	parts	on;
+	autorange	-1;
+	pos	0	0	0	0	0	0;
+	represent	0x0;
+	temp	-1;
+	parttemp	""	0	-1;
+	dis	off;
+	capabilities	0x0;
+	entityid	1	1	3	0	0	0	0	41;
+	markings	0	Ship2;
+	appear	0x0;
+	deadrec	3;
+	tflod_state	off;
+	tflod_depth	1;
+	immediate	1;
+	triggerFltSounds	off;
+	recvEnabled	off;
+	entitytypeid	0	0	0	0	0	0	0;
+	enableFltSounds	off;
+}
+
+
+object Ship3 {
+	file	skiff2_brit.fst;
+	loader	0;
+	loaderflags	0x0	255;
+	convt	1;
+	cs	1;
+	optim	0x3;
+	isclass	0x0;
+	divisions	10;
+	upvol	on;
+	parts	on;
+	autorange	-1;
+	pos	0	0	0	0	0	0;
+	represent	0x0;
+	temp	-1;
+	parttemp	""	0	-1;
+	dis	off;
+	capabilities	0x0;
+	entityid	1	1	3	0	0	0	0	42;
+	markings	0	Ship3;
+	appear	0x0;
+	deadrec	3;
+	tflod_state	off;
+	tflod_depth	1;
+	immediate	1;
+	triggerFltSounds	off;
+	recvEnabled	off;
+	entitytypeid	0	0	0	0	0	0	0;
+	enableFltSounds	off;
+}
+
+
+object Ship4 {
+	file	skiff1_germ.fst;
+	loader	0;
+	loaderflags	0x0	255;
+	convt	1;
+	cs	1;
+	optim	0x3;
+	isclass	0x0;
+	divisions	10;
+	upvol	on;
+	parts	on;
+	autorange	-1;
+	pos	0	0	0	0	0	0;
+	represent	0x0;
+	temp	-1;
+	parttemp	""	0	-1;
+	dis	off;
+	capabilities	0x0;
+	entityid	2	1	3	0	0	0	0	43;
+	markings	0	Ship4;
+	appear	0x0;
+	deadrec	3;
+	tflod_state	off;
+	tflod_depth	1;
+	immediate	1;
+	triggerFltSounds	off;
+	recvEnabled	off;
+	entitytypeid	0	0	0	0	0	0	0;
+	enableFltSounds	off;
+}
+
+
+object Bunker4 {
+	file	blockades.fst;
+	loader	0;
+	loaderflags	0x0	255;
+	convt	1;
+	cs	0;
+	optim	0x3;
+	isclass	0x0;
+	divisions	10;
+	upvol	on;
+	parts	on;
+	autorange	-1;
+	pos	-3093.6	2829.64	52.007	50	0	0;
+	represent	0x0;
+	temp	-1;
+	parttemp	""	0	-1;
+	dis	off;
+	capabilities	0x0;
+	entityid	1	4	1	0	0	0	0	33;
+	appmap	onoff	1	dam	1	24	24	0	""	""	"";
+	appmap	onoff	1	nodam	1	24	0	0	""	""	"";
+	markings	0	Bunker4;
+	appear	0x0;
+	deadrec	1;
+	tflod_state	off;
+	tflod_depth	1;
+	immediate	1;
+	triggerFltSounds	off;
+	recvEnabled	off;
+	entitytypeid	0	0	0	0	0	0	0;
+	enableFltSounds	off;
+}
+
+
+object GroundFire {
+	file	flare.fst;
+	loader	0;
+	loaderflags	0x0	255;
+	convt	1;
+	cs	1;
+	optim	0x3;
+	isclass	0x0;
+	divisions	10;
+	upvol	on;
+	parts	on;
+	autorange	-1;
+	pos	0	0	0	0	0	0;
+	represent	0x0;
+	temp	-1;
+	parttemp	""	0	-1;
+	dis	off;
+	capabilities	0x0;
+	entityid	0	0	0	0	0	0	0	0;
+	markings	0	"";
+	appear	0x0;
+	deadrec	0;
+	tflod_state	off;
+	tflod_depth	1;
+	immediate	1;
+	triggerFltSounds	off;
+	recvEnabled	off;
+	entitytypeid	0	0	0	0	0	0	0;
+	enableFltSounds	off;
+}
+
+
+object Bridge1 {
+	file	bridge_01.fst;
+	loader	0;
+	loaderflags	0x0	255;
+	convt	2;
+	cs	0;
+	optim	0x3;
+	isclass	0x0;
+	divisions	10;
+	upvol	on;
+	parts	on;
+	autorange	-1;
+	pos	-30.376	-2132.17	37.644	0	0	0;
+	represent	0x0;
+	temp	-1;
+	parttemp	""	0	-1;
+	dis	off;
+	capabilities	0x0;
+	entityid	3	4	1	0	0	0	0	20;
+	markings	0	Bridge1;
+	appear	0x0;
+	deadrec	1;
+	tflod_state	off;
+	tflod_depth	1;
+	immediate	1;
+	appmap	damage	1	dam	1	24	24	0	""	""	"";
+	appmap	damage	1	undam	1	24	0	0	""	""	"";
+	triggerFltSounds	off;
+	recvEnabled	off;
+	entitytypeid	0	0	0	0	0	0	0;
+	enableFltSounds	off;
+}
+
+
+object Bridge2 {
+	file	bridge_02.fst;
+	loader	0;
+	loaderflags	0x0	255;
+	convt	2;
+	cs	0;
+	optim	0x3;
+	isclass	0x0;
+	divisions	10;
+	upvol	on;
+	parts	on;
+	autorange	-1;
+	pos	40.032	-2161.56	38.609	0	0	0;
+	represent	0x0;
+	temp	-1;
+	parttemp	""	0	-1;
+	dis	off;
+	capabilities	0x0;
+	entityid	3	4	3	0	0	0	0	21;
+	markings	0	Bridge2;
+	appear	0x0;
+	deadrec	1;
+	tflod_state	off;
+	tflod_depth	1;
+	immediate	1;
+	appmap	damage	1	dam	1	24	24	0	""	""	"";
+	appmap	damage	1	undam	1	24	0	0	""	""	"";
+	triggerFltSounds	off;
+	recvEnabled	off;
+	entitytypeid	0	0	0	0	0	0	0;
+	enableFltSounds	off;
+}
+
+
+object Bridge3 {
+	file	bridge_03.fst;
+	loader	0;
+	loaderflags	0x0	255;
+	convt	2;
+	cs	0;
+	optim	0x3;
+	isclass	0x0;
+	divisions	10;
+	upvol	on;
+	parts	on;
+	autorange	-1;
+	pos	121.089	-2191.69	39.572	0	0	0;
+	represent	0x0;
+	temp	-1;
+	parttemp	""	0	-1;
+	dis	off;
+	capabilities	0x0;
+	entityid	3	4	3	0	0	0	0	22;
+	markings	0	Bridge3;
+	appear	0x0;
+	deadrec	1;
+	tflod_state	off;
+	tflod_depth	1;
+	immediate	1;
+	appmap	damage	1	dam	1	24	24	0	""	""	"";
+	appmap	damage	1	undam	1	24	0	0	""	""	"";
+	triggerFltSounds	off;
+	recvEnabled	off;
+	entitytypeid	0	0	0	0	0	0	0;
+	enableFltSounds	off;
+}
+
+
+object Bridge4 {
+	file	bridge_04.fst;
+	loader	0;
+	loaderflags	0x0	255;
+	convt	2;
+	cs	0;
+	optim	0x3;
+	isclass	0x0;
+	divisions	10;
+	upvol	on;
+	parts	on;
+	autorange	-1;
+	pos	212.767	-2222.55	41.811	0	0	0;
+	represent	0x0;
+	temp	-1;
+	parttemp	""	0	-1;
+	dis	off;
+	capabilities	0x0;
+	entityid	3	4	1	0	0	0	0	23;
+	markings	0	Bridge4;
+	appear	0x0;
+	deadrec	1;
+	tflod_state	off;
+	tflod_depth	1;
+	immediate	1;
+	appmap	damage	1	dam	1	24	24	0	""	""	"";
+	appmap	damage	1	undam	1	24	0	0	""	""	"";
+	triggerFltSounds	off;
+	recvEnabled	off;
+	entitytypeid	0	0	0	0	0	0	0;
+	enableFltSounds	off;
+}
+
+
+object Bridge5 {
+	file	bridge_05.fst;
+	loader	0;
+	loaderflags	0x0	255;
+	convt	2;
+	cs	0;
+	optim	0x3;
+	isclass	0x0;
+	divisions	10;
+	upvol	on;
+	parts	on;
+	autorange	-1;
+	pos	299.961	-2249.81	44.053	0	0	0;
+	represent	0x0;
+	temp	-1;
+	parttemp	""	0	-1;
+	dis	off;
+	capabilities	0x0;
+	entityid	3	4	3	0	0	0	0	24;
+	markings	0	Bridge5;
+	appear	0x0;
+	deadrec	1;
+	tflod_state	off;
+	tflod_depth	1;
+	immediate	1;
+	appmap	damage	1	dam	1	24	24	0	""	""	"";
+	appmap	damage	1	undam	1	24	0	0	""	""	"";
+	triggerFltSounds	off;
+	recvEnabled	off;
+	entitytypeid	0	0	0	0	0	0	0;
+	enableFltSounds	off;
+}
+
+
+object Bridge6 {
+	file	bridge_06.fst;
+	loader	0;
+	loaderflags	0x0	255;
+	convt	2;
+	cs	0;
+	optim	0x3;
+	isclass	0x0;
+	divisions	10;
+	upvol	on;
+	parts	on;
+	autorange	-1;
+	pos	382.673	-2273.45	44.248	0	0	0;
+	represent	0x0;
+	temp	-1;
+	parttemp	""	0	-1;
+	dis	off;
+	capabilities	0x0;
+	entityid	3	4	1	0	0	0	0	25;
+	markings	0	Bridge6;
+	appear	0x0;
+	deadrec	1;
+	tflod_state	off;
+	tflod_depth	1;
+	immediate	1;
+	appmap	damage	1	dam	1	24	24	0	""	""	"";
+	appmap	damage	1	undam	1	24	0	0	""	""	"";
+	triggerFltSounds	off;
+	recvEnabled	off;
+	entitytypeid	0	0	0	0	0	0	0;
+	enableFltSounds	off;
+}
+
+
+object Bridge7 {
+	file	bridge_07.fst;
+	loader	0;
+	loaderflags	0x0	255;
+	convt	2;
+	cs	0;
+	optim	0x3;
+	isclass	0x0;
+	divisions	10;
+	upvol	on;
+	parts	on;
+	autorange	-1;
+	pos	462.023	-2294.04	43.122	0	0	0;
+	represent	0x0;
+	temp	-1;
+	parttemp	""	0	-1;
+	dis	off;
+	capabilities	0x0;
+	entityid	3	4	3	0	0	0	0	26;
+	markings	0	Bridge7;
+	appear	0x0;
+	deadrec	1;
+	tflod_state	off;
+	tflod_depth	1;
+	immediate	1;
+	appmap	damage	1	dam	1	24	24	0	""	""	"";
+	appmap	damage	1	undam	1	24	0	0	""	""	"";
+	triggerFltSounds	off;
+	recvEnabled	off;
+	entitytypeid	0	0	0	0	0	0	0;
+	enableFltSounds	off;
+}
+
+
+object Bridge8 {
+	file	bridge_08.fst;
+	loader	0;
+	loaderflags	0x0	255;
+	convt	2;
+	cs	0;
+	optim	0x3;
+	isclass	0x0;
+	divisions	10;
+	upvol	on;
+	parts	on;
+	autorange	-1;
+	pos	541.501	-2312.49	41.303	0	0	0;
+	represent	0x0;
+	temp	-1;
+	parttemp	""	0	-1;
+	dis	off;
+	capabilities	0x0;
+	entityid	3	4	1	0	0	0	0	27;
+	markings	0	Bridge8;
+	appear	0x0;
+	deadrec	1;
+	tflod_state	off;
+	tflod_depth	1;
+	immediate	1;
+	appmap	damage	1	dam	1	24	24	0	""	""	"";
+	appmap	damage	1	undam	1	24	0	0	""	""	"";
+	triggerFltSounds	off;
+	recvEnabled	off;
+	entitytypeid	0	0	0	0	0	0	0;
+	enableFltSounds	off;
+}
+
+
+object Bunker1 {
+	file	blockades.fst;
+	loader	0;
+	loaderflags	0x0	255;
+	convt	1;
+	cs	0;
+	optim	0x3;
+	isclass	0x0;
+	divisions	10;
+	upvol	on;
+	parts	on;
+	autorange	-1;
+	pos	-935.619	-500	61.5	15	0	0;
+	represent	0x0;
+	temp	-1;
+	parttemp	""	0	-1;
+	dis	off;
+	capabilities	0x0;
+	entityid	1	4	1	0	0	0	0	30;
+	appmap	onoff	1	dam	1	24	24	0	""	""	"";
+	appmap	onoff	1	nodam	1	24	0	0	""	""	"";
+	markings	0	Bunker1;
+	appear	0x0;
+	deadrec	1;
+	tflod_state	off;
+	tflod_depth	1;
+	immediate	1;
+	triggerFltSounds	off;
+	recvEnabled	off;
+	entitytypeid	0	0	0	0	0	0	0;
+	enableFltSounds	off;
+}
+
+
+object Bunker2 {
+	file	blockades.fst;
+	loader	0;
+	loaderflags	0x0	255;
+	convt	1;
+	cs	0;
+	optim	0x3;
+	isclass	0x0;
+	divisions	10;
+	upvol	on;
+	parts	on;
+	autorange	-1;
+	pos	-1828	760.232	44	25	0	0;
+	represent	0x0;
+	temp	-1;
+	parttemp	""	0	-1;
+	dis	off;
+	capabilities	0x0;
+	entityid	1	4	1	0	0	0	0	31;
+	appmap	onoff	1	dam	1	24	24	0	""	""	"";
+	appmap	onoff	1	nodam	1	24	0	0	""	""	"";
+	markings	0	Bunker2;
+	appear	0x0;
+	deadrec	1;
+	tflod_state	off;
+	tflod_depth	1;
+	immediate	1;
+	triggerFltSounds	off;
+	recvEnabled	off;
+	entitytypeid	0	0	0	0	0	0	0;
+	enableFltSounds	off;
+}
+
+
+object Bunker3 {
+	file	blockades.fst;
+	loader	0;
+	loaderflags	0x0	255;
+	convt	1;
+	cs	0;
+	optim	0x3;
+	isclass	0x0;
+	divisions	10;
+	upvol	on;
+	parts	on;
+	autorange	-1;
+	pos	-2019.5	1801.74	40.003	25	0	0;
+	represent	0x0;
+	temp	-1;
+	parttemp	""	0	-1;
+	dis	off;
+	capabilities	0x0;
+	entityid	0	4	1	0	0	0	0	32;
+	appmap	onoff	1	dam	1	24	24	0	""	""	"";
+	appmap	onoff	1	nodam	1	24	0	0	""	""	"";
+	markings	0	Bunker3;
+	appear	0x0;
+	deadrec	1;
+	tflod_state	off;
+	tflod_depth	1;
+	immediate	1;
+	triggerFltSounds	off;
+	recvEnabled	off;
+	entitytypeid	0	0	0	0	0	0	0;
+	enableFltSounds	off;
+}
+
+
+object Ship5 {
+	file	skiff2_germ.fst;
+	loader	0;
+	loaderflags	0x0	255;
+	convt	1;
+	cs	1;
+	optim	0x3;
+	isclass	0x0;
+	divisions	10;
+	upvol	on;
+	parts	on;
+	autorange	-1;
+	pos	0	0	0	0	0	0;
+	represent	0x0;
+	temp	-1;
+	parttemp	""	0	-1;
+	dis	off;
+	capabilities	0x0;
+	entityid	2	1	3	0	0	0	0	44;
+	markings	0	Ship5;
+	appear	0x0;
+	deadrec	3;
+	tflod_state	off;
+	tflod_depth	1;
+	immediate	1;
+	triggerFltSounds	off;
+	recvEnabled	off;
+	entitytypeid	0	0	0	0	0	0	0;
+	enableFltSounds	off;
+}
+
+
+object Ship6 {
+	file	skiff2_germ.fst;
+	loader	0;
+	loaderflags	0x0	255;
+	convt	1;
+	cs	1;
+	optim	0x3;
+	isclass	0x0;
+	divisions	10;
+	upvol	on;
+	parts	on;
+	autorange	-1;
+	pos	0	0	0	0	0	0;
+	represent	0x0;
+	temp	-1;
+	parttemp	""	0	-1;
+	dis	off;
+	capabilities	0x0;
+	entityid	2	1	3	0	0	0	0	45;
+	markings	0	Ship6;
+	appear	0x0;
+	deadrec	3;
+	tflod_state	off;
+	tflod_depth	1;
+	immediate	1;
+	triggerFltSounds	off;
+	recvEnabled	off;
+	entitytypeid	0	0	0	0	0	0	0;
+	enableFltSounds	off;
+}
+
+
+object Flak {
+	file	flak.fst;
+	loader	0;
+	loaderflags	0x0	255;
+	convt	1;
+	cs	1;
+	optim	0x3;
+	isclass	0x0;
+	divisions	10;
+	upvol	on;
+	parts	on;
+	autorange	-1;
+	pos	0	0	0	0	0	0;
+	represent	0x0;
+	temp	-1;
+	parttemp	""	0	-1;
+	dis	off;
+	capabilities	0x0;
+	entityid	2	1	3	0	0	0	0	44;
+	markings	0	Ship5;
+	appear	0x0;
+	deadrec	3;
+	tflod_state	off;
+	tflod_depth	1;
+	immediate	1;
+	triggerFltSounds	off;
+	recvEnabled	off;
+	entitytypeid	0	0	0	0	0	0	0;
+	enableFltSounds	off;
+}
+
+
+object CockPitMap {
+	file	cockpitmap.fst;
+	loader	0;
+	loaderflags	0x0	255;
+	convt	1;
+	cs	0;
+	optim	0x0;
+	isclass	0x0;
+	divisions	10;
+	upvol	on;
+	parts	on;
+	autorange	-1;
+	pos	0	0	0	0	0	0;
+	represent	0x0;
+	temp	-1;
+	parttemp	""	0	-1;
+	dis	off;
+	capabilities	0x0;
+	entityid	0	0	0	0	0	0	0	0;
+	markings	0	"";
+	appear	0x0;
+	deadrec	0;
+	tflod_state	off;
+	tflod_depth	1;
+	immediate	1;
+	triggerFltSounds	off;
+	recvEnabled	off;
+	entitytypeid	0	0	0	0	0	0	0;
+	enableFltSounds	off;
+}
+
+
+player Pilot {
+	type	0;
+	state	on;
+	classnum	0;
+	represent	0x0;
+	team	0;
+	csref	0;
+	position	0	0	0;
+	euler	0	0	0;
+	motstate	1;
+	awstate	on;
+}
+
+
+observer MainObserver {
+	scene	MainScene;
+	state	1;
+	tether	4	1;
+	stressstate	off;
+	stressparam	0.5	0.7	0.1;
+	stereosep	0.1;
+	stereorng	1000;
+	share	0x0;
+	dis	0;
+	entityid	0	0	0	0	0	0	0;
+	cloak	off;
+	tfixed	0	0	10	0	0	0;
+	gfx	default;
+	awstate	on;
+	modelflags	0x2F;
+	splmin	0;
+	splmax	200;
+	plyrref	Pilot;
+	channel	Main;
+	env	clear;
+	audioEnabled	on;
+	awChannel	Channel;
+}
+
+
+observer PipObserver {
+	scene	MainScene;
+	state	0;
+	tether	3	1;
+	stressstate	off;
+	stressparam	0.5	0.7	0.1;
+	stereosep	0.1;
+	stereorng	1000;
+	share	0xFF;
+	dis	0;
+	entityid	0	0	0	0	0	0	0;
+	gfx	default;
+	tspin	20	0.1	10;
+	cloak	off;
+	awstate	on;
+	modelflags	0xF;
+	splmin	0;
+	splmax	130;
+	plyrref	Pilot;
+	env	clear;
+	audioEnabled	off;
+}
+
+
+observer CockPitObserver {
+	channel	CockPit;
+	state	1;
+	tether	0	1;
+	stressstate	off;
+	stressparam	0.5	0.7	0.1;
+	stereosep	0.1;
+	stereorng	1000;
+	share	0x0;
+	dis	0;
+	entityid	0	0	0	0	0	0	0;
+	scene	MainCockPitScene;
+	awstate	on;
+	modelflags	0xF;
+	splmin	0;
+	splmax	130;
+	gfx	CockPit;
+	position	0	-1.35	0.45;
+	euler	0	0	0;
+	audioEnabled	off;
+}
+
+
+scene MainScene {
+	object	Terrain;
+	sound	Engine;
+	sound	MachGun;
+	sound	Train;
+	sound	EngineWhine;
+	sound	Wind;
+	sound	SelectionSong;
+	sound	Scream;
+	sound	EngineStartup;
+	sound	EngineOutOfFuel;
+	sound	HitMe;
+	sound	Sinking;
+	sound	Blimp;
+	sound	TripleExplosion;
+}
+
+
+scene MainCockPitScene {
+	object	CockPit;
+	object	CockPitMap;
+}
+
+
+scene SelScene {
+	object	SelectionTile;
+}
+
+
+scene SelCockPitScene {
+	object	CockPitSel;
+}
+
+
+window Main {
+	screen	0;
+	wintype	1;
+	winsize	0	1279	0	1023;
+	border	off;
+	label	"MardiGras WWI Adventure";
+	intro	"";
+	input	on;
+	async	off;
+	cbits	8;
+	zbits	24;
+	samples	8;
+	aa	on;
+	stencil	0;
+	stereo	off;
+	bufmode	0;
+	iocpu	-1;
+	iopri	-1;
+	drawcpu	-1;
+	drawpri	-1;
+	cullcpu	-1;
+	cullpri	-1;
+}
+
+
+env clear {
+	state	on;
+	skycolor	0.365864	0.513054	0.53;
+	fogstate	enable;
+	viscolor	0.365864	0.513054	0.53;
+	visrng	0	1500;
+	vistype	1;
+	visfunc	0;
+	tod	1;
+	lightsrc	sun;
+	rampval	0.1	0;
+	rampval	0.3	0;
+	rampval	0.5	0;
+	rampval	0.8	0.4;
+	rampval	0.9	0.75;
+	rampval	1	1;
+	rampval	1	1;
+	rampval	1	1;
+	sos	330;
+	//envfxname	clouds;
+}
+
+
+env rainy {
+	state	on;
+	skycolor	0.290907	0.41749	1;
+	fogstate	enable;
+	rampval	0.1	0.1;
+	viscolor	0.290907	0.41749	1;
+	visrng	1500	6000;
+	vistype	1;
+	visfunc	0;
+	tod	1;
+	lightsrc	sun;
+	rampval	0.3	0.3;
+	rampval	0.5	0.5;
+	rampval	0.6	0.6;
+	rampval	0.7	0.7;
+	rampval	0.8	0.8;
+	rampval	0.9	0.9;
+	rampval	1	1;
+	rampval	1	1;
+	sos	330;
+}
+
+
+envfx clouds {
+	state	on;
+	type	1;
+	color	1	1	1;
+	cldtextype	1;
+	cldtexname	../visual_data/textures/clouds2.int;
+	cldtop	4000;
+	cldbot	4000;
+	cldtoptran	4000;
+	cldbottran	4000;
+	cldtile	16	16;
+	clddrw	1;
+	skirtminz	-500000;
+	cldscud	off;
+}
+
+
+light sun {
+	type	3;
+	state	on;
+	twoside	0;
+	ambient	0.3	0.3	0.3;
+	diffuse	1	1	1;
+	attn	1	0	0;
+	posvec	0	85	0;
+}
+
+
+application Default {
+	fname	./mardi;
+	appargs	"$ADF -c";
+}
+
+
+isector hotIsector {
+	state	on;
+	render	off;
+	update	1;
+	zoffset	0;
+	minz	-50000;
+	maxz	50000;
+	mask	0x3;
+	results	0x1403;
+	xform	on;
+	zpr	0;
+	scene	MainScene;
+}
+
+
+isector losIsector {
+	state	on;
+	render	off;
+	update	1;
+	zoffset	0;
+	minz	-50000;
+	maxz	50000;
+	mask	0xFFFEFFFF;
+	results	0x1403;
+	xform	on;
+	scene	MainScene;
+	los	5;
+}
+
+
+dbm {
+	dbshape	0;
+	state	on;
+	fixedmem	64;
+	pageconfig	202;
+	dblleorigin	0	0	0;
+}
+
+
+vg_dis {
+	out_mark_color	1	0	0;
+	state	1;
+	filter	on	1000;
+	thresholds	10	1 3;
+	gclamp	on;
+	smooth	1	3;
+	timeout	15;
+	useladbm	off;
+	displaymarks	off;
+	force	-1;
+	exerciseid	0;
+	site	0;
+	port	3007;
+	host	0;
+	det_obs_dur	10;
+	keyfunc	""	0;
+	mark_color	1	1	1;
+	scene	MainScene;
+	address	0.0.0.0;
+	timetype	0;
+	inbappfrom	0;
+}
+
+
+awEngine Engine {
+	index	1;
+	indexValue	0;
+	hd	on	4	67;
+	access	0;
+	awdhost	"";
+	volume	1;
+	headroom 1;
+}
+
+
+awChannel Channel {
+	model	2;
+	outputFrontLeft	1;
+	outputFrontRight	2;
+	outputRearLeft	3;
+	outputRearRight	4;
+	voices	16;
+	engine	Engine;
+}
+
+
+awSound Engine {
+	wave	longrun.aifc;
+	position	0	0	0	0	0	0;
+	spl	80;
+	pitchbend	1;
+	lopass	22050;
+	splhi	135;
+	pitchbendhi	1.5;
+	lopasshi	22050;
+	expunge	0;
+	priority	1;
+	doppler	2;
+	propagation	2;
+	absorption	2;
+	attenuation	2;
+	wcmap	2;
+	triggerInfo	0	0	0	0xFFFFFFFF	-1;
+	releaseInfo	0	-1	0	0xFFFFFFFF;
+	splVariation	0	0	on	0	0	0	0	0	0	0	0.1;
+	pbendVariation	0	0	on	0	0	0	0	0	0	0	0.1;
+	lopassVariation	0	0	on	0	0	0	0	0	0	0	0.1;
+}
+
+
+awSound MachGun {
+	wave	fokkergunMix1.aifc;
+	position	0	0	0	0	0	0;
+	spl	170;
+	pitchbend	1;
+	lopass	22050;
+	splhi	160;
+	pitchbendhi	1;
+	lopasshi	22050;
+	expunge	0;
+	priority	1;
+	doppler	2;
+	propagation	2;
+	absorption	2;
+	attenuation	2;
+	wcmap	2;
+	triggerInfo	0	-1	0	0xFFFFFFFF	-1;
+	releaseInfo	0	-1	0	0xFFFFFFFF;
+	splVariation	0	0	on	0	0	0	0	0	0	0	0.1;
+	pbendVariation	0	0	on	0	0	0	0	0	0	0	0.1;
+	lopassVariation	0	0	on	0	0	0	0	0	0	0	0.1;
+}
+
+
+awSound Train {
+	wave	steamtrain.aifc;
+	position	0	0	0	0	0	0;
+	spl	85;
+	pitchbend	1;
+	lopass	22050;
+	splhi	100;
+	pitchbendhi	1;
+	lopasshi	22050;
+	expunge	0;
+	priority	0;
+	doppler	2;
+	propagation	2;
+	absorption	2;
+	attenuation	2;
+	wcmap	2;
+	triggerInfo	0	-1	0	0xFFFFFFFF	-1;
+	releaseInfo	0	-1	0	0xFFFFFFFF;
+	splVariation	0	0	on	0	0	0	0	0	0	0	0.1;
+	pbendVariation	0	0	on	0	0	0	0	0	0	0	0.1;
+	lopassVariation	0	0	on	0	0	0	0	0	0	0	0.1;
+}
+
+
+awSound EngineWhine {
+	wave	goodyear.aifc;
+	position	0	0	0	0	0	0;
+	spl	90;
+	pitchbend	0.67;
+	lopass	22050;
+	splhi	160;
+	pitchbendhi	1.5;
+	lopasshi	22050;
+	expunge	0;
+	priority	1;
+	doppler	2;
+	propagation	2;
+	absorption	2;
+	attenuation	2;
+	wcmap	2;
+	triggerInfo	0	-1	0	0xFFFFFFFF	-1;
+	releaseInfo	0	-1	0	0xFFFFFFFF;
+	splVariation	0	0	on	0	0	0	50	0	0	0	0.1;
+	pbendVariation	0	0	on	0	0	0	50	0	0	0	0.1;
+	lopassVariation	0	0	on	0	0	0	0	0	0	0	0.1;
+}
+
+
+awSound Wind {
+	wave	wind.aifc;
+	position	0	0	0	0	0	0;
+	spl	90;
+	pitchbend	0.8;
+	lopass	22050;
+	splhi	160;
+	pitchbendhi	1.5;
+	lopasshi	22050;
+	expunge	0;
+	priority	0;
+	doppler	2;
+	propagation	2;
+	absorption	2;
+	attenuation	2;
+	wcmap	2;
+	triggerInfo	0	-1	0	0xFFFFFFFF	-1;
+	releaseInfo	0	-1	0	0xFFFFFFFF;
+	splVariation	0	0	on	0	0	0	50	0	0	0	0.1;
+	pbendVariation	0	0	on	0	0	0	50	0	0	0	0.1;
+	lopassVariation	0	0	on	0	0	0	0	0	0	0	0.1;
+}
+
+
+awSound SelectionSong {
+	wave	rev.aifc;
+	position	0	0	0	0	0	0;
+	spl	80;
+	pitchbend	1;
+	lopass	22050;
+	splhi	100;
+	pitchbendhi	1.5;
+	lopasshi	22050;
+	expunge	0;
+	priority	0;
+	doppler	0;
+	propagation	0;
+	absorption	0;
+	attenuation	0;
+	wcmap	2;
+	triggerInfo	0	0	0	0xFFFFFFFF	-1;
+	releaseInfo	0	-1	0	0xFFFFFFFF;
+	splVariation	0	0	on	0	0	0	50	0	0	0	0.1;
+	pbendVariation	0	0	on	0	0	0	50	0	0	0	0.1;
+	lopassVariation	0	0	on	0	0	0	0	0	0	0	0.1;
+}
+
+
+awSound Scream {
+	wave	scream.aifc;
+	position	0	0	0	0	0	0;
+	spl	160;
+	pitchbend	1;
+	lopass	22050;
+	splhi	130;
+	pitchbendhi	1.5;
+	lopasshi	22050;
+	expunge	0;
+	priority	1;
+	doppler	2;
+	propagation	2;
+	absorption	2;
+	attenuation	2;
+	wcmap	2;
+	triggerInfo	0	0	0	0xFFFFFFFF	-1;
+	releaseInfo	0	-1	0	0xFFFFFFFF;
+	splVariation	0	0	on	0	0	0	0	0	0	0	0.1;
+	pbendVariation	0	0	on	0	0	0	0	0	0	0	0.1;
+	lopassVariation	0	0	on	0	0	0	0	0	0	0	0.1;
+}
+
+
+awSound EngineStartup {
+	wave	2fokkerstart.aifc;
+	position	0	0	0	0	0	0;
+	spl	60;
+	pitchbend	1;
+	lopass	22050;
+	splhi	140;
+	pitchbendhi	1.5;
+	lopasshi	22050;
+	expunge	0;
+	priority	0;
+	doppler	2;
+	propagation	2;
+	absorption	2;
+	attenuation	2;
+	wcmap	2;
+	triggerInfo	0	-1	0	0xFFFFFFFF	-1;
+	releaseInfo	0	-1	0	0xFFFFFFFF;
+	splVariation	0	0	on	0	0	0	50	0	0	0	0.1;
+	pbendVariation	0	0	on	0	0	0	50	0	0	0	0.1;
+	lopassVariation	0	0	on	0	0	0	0	0	0	0	0.1;
+}
+
+
+awSound BigExplosion {
+	wave	explosion1.aifc;
+	position	0	0	0	0	0	0;
+	spl	160;
+	pitchbend	1;
+	lopass	22050;
+	splhi	200;
+	pitchbendhi	1;
+	lopasshi	22050;
+	expunge	0;
+	priority	0;
+	doppler	2;
+	propagation	2;
+	absorption	2;
+	attenuation	2;
+	wcmap	2;
+	triggerInfo	0	-1	0	0xFFFFFFFF	-1;
+	releaseInfo	1	-1	0	0xFFFFFFFF;
+	splVariation	0	0	on	0	0	0	50	0	0	0	0.1;
+	pbendVariation	0	0	on	0	0	0	50	0	0	0	0.1;
+	lopassVariation	0	0	on	0	0	0	0	0	0	0	0.1;
+}
+
+
+awSound TripleExplosion {
+	wave	smallexplosion2.aifc;
+	position	0	0	0	0	0	0;
+	spl	160;
+	pitchbend	1;
+	lopass	22050;
+	splhi	200;
+	pitchbendhi	1;
+	lopasshi	22050;
+	expunge	0;
+	priority	0;
+	doppler	2;
+	propagation	2;
+	absorption	2;
+	attenuation	2;
+	wcmap	2;
+	triggerInfo	0	-1	0	0xFFFFFFFF	-1;
+	releaseInfo	1	-1	0	0xFFFFFFFF;
+	splVariation	0	0	on	0	0	0	50	0	0	0	0.1;
+	pbendVariation	0	0	on	0	0	0	50	0	0	0	0.1;
+	lopassVariation	0	0	on	0	0	0	0	0	0	0	0.1;
+}
+
+
+awSound EngineOutOfFuel {
+	wave	fokkerstop.aifc;
+	position	0	0	0	0	0	0;
+	spl	50;
+	pitchbend	1;
+	lopass	22050;
+	splhi	150;
+	pitchbendhi	1;
+	lopasshi	22050;
+	expunge	0;
+	priority	0;
+	doppler	2;
+	propagation	2;
+	absorption	2;
+	attenuation	2;
+	wcmap	2;
+	triggerInfo	0	-1	0	0xFFFFFFFF	-1;
+	releaseInfo	0	-1	0	0xFFFFFFFF;
+	splVariation	0	0	on	0	0	0	50	0	0	0	0.1;
+	pbendVariation	0	0	on	0	0	0	50	0	0	0	0.1;
+	lopassVariation	0	0	on	0	0	0	0	0	0	0	0.1;
+}
+
+
+awSound SmallExplosion {
+	wave	smallexplosion1.aifc;
+	position	0	0	0	0	0	0;
+	spl	160;
+	pitchbend	1;
+	lopass	22050;
+	splhi	200;
+	pitchbendhi	1;
+	lopasshi	22050;
+	expunge	0;
+	priority	0;
+	doppler	2;
+	propagation	2;
+	absorption	2;
+	attenuation	2;
+	wcmap	2;
+	triggerInfo	0	-1	0	0xFFFFFFFF	-1;
+	releaseInfo	1	-1	0	0xFFFFFFFF;
+	splVariation	0	0	on	0	0	0	0	0	0	0	0.1;
+	pbendVariation	0	0	on	0	0	0	0	0	0	0	0.1;
+	lopassVariation	0	0	on	0	0	0	0	0	0	0	0.1;
+}
+
+
+awSound HitMe {
+	wave	rich.aifc;
+	position	0	0	0	0	0	0;
+	spl	150;
+	pitchbend	1;
+	lopass	22050;
+	splhi	150;
+	pitchbendhi	1;
+	lopasshi	22050;
+	expunge	0;
+	priority	1;
+	doppler	2;
+	propagation	2;
+	absorption	2;
+	attenuation	2;
+	wcmap	2;
+	triggerInfo	0	-1	0	0xFFFFFFFF	-1;
+	releaseInfo	1	-1	0	0xFFFFFFFF;
+	splVariation	0	0	on	0	0	0	0	0	0	0	0.1;
+	pbendVariation	0	0	on	0	0	0	0	0	0	0	0.1;
+	lopassVariation	0	0	on	0	0	0	0	0	0	0	0.1;
+}
+
+
+awSound Flak {
+	wave	flak.aifc;
+	position	0	0	0	0	0	0;
+	spl	135;
+	pitchbend	1;
+	lopass	22050;
+	splhi	150;
+	pitchbendhi	1;
+	lopasshi	22050;
+	expunge	0;
+	priority	0;
+	doppler	2;
+	propagation	2;
+	absorption	2;
+	attenuation	2;
+	wcmap	2;
+	triggerInfo	0	-1	0	0xFFFFFFFF	-1;
+	releaseInfo	1	-1	0	0xFFFFFFFF;
+	splVariation	0	0	on	0	0	0	0	0	0	0	0.1;
+	pbendVariation	0	0	on	0	0	0	0	0	0	0	0.1;
+	lopassVariation	0	0	on	0	0	0	0	0	0	0	0.1;
+}
+
+
+awSound Sinking {
+	wave	water_explosion.aifc;
+	position	0	0	0	0	0	0;
+	spl	130;
+	pitchbend	1;
+	lopass	22050;
+	splhi	130;
+	pitchbendhi	1.5;
+	lopasshi	22050;
+	expunge	0;
+	priority	0;
+	doppler	2;
+	propagation	2;
+	absorption	2;
+	attenuation	2;
+	wcmap	2;
+	triggerInfo	0	0	0	0xFFFFFFFF	-1;
+	releaseInfo	0	-1	0	0xFFFFFFFF;
+	splVariation	0	0	on	0	0	0	0	0	0	0	0.1;
+	pbendVariation	0	0	on	0	0	0	0	0	0	0	0.1;
+	lopassVariation	0	0	on	0	0	0	0	0	0	0	0.1;
+}
+
+
+awSound OpponentEngine {
+	wave	longrun.aifc;
+	//wave	fokkerrun.aifc;
+	position	0	0	0	0	0	0;
+	spl	90;
+	pitchbend	1.5;
+	lopass	22050;
+	splhi	200;
+	pitchbendhi	1.5;
+	lopasshi	22050;
+	expunge	0;
+	priority	0;
+	doppler	2;
+	propagation	2;
+	absorption	2;
+	attenuation	2;
+	wcmap	2;
+	triggerInfo	0	0	0	0xFFFFFFFF	-1;
+	releaseInfo	0	-1	0	0xFFFFFFFF;
+	splVariation	0	0	on	0	0	0	0	0	0	0	0.1;
+	pbendVariation	0	0	on	0	0	0	0	0	0	0	0.1;
+	lopassVariation	0	0	on	0	0	0	0	0	0	0	0.1;
+}
+
+
+awSound Ship {
+	wave	diesel_boat.aifc;
+	position	0	0	0	0	0	0;
+	spl	95;
+	pitchbend	1;
+	lopass	22050;
+	splhi	200;
+	pitchbendhi	1.5;
+	lopasshi	22050;
+	expunge	0;
+	priority	0;
+	doppler	2;
+	propagation	2;
+	absorption	2;
+	attenuation	2;
+	wcmap	2;
+	triggerInfo	0	0	0	0xFFFFFFFF	-1;
+	releaseInfo	0	-1	0	0xFFFFFFFF;
+	splVariation	0	0	on	0	0	0	0	0	0	0	0.1;
+	pbendVariation	0	0	on	0	0	0	0	0	0	0	0.1;
+	lopassVariation	0	0	on	0	0	0	0	0	0	0	0.1;
+}
+
+
+awSound Blimp {
+	wave	goodyear.aifc;
+	position	0	0	0	0	0	0;
+	spl	85;
+	pitchbend	1;
+	lopass	22050;
+	splhi	200;
+	pitchbendhi	1.5;
+	lopasshi	22050;
+	expunge	0;
+	priority	0;
+	doppler	2;
+	propagation	2;
+	absorption	2;
+	attenuation	2;
+	wcmap	2;
+	triggerInfo	0	0	0	0xFFFFFFFF	-1;
+	releaseInfo	0	-1	0	0xFFFFFFFF;
+	splVariation	0	0	on	0	0	0	0	0	0	0	0.1;
+	pbendVariation	0	0	on	0	0	0	0	0	0	0	0.1;
+	lopassVariation	0	0	on	0	0	0	0	0	0	0	0.1;
+}
+
+
+region 000_000 {
+	state	off;
+	position	0	0	0;
+	euler	0	0	0;
+	render	off;
+	aoicull	on;
+	voloff	0	0	0;
+}
+
+
+region 000_001 {
+	state	off;
+	position	0	0	0;
+	euler	0	0	0;
+	render	off;
+	aoicull	on;
+	voloff	0	0	0;
+}
+
+
+region 000_002 {
+	state	off;
+	position	0	0	0;
+	euler	0	0	0;
+	render	off;
+	aoicull	on;
+	voloff	0	0	0;
+}
+
+
+region 001_000 {
+	state	off;
+	position	0	0	0;
+	euler	0	0	0;
+	render	off;
+	aoicull	on;
+	voloff	0	0	0;
+}
+
+
+region 001_001 {
+	state	off;
+	position	0	0	0;
+	euler	0	0	0;
+	render	off;
+	aoicull	on;
+	voloff	0	0	0;
+}
+
+
+region 001_002 {
+	state	off;
+	position	0	0	0;
+	euler	0	0	0;
+	render	off;
+	aoicull	on;
+	voloff	0	0	0;
+}
+
+
+region 002_000 {
+	state	off;
+	position	0	0	0;
+	euler	0	0	0;
+	render	off;
+	aoicull	on;
+	voloff	0	0	0;
+}
+
+
+region 002_001 {
+	state	off;
+	position	0	0	0;
+	euler	0	0	0;
+	render	off;
+	aoicull	on;
+	voloff	0	0	0;
+}
+
+
+region 002_002 {
+	state	off;
+	position	0	0	0;
+	euler	0	0	0;
+	render	off;
+	aoicull	on;
+	voloff	0	0	0;
+}
+
+
+region 003_000 {
+	state	off;
+	position	0	0	0;
+	euler	0	0	0;
+	render	off;
+	aoicull	on;
+	voloff	0	0	0;
+}
+
+
+region 003_001 {
+	state	off;
+	position	0	0	0;
+	euler	0	0	0;
+	render	off;
+	aoicull	on;
+	voloff	0	0	0;
+}
+
+
+region 003_002 {
+	state	off;
+	position	0	0	0;
+	euler	0	0	0;
+	render	off;
+	aoicull	on;
+	voloff	0	0	0;
+}
+
+
+adfstate {
+	module	Vega	2.0;
+	module	"Large Area DBM"	1.0;
+	module	"Light Lobes"	1.0;
+	module	DIS	1.1;
+	module	"Terrain FLOD"	1.0;
+	module	AudioWorks2	1.1;
+	module	"Vega Audio"	1.0;
+	module	"Vega Marine"	1.0;
+	module	RotterDam	1.0;
+	module	"Special Effect"	1.0;
+}
+
