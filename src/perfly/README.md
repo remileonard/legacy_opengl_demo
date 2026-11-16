@@ -253,16 +253,17 @@ perfly earth.pfb 3010_mix.pfb trans_1.pfb trans_2.pfb europe.pfb ...
 | `lighting 0/1` | the lighting of the textured geosets | 0 |
 | `center x y z` | the center of the tether | 0 0 0 |
 | `minRadius`, `maxRadius` | the limits of the radius | 0, 5000 |
-| `inRadius`, `outRadius` | going below the inner radius enters the next world; going above the outer one returns to the previous world | 20, 5000 |
+| `inRadius`, `outRadius` | with `inAround`... `outTilt`, the inner and outer positions the right button flies to; reaching the inner one enters the next world, the outer one the previous world | 20, 5000 |
 | `inAround`, `inTilt`, `outAround`, `outTilt` | the eye when entering the world from the next world (in) or the previous one (out) | 0 |
-| `nearMinAround` ... `farMaxTilt` | the limits of the angles at the inner (near) and the outer (far) radius, interpolated in between | -180, 180 |
+| `nearMinAround` ... `farMaxTilt` | the limits of the angles at the smallest (near) and the largest (far) radius, interpolated in between | -180, 180 |
 | `nearClip`, `farClip` | the clip planes | 1, 100 |
 | `skyColor r g b` | the clear color | 0 0 0 |
-| `scaleLinearVelocity` | the zoom speed: 1 crosses the world in 5 seconds | 1 |
-| `maxAngularVelocity` | the turning speed | 30 |
-| `tileSize`, `minRoll`, `maxRoll`, `maxRollVelocity` | read and unused (texture paging, roll) | |
+| `scaleLinearVelocity` | the radius change per frame | 1 |
+| `maxAngularVelocity` | the turning speed, in degrees per frame | 30 |
+| `minRoll`, `maxRoll`, `maxRollVelocity` | the roll of the two-button motions | -180, 180, 30 |
+| `tileSize` | read and unused (texture paging) | |
 
-After the last world, zooming in goes back to world 0. In a transition
+After the last world, flying in goes back to world 0. In a transition
 world (two files, outer radius at most 3), the first geoset of the second
 picture fades out as the eye goes in.
 
@@ -285,18 +286,23 @@ The layer decodes them as the original did.
 The original pages its textures into texture memory a tile at a time. The
 layer loads each texture whole, the first time its world is shown.
 
-Controls of the tether:
+Controls of the tether. They come from the executable
+(`pfiProcessTDFTetherMouse` and `pfiUpdate2DIXformTether`). As in the
+other Performer motion models, the eye moves only while a button is held:
 
 | Input | Action |
 | --- | --- |
-| left button / Page Up | go in |
-| right button (or Ctrl + left) / Page Down | go out |
-| mouse away from the center, while a button is held | turn around and tilt |
+| left button | turn around and tilt; the farther the mouse is from the center, the faster |
+| middle button (or Shift + left) | change the radius: mouse above the center goes in, below goes out |
+| right button (or Ctrl + left) | fly to the inner position of the world (mouse above the center) or to its outer position (below), the radius and the angles arriving together; once there, enter the next or the previous world |
+| left + middle, left + right | the same, with roll |
+| Page Up / Page Down | fly in / out, like the right button |
 | arrows | turn around and tilt |
 
-These controls are the layer's own. The original's tether motion
-(`pfiInputXformTether`) is in an IRIX library this repository does not
-have, so it is not a copy of the original.
+Only the right button changes worlds, as in the original: the middle
+button stops at the limits of the world. Speeds in `paths` are per frame
+of the 60 Hz of the demo; the layer scales them to the actual frame time.
+The keyboard keys are additions of the layer.
 
 ## Controls
 

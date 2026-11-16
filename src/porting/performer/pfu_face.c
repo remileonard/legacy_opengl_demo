@@ -40,10 +40,17 @@
  * bytes whose lengths come from numbers5551E; the image is written from
  * its last byte back to its first.
  *
- * The motion of the tether is my own (pfiInputXformTether is not in the
- * executable as source): the left button goes in, the right button goes
- * out, the mouse away from the center of the view turns around and tilts;
- * Page Up / Page Down and the arrows do the same from the keyboard.
+ * The tether is that of the executable (pfiProcessTDFTetherMouse and
+ * pfiUpdate2DIXformTether), a button held to move as in the other motion
+ * models of Performer:
+ *   left            turn around and tilt with the mouse away from the center
+ *   middle          change the radius: mouse above the center in, below out
+ *   right           fly to the inner position of the world (mouse above the
+ *                   center) or to its outer one (below); there, the next or
+ *                   the previous world is entered
+ *   two buttons     the same with roll (left + middle, left + right)
+ * Ctrl + left and Shift + left stand for the right and the middle buttons;
+ * Page Up / Page Down fly in and out, the arrows turn.
  */
 #include <GL/freeglut.h>
 
@@ -66,6 +73,7 @@ typedef struct {
     float nearMinTilt, nearMaxTilt, farMinTilt, farMaxTilt;
     float nearClip, farClip;
     pfVec3 sky;
+    float minRoll, maxRoll;
     float linear, angular, roll;
     int texbase;
     pfGroup *group;
@@ -240,6 +248,8 @@ static void world_defaults(World *w)
     w->outRadius = 5000;
     w->nearMinAround = w->farMinAround = w->nearMinTilt = w->farMinTilt = -180;
     w->nearMaxAround = w->farMaxAround = w->nearMaxTilt = w->farMaxTilt = 180;
+    w->minRoll = -180;
+    w->maxRoll = 180;
     w->nearClip = 1;
     w->farClip = 100;
     w->linear = 1;
@@ -294,6 +304,8 @@ static int read_paths(void)
         TAG("nearMaxTilt", nearMaxTilt);
         TAG("farMinTilt", farMinTilt);
         TAG("farMaxTilt", farMaxTilt);
+        TAG("minRoll", minRoll);
+        TAG("maxRoll", maxRoll);
         TAG("nearClip", nearClip);
         TAG("farClip", farClip);
         TAG("scaleLinearVelocity", linear);
@@ -311,8 +323,7 @@ static int read_paths(void)
                 w->norder++;
                 p += n;
             }
-        } else if (strcmp(tag, "tileSize") != 0 && strcmp(tag, "minRoll") != 0 &&
-                   strcmp(tag, "maxRoll") != 0)
+        } else if (strcmp(tag, "tileSize") != 0)
             pfNotify(PFNFY_NOTICE, PFNFY_PRINT, "face: unknown tag <%s> in paths", tag);
 #undef TAG
     }
@@ -382,14 +393,14 @@ static pfGroup *scene_group(pfScene *scene)
     return c && c->type == PFNODE_GROUP ? c : NULL;
 }
 
-/* the clip planes and the color of the sky of the world, set at the first
- * frame in it: perfly sets its own after the scene */
+/* the clip planes and the color of the sky of the world, set during the
+ * first frames in it: perfly sets its own after the scene */
 static int view_pending;
 
 static void apply_view(const World *w)
 {
     pfEarthSky *es;
-    view_pending = 0;
+    view_pending--;
     if (!face_chan)
         return;
     pfChanNearFar(face_chan, w->nearClip, w->farClip);
@@ -413,7 +424,7 @@ static void enter_world(int k, int from_outside)
     radius = from_outside ? w->outRadius : w->inRadius;
     around = from_outside ? w->outAround : w->inAround;
     tilt = from_outside ? w->outTilt : w->inTilt;
-    view_pending = 1;
+    view_pending = 10;
     pfNotify(PFNFY_NOTICE, PFNFY_PRINT, "face: world %d", k);
 }
 
@@ -458,7 +469,8 @@ void pfuiFaceAttach(pfScene *scene, pfChannel *chan)
     enter_world(0, 1);
 }
 
-/* the keys of the tether, held */
+/* the keys of the tether, held: Page Up / Page Down fly in / out like the
+ * right button, the arrows turn like the left button */
 int pfuiFaceSpecial(int key, int down)
 {
     int *k = NULL;
@@ -480,78 +492,154 @@ int pfuiFaceSpecial(int key, int down)
 
 static float lerp(float a, float b, float t) { return a + (b - a) * t; }
 
+static float wrap180(float a)
+{
+    if (a >= 180) a -= 360;
+    else if (a <= -180) a += 360;
+    return a;
+}
+
+/* the position of the mouse in the view, as pfiUpdate2DIXformTether takes
+ * it: (0.5 - x) * |0.5 - x| * 4, from -1 to 1, x and y from 0 to 1 from the
+ * bottom left */
+static float stick(float v)
+{
+    float d = 0.5f - v;
+    d = d * (float)fabs(d) * 4;
+    return PF_CLAMP(d, -1, 1);
+}
+
+/* the motions of the tether (pfiUpdate2DIXformTether of perfly.face):
+ * the speeds of paths are per frame of the 60 Hz of the demo */
+enum { MOTION_NONE, MOTION_ROTATE, MOTION_RADIUS, MOTION_GOTO };
+static float roll;
+static int goto_dir;    /* 1: to the inner position, 2: to the outer one */
+
+/* the flight of the right button to the inner or outer position of the
+ * world, all three coordinates arriving together; 1 when it is there */
+static int fly_to(World *w, float my, float frames)
+{
+    int inward = my <= 0;
+    float tr = inward ? w->inRadius : w->outRadius;
+    float ta = inward ? w->inAround : w->outAround;
+    float tt = inward ? w->inTilt : w->outTilt;
+    float dr = tr - radius, da = wrap180(ta - around), dtl = wrap180(tt - tilt);
+    float lin = w->linear, ang = w->angular, a = (float)fabs(my) * frames;
+    float timer = (float)fabs(dr) / lin, timea = (float)fabs(da) / ang, timet = (float)fabs(dtl) / ang;
+    float most = PF_MAX2(timer, PF_MAX2(timea, timet)), sr, sa, st;
+    const float eps = 1e-4f;
+    int there = 0;
+    goto_dir = inward ? 1 : 2;
+    if (most < eps)
+        most = eps;
+    sr = a * lin * PF_MIN2(timer / most, 1);
+    sa = a * ang * PF_MIN2(timea / most, 1);
+    st = a * ang * PF_MIN2(timet / most, 1);
+    if (sr < eps) sr = eps;
+    if (sa < eps) sa = eps;
+    if (st < eps) st = eps;
+    if (fabs(dr) < sr) { radius = tr; there++; } else radius += dr > 0 ? sr : -sr;
+    if (fabs(da) < sa) { around = ta; there++; } else around += da > 0 ? sa : -sa;
+    if (fabs(dtl) < st) { tilt = tt; there++; } else tilt += dtl > 0 ? st : -st;
+    around = wrap180(around);
+    return there == 3;
+}
+
 /* the eye of the frame: the tether moved by the mouse and the keys */
 int pfuiFaceEye(pfuMouse *m, int inside, int cx, int cy, int cw, int ch, float dt, pfCoord *eye)
 {
     World *w;
-    float t, range, nx = 0, ny = 0, lo, hi, ca, sa, ct, st;
-    int buttons = 0, in, out;
+    float t, frames = dt * 60, mx = 0, my = 0, lo, hi, ca, sa, ct, st;
+    int buttons = 0, motion = MOTION_NONE, rolling = 0;
     if (!active)
         return 0;
     w = &worlds[current];
     if (m && inside) {
         buttons = m->flags & PFUDEV_MOUSE_DOWN_MASK;
-        if ((buttons & PFUDEV_MOUSE_LEFT_DOWN) && (m->modifiers & PFUDEV_MOD_CTRL))
+        /* one button mice: Ctrl + left is the right button, Shift + left
+         * the middle one */
+        if (buttons == PFUDEV_MOUSE_LEFT_DOWN && (m->modifiers & PFUDEV_MOD_CTRL))
             buttons = PFUDEV_MOUSE_RIGHT_DOWN;
-        else if ((buttons & PFUDEV_MOUSE_LEFT_DOWN) && (m->modifiers & PFUDEV_MOD_SHIFT))
+        else if (buttons == PFUDEV_MOUSE_LEFT_DOWN && (m->modifiers & PFUDEV_MOD_SHIFT))
             buttons = PFUDEV_MOUSE_MIDDLE_DOWN;
-        nx = (m->xpos - (cx + cw / 2.0f)) / (cw / 2.0f);
-        ny = (m->ypos - (cy + ch / 2.0f)) / (ch / 2.0f);
-        nx = PF_CLAMP(nx, -1, 1);
-        ny = PF_CLAMP(ny, -1, 1);
-        if (fabs(nx) < 0.05f) nx = 0;
-        if (fabs(ny) < 0.05f) ny = 0;
+        mx = stick((m->xpos - cx) / (float)cw);
+        my = stick((m->ypos - cy) / (float)ch);
     }
-    in = kin || (buttons & PFUDEV_MOUSE_LEFT_DOWN);
-    out = kout || (buttons & PFUDEV_MOUSE_RIGHT_DOWN);
-    if (!buttons) {
-        nx = 0;
-        ny = 0;
+    /* pfiProcessTDFTetherMouse: left turns, middle changes the radius,
+     * right flies to the inner (mouse above the center) or the outer
+     * position (below); a second button rolls */
+    switch (buttons) {
+    case PFUDEV_MOUSE_LEFT_DOWN: motion = MOTION_ROTATE; break;
+    case PFUDEV_MOUSE_MIDDLE_DOWN: motion = MOTION_RADIUS; break;
+    case PFUDEV_MOUSE_LEFT_DOWN | PFUDEV_MOUSE_MIDDLE_DOWN: motion = MOTION_RADIUS; rolling = 1; break;
+    case PFUDEV_MOUSE_RIGHT_DOWN: motion = MOTION_GOTO; break;
+    case PFUDEV_MOUSE_RIGHT_DOWN | PFUDEV_MOUSE_LEFT_DOWN: motion = MOTION_GOTO; rolling = 1; break;
     }
-    nx += (kright ? 0.5f : 0) - (kleft ? 0.5f : 0);
-    ny += (kup ? 0.5f : 0) - (kdown ? 0.5f : 0);
-
-    /* in and out: the whole range of the world in 5 seconds at the speed 1 */
-    range = w->outRadius - w->inRadius;
-    if (range <= 0)
-        range = PF_MAX2(1.0f, w->maxRadius - w->minRadius);
-    if (in) radius -= w->linear * range / 5 * dt;
-    if (out) radius += w->linear * range / 5 * dt;
-
-    /* the angles, at most the angular velocity per frame of 1/60 s */
-    around -= nx * w->angular * 60 * 0.5f * dt;
-    tilt += ny * w->angular * 60 * 0.5f * dt;
-
-    if (in && radius <= w->inRadius && w->inRadius >= w->minRadius) {
-        enter_world((current + 1) % nworlds, 1);
-        w = &worlds[current];
-    } else if (out && radius >= w->outRadius && current > 0 && w->outRadius <= w->maxRadius) {
-        enter_world(current - 1, 0);
-        w = &worlds[current];
+    if (motion == MOTION_NONE) {
+        if (kin || kout) {
+            motion = MOTION_GOTO;
+            mx = 0;
+            my = kin ? -1 : 1;
+        } else if (kleft || kright || kup || kdown) {
+            motion = MOTION_ROTATE;
+            mx = (kleft ? 0.5f : 0) - (kright ? 0.5f : 0);
+            my = (kdown ? 0.5f : 0) - (kup ? 0.5f : 0);
+        }
     }
-    radius = PF_CLAMP(radius, w->minRadius, w->maxRadius);
-    if (view_pending)
+
+    /* the limits of the angles, from those at the smallest radius to those
+     * at the largest */
+    t = w->maxRadius > w->minRadius ? (radius - w->minRadius) / (w->maxRadius - w->minRadius) : 0;
+    if (rolling) {
+        roll = wrap180(roll + mx * w->roll * frames);
+        roll = PF_CLAMP(roll, w->minRoll, w->maxRoll);
+    } else if (buttons) {
+        roll = 0;
+    }
+
+    switch (motion) {
+    case MOTION_RADIUS:
+        radius += my * w->linear * frames;
+        radius = PF_CLAMP(radius, w->minRadius, w->maxRadius);
+        break;
+    case MOTION_ROTATE:
+        around = wrap180(around + mx * w->angular * frames);
+        tilt = wrap180(tilt + my * w->angular * frames);
+        break;
+    case MOTION_GOTO:
+        /* there: the next world, entered from its outer position, or the
+         * previous one, entered from its inner position */
+        if (fly_to(w, my, frames)) {
+            if (goto_dir == 1)
+                enter_world((current + 1) % nworlds, 1);
+            else if (current > 0)
+                enter_world(current - 1, 0);
+            w = &worlds[current];
+        }
+        break;
+    }
+    if (motion != MOTION_GOTO) {
+        lo = lerp(w->nearMinAround, w->farMinAround, t);
+        hi = lerp(w->nearMaxAround, w->farMaxAround, t);
+        if (around >= hi) around = hi;
+        else if (around <= lo) around = lo;
+        lo = lerp(w->nearMinTilt, w->farMinTilt, t);
+        hi = lerp(w->nearMaxTilt, w->farMaxTilt, t);
+        if (tilt >= hi) tilt = hi;
+        else if (tilt <= lo) tilt = lo;
+    }
+    if (view_pending > 0)
         apply_view(w);
-
-    /* the limits of the angles, from those at the inner radius to those at
-     * the outer one */
-    t = w->outRadius > w->inRadius ? (radius - w->inRadius) / (w->outRadius - w->inRadius) : 0;
-    t = PF_CLAMP(t, 0, 1);
-    lo = lerp(w->nearMinAround, w->farMinAround, t);
-    hi = lerp(w->nearMaxAround, w->farMaxAround, t);
-    if (hi - lo < 359) around = PF_CLAMP(around, lo, hi);
-    lo = lerp(w->nearMinTilt, w->farMinTilt, t);
-    hi = lerp(w->nearMaxTilt, w->farMaxTilt, t);
-    tilt = PF_CLAMP(tilt, PF_MAX2(lo, -90), PF_MIN2(hi, 90));
 
     /* the transitions: the second picture comes in as the eye goes in */
     if (is_transition(w)) {
         pfGeoSet *g = first_gset(pfGetChild(w->group, 1), 0);
+        float p = w->outRadius > w->inRadius ? (radius - w->inRadius) / (w->outRadius - w->inRadius) : 0;
         if (g) {
             static float col[MAX_WORLDS][4];
             float *c = col[current];
             c[0] = c[1] = c[2] = 1;
-            c[3] = 1 - t;
+            c[3] = 1 - PF_CLAMP(p, 0, 1);
             g->attr[PFGS_COLOR4] = c;
             g->bind[PFGS_COLOR4] = PFGS_OVERALL;
             g->ilist[PFGS_COLOR4] = NULL;
@@ -567,6 +655,6 @@ int pfuiFaceEye(pfuMouse *m, int inside, int cx, int cy, int cw, int ch, float d
     st = (float)sin(PF_DEG2RAD(tilt));
     pfSetVec3(eye->xyz, w->center[0] + radius * ct * ca, w->center[1] + radius * ct * sa,
               w->center[2] + radius * st);
-    pfSetVec3(eye->hpr, around + 90, -tilt, 0);
+    pfSetVec3(eye->hpr, around + 90, -tilt, roll);
     return 1;
 }
