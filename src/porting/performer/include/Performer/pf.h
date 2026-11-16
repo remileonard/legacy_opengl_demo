@@ -29,6 +29,9 @@
 #include <io.h>
 #undef near
 #undef far
+/* the global WriteFile of generic.c would collide with the WriteFile of
+ * kernel32 at link time */
+#define WriteFile pfWriteFileName
 #ifndef R_OK
 #define R_OK 4
 #endif
