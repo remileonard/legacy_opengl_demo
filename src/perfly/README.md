@@ -61,7 +61,13 @@ perfly [options] file.ext ...
 
 Supported formats:
 
-- `.pfb`: Performer binary, e.g. the Mekton models in `data/mekton/models`;
+- `.pfb`: Performer binary, e.g. the Mekton models in `data/mekton/models`.
+  The later version 2 files (magic `0xDB0ACE01`, e.g. `earth.pfb`) have
+  the same chunks, but their coordinates are scrambled: each word is
+  xor'ed with a key of 3 words (`21b3c975 ad314ffb c7230d61`). I found the
+  key on `earth.pfb`, a sphere whose coordinates are its normals times its
+  radius. The key is applied when it gives plausible coordinates and the
+  raw values do not;
 - `.dwb`: Designer's Workbench, e.g. the F-18 models and terrains in
   `data/f18/models`;
 - `.obj`: Wavefront, e.g. the models in `data/smooth`. They are turned

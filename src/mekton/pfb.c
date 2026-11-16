@@ -4,6 +4,7 @@
  * File layout (all values big-endian 32-bit):
  *
  *   header   0xDB0ACE00, version 1, 1, header size 16
+ *            (0xDB0ACE01, version 2 in later files, e.g. earth.pfb)
  *   chunks   type, record count, byte size, records...
  *
  * Chunk types used by Mekton:
@@ -207,6 +208,41 @@ static void read_gstate(Reader *r, PfbGState *g)
     free(w);
 }
 
+/*
+ * The coordinates of the version 2 files are scrambled: each word is
+ * xor'ed with a key of 3 words, found on earth.pfb (a sphere whose
+ * coordinates are its normals times its radius). The key is used when
+ * the result looks like coordinates and the raw values do not.
+ */
+static const unsigned long coord_key[3] = { 0x21b3c975UL, 0xad314ffbUL, 0xc7230d61UL };
+
+static int plausible(float v)
+{
+    return v == v && v > -1e7f && v < 1e7f && (v == 0 || v > 1e-20f || v < -1e-20f);
+}
+
+static void unscramble_coords(float *f, int n)
+{
+    int i, raw = 0, dec = 0;
+    for (i = 0; i < n; i++) {
+        union { unsigned int u; float f; } w;
+        w.f = f[i];
+        raw += plausible(f[i]);
+        w.u ^= (unsigned int)coord_key[i % 3];
+        dec += plausible(w.f);
+    }
+    if (dec <= raw)
+        return;
+    for (i = 0; i < n; i++) {
+        union { unsigned int u; float f; } w;
+        w.f = f[i];
+        w.u ^= (unsigned int)coord_key[i % 3];
+        f[i] = w.f;
+    }
+}
+
+static int file_version;
+
 static void read_list(Reader *r, int type, PfbList *l)
 {
     static const int comps[9] = { 0, 0, 0, 0, 1, 3, 4, 3, 2 };
@@ -229,6 +265,8 @@ static void read_list(Reader *r, int type, PfbList *l)
     } else {
         l->f = (float *)malloc(sizeof(float) * (n * l->comps + 1));
         rd_floats(r, l->f, n * l->comps);
+        if (type == 5 && file_version >= 2)
+            unscramble_coords(l->f, n * l->comps);
     }
 }
 
@@ -460,11 +498,12 @@ PfbFile *pfb_load(const char *path)
     r.p = buf;
     r.end = buf + size;
     r.error = 0;
-    if (rd_u32(&r) != PFB_MAGIC) {
+    /* 0xDB0ACE00: Mekton; 0xDB0ACE01: the later version 2, with the same chunks */
+    if ((rd_u32(&r) & ~1UL) != PFB_MAGIC) {
         free(buf);
         return NULL;
     }
-    rd_u32(&r);
+    file_version = (int)rd_u32(&r);
     rd_u32(&r);
     r.p = buf + rd_u32(&r);
 
