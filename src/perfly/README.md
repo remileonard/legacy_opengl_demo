@@ -41,6 +41,7 @@ The layer is made of these files:
 | `pf_runtime.c` | `pfInit`/`pfConfig`, pipes, pipe windows (one freeglut window each), channels (viewports, field of view, near/far, view and view offsets, channel groups and their shared attributes), the frame loop (`pfSync`, `pfFrame`: APP, CULL and DRAW callbacks of each channel), Earth/sky (clear, sky dome, sky and ground, horizon band), fog, frustums, libpr state (materials, light model, lights, matrix stack), statistics, strings, notification |
 | `pf_scene.c` | bounding spheres, `pfSCS`, `pfFlatten`, partitions (plain groups) |
 | `pfd_util.c` | loaders chosen by file extension, builder modes, scene geostate, scene-graph statistics, and a Wavefront `.obj` loader |
+| `pfd_flt.c` | an OpenFlight `.flt` loader |
 | `pfu_util.c` | window input as Performer events (`pfuMouse`, `pfuEventStream`), messages, draw styles, scene-graph display, SGI image snapshots, texture lists, side-by-side channels (MCO) |
 | `pfu_gui.c` | the GUI panel and its widgets: buttons, switches, menu buttons, radio buttons, linear and log sliders, message bar |
 | `pfi_xformer.c` | the `pfiTDFXformer`: trackball, drive and fly, with collisions |
@@ -64,7 +65,9 @@ Supported formats:
 - `.dwb`: Designer's Workbench, e.g. the F-18 models and terrains in
   `data/f18/models`;
 - `.obj`: Wavefront, e.g. the models in `data/smooth`. They are turned
-  from Y up to Performer's Z up.
+  from Y up to Performer's Z up;
+- `.flt`: OpenFlight, in the 14.2 format and the older format of version
+  12. See below.
 
 The folder of each file and the `../textures` folder next to it are added
 to the search path for textures.
@@ -97,6 +100,38 @@ perfly -c 3 -E skygrnd data/mekton/models/colony_city.pfb
 | `-X radius` | explode the files |
 | `-F path` | file search path |
 | `-I n` | print the statistics and exit after n frames |
+
+## OpenFlight
+
+The `.flt` loader reads:
+
+- the header and its units;
+- the color, material and texture palettes;
+- the vertex palette with its vertex lists (14.2), and the old vertices
+  given inside the faces, with integer coordinates (version 12);
+- groups, objects, levels of detail and matrices;
+- external references, each file loaded once and shared;
+- faces with their colors, materials, textures and draw types (solid,
+  two-sided, wireframe, points);
+- subfaces, drawn as decals;
+- billboard faces, turned toward the eye around Z.
+
+It skips the transform records that only describe a matrix, the light
+source palette and the `.attr` files of the textures.
+
+A face is lit when it has a material: its color is then the face color
+times the diffuse color of the material. Faces without a material keep
+their color, unlit. Textures with an alpha channel (`.rgba`, `.inta`) are
+cut out on their alpha.
+
+The *toon* town of the Performer "friends" demos runs with its original
+command, from the folder that holds `toon/` (its data is not in this
+repository):
+
+```
+perfly -N -L -E tag -l 0 -d -s 3.75 -d -P 3 -p 2500,2500,2 -g 2 \
+    -F toon/pftoon:toon/pftexture:toon/pfmodel toon/pftoon/toon.flt
+```
 
 ## Controls
 

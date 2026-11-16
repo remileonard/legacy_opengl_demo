@@ -228,7 +228,7 @@ int pfiCollideXformer(pfiXformer *x)
         if (isect(x, top, down, up * 2, &d, nrm)) {
             float ground = top[2] - d;
             if (x->drive_height < 0)
-                x->drive_height = PF_MAX2(x->coord.xyz[2] - ground, PF_MAX2(1.0f, x->bs.radius * 0.002f));
+                x->drive_height = PF_MAX2(x->coord.xyz[2] - ground, 0.5f);
             x->coord.xyz[2] = ground + x->drive_height;
         }
     }

@@ -5,7 +5,8 @@
  * graph as it is), the fonts.
  *
  * The loaders: .pfb (Performer binary, the loader of Mekton), .dwb
- * (Designer's Workbench, the loader of the F-18 demo) and .obj (Wavefront).
+ * (Designer's Workbench, the loader of the F-18 demo), .obj (Wavefront)
+ * and .flt (OpenFlight, pfd_flt.c).
  */
 #ifndef PERFORMER_PFDU_H
 #define PERFORMER_PFDU_H

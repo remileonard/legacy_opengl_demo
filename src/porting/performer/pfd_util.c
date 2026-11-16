@@ -12,6 +12,8 @@
 /* the Designer's Workbench loader of the F-18 demo (src/f18/dwb.c) */
 pfNode *pfdLoadFile_dwb(const char *file);
 pfNode *pfdLoadFile_obj(const char *file);
+/* OpenFlight (pfd_flt.c) */
+pfNode *pfdLoadFile_flt(const char *file);
 
 static int bldr_modes[64];
 static pfGeoState default_gs;
@@ -35,6 +37,7 @@ static void register_loaders(void)
     done = 1;
     pfdRegisterLoader("dwb", pfdLoadFile_dwb);
     pfdRegisterLoader("obj", pfdLoadFile_obj);
+    pfdRegisterLoader("flt", pfdLoadFile_flt);
 }
 
 /* appends a directory to the file search path */

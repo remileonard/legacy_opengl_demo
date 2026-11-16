@@ -45,8 +45,12 @@ static void bound_node(pfNode *n, pfMatrix m, pfVec3 lo, pfVec3 hi, int *any, in
             }
         }
         for (j = 0; j < nv; j++) {
-            pfVec3 p;
-            pfXformPt3(p, co + 3 * j, m);
+            pfVec3 p, q;
+            pfCopyVec3(q, co + 3 * j);
+            /* the geosets of a billboard are around their position */
+            if (n->type == PFNODE_BBOARD && n->bbpos)
+                pfAddVec3(q, q, n->bbpos[i]);
+            pfXformPt3(p, q, m);
             for (k = 0; k < 3; k++) {
                 if (!*any || p[k] < lo[k]) lo[k] = p[k];
                 if (!*any || p[k] > hi[k]) hi[k] = p[k];

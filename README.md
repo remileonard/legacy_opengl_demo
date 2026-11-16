@@ -137,7 +137,7 @@ See [src/f18/README.md](src/f18/README.md) for the file format and the controls.
 
 ### 🛫 Perfly (IRIS Performer 2.0)
 The database fly-through of IRIS Performer 2.0. Its original sources and the code shared by the Performer samples are built unchanged, on a Performer compatibility layer over OpenGL and freeglut (`src/porting/performer`). It reuses the scene graph of Mekton and the loaders of Mekton and the F-18 demo. Features:
-- Loads `.pfb` (Mekton), `.dwb` (F-18) and `.obj` (Wavefront) files
+- Loads `.pfb` (Mekton), `.dwb` (F-18), `.obj` (Wavefront) and `.flt` (OpenFlight 14.2 and older) files
 - Trackball, drive and fly motion with collisions
 - The GUI panel of libpfutil: buttons, menus, switches, sliders
 - Earth/sky modes, fog, time of day, eye or sun lighting
