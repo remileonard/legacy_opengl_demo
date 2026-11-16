@@ -6,10 +6,13 @@ set(PF_DIR ${CMAKE_SOURCE_DIR}/src/mekton)
 set(PFC_DIR ${CMAKE_SOURCE_DIR}/src/porting/performer)
 set(PERFLY_SOURCES
     perfly/perfly.c perfly/gui.c perfly/keybd.c perfly/cmdline.c
-    common/main.c common/generic.c common/env.c
+    common/main.c common/generic.c common/env.c paths/perfly_paths.c
     ${PFC_DIR}/pf_runtime.c ${PFC_DIR}/pf_scene.c ${PFC_DIR}/pfd_util.c ${PFC_DIR}/pfd_flt.c
-    ${PFC_DIR}/pfu_util.c ${PFC_DIR}/pfu_gui.c ${PFC_DIR}/pfi_xformer.c
+    ${PFC_DIR}/pfu_util.c ${PFC_DIR}/pfu_gui.c ${PFC_DIR}/pfu_path.c ${PFC_DIR}/pfi_xformer.c
     ${PF_DIR}/pf.c ${PF_DIR}/pfb.c ${CMAKE_SOURCE_DIR}/src/f18/dwb.c)
+# the original main becomes perfly_main: paths/perfly_paths.c takes the
+# vehicles (-A model,path,name) out of the command line before it
+set_source_files_properties(common/main.c PROPERTIES COMPILE_DEFINITIONS main=perfly_main)
 if(WIN32)
     list(APPEND PERFLY_SOURCES ${PFC_DIR}/win32/getopt.c)
 endif()

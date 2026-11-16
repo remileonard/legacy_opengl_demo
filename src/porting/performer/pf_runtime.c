@@ -570,7 +570,12 @@ static pfChanFuncType chan_func(pfChannel *c, int trav)
     return src(c, bits[trav])->func[trav];
 }
 
-void pfChanScene(pfChannel *c, pfScene *s) { src(c, PFCHAN_SCENE)->scene = s; }
+void pfChanScene(pfChannel *c, pfScene *s)
+{
+    src(c, PFCHAN_SCENE)->scene = s;
+    /* the vehicles of the paths go into the first scene */
+    pfuiAttachVehicles(s);
+}
 pfScene *pfGetChanScene(pfChannel *c) { return src(c, PFCHAN_SCENE)->scene; }
 void pfChanESky(pfChannel *c, pfEarthSky *es) { src(c, PFCHAN_EARTHSKY)->esky = es; }
 
@@ -1297,6 +1302,7 @@ int pfSync(void)
         sleep_secs(wait);
         last_sync_sleep = pfGetTime() - now;
     }
+    pfuiUpdateVehicles();
     return 0;
 }
 
@@ -1397,6 +1403,8 @@ int pfFrame(void)
             tdraw += pfGetTime() - t;
         }
         cur_chan = NULL;
+        if (nchans && chans[0]->master->pipe->pwin == pw)
+            pfuiDrawVehicleName(chans[0]->master);
         glViewport(0, 0, pw->xs, pw->ys);
         if (win_hook)
             win_hook(pw);

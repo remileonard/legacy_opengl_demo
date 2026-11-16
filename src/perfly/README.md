@@ -156,9 +156,51 @@ perfly -N -L -E tag -l 2 -d -p 2500,2500,2 -g 2 \
     -F orig/pftown:orig/pftexture:orig/pfmodel orig/pftown/town.flt
 ```
 
-The `.path` files of `orig/pfpath` are motion paths, for a later perfly
-(`perfly -A model.flt,tour.path,Tour`). The perfly of Performer 2.0 has no
-paths: its `-A` is the welcome text.
+## Vehicles on paths
+
+The `.path` files of `orig/pfpath` move models through the town, with the
+syntax of a later perfly: `-A model.flt,file.path,Name`.
+
+In the perfly of Performer 2.0, `-A` is the welcome text. So
+`paths/perfly_paths.c` provides `main`. It takes out the `-A` options that
+hold two commas, then calls the original `main` (`common/main.c`, compiled
+as `perfly_main`). The other `-A` options are still the welcome text, and
+the original sources stay unchanged. The Performer layer moves the models
+(`src/porting/performer/pfu_path.c`).
+
+A path is made of these lines:
+
+- `speed s rate`: speed in units per second, and its rate of change; a
+  negative speed runs the path backward;
+- `line x1 y1 z1 x2 y2 z2`: a straight segment;
+- `fillet r`: rounds the corner between the line before and the line after
+  with an arc of radius r;
+- `arc cx cy cz r a0 a1`: an arc;
+- `close`: the path loops.
+
+The models face +X and turn along their motion. For the town:
+
+```
+perfly -N -L -E tag -l 2 -d -p 2500,2500,2 -g 2 \
+    -F orig/pftown:orig/pftexture:orig/pfmodel:orig/pfpath \
+    -A esprit.flt,city.path,Lotus -A truck.flt,city2.path,Truck \
+    -A blimp.flt,blimp.path,Blimp -A dashposx.flt,tour.path,Dash8 \
+    orig/pftown/town.flt
+```
+
+`tour.path` was written for a `carpet.flt` that is not in the data. The
+Dash 8 model turned toward +X (`dashposx.flt`) flies it instead.
+
+Keys, taken before perfly sees them:
+
+| Key | Action |
+| --- | --- |
+| `v` | follow the next vehicle, then none |
+| `V` | chase view (behind and above) or on-board view |
+
+The name of the followed vehicle is shown at the bottom of the view. When
+it is left, trackball mode comes back to its view, and drive and fly modes
+go on from where the eye is.
 
 ## Controls
 

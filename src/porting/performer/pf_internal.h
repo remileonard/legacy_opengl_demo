@@ -160,6 +160,15 @@ void pfuiWinCreated(pfPipeWindow *pw);
 void pfuiPeekMouse(pfuMouse *mouse);
 void pfuiTextWidth(const char *s, int big, int *w);
 void pfuiDrawText(float x, float y, const char *s, int big);
+/* the vehicles on paths (pfu_path.c) */
+int pfuiAddVehicle(const char *model, const char *pathfile, const char *name);
+int pfuiNumVehicles(void);
+void pfuiAttachVehicles(pfScene *scene);
+void pfuiUpdateVehicles(void);
+int pfuiFollowedVehicle(void);
+int pfuiFollowEye(pfCoord *eye);
+int pfuiVehicleKey(int key);
+void pfuiDrawVehicleName(pfChannel *chan);
 /* the bounding sphere of a graph under a matrix (pf_scene.c) */
 int pfiNodeBound(pfNode *n, pfSphere *s);
 

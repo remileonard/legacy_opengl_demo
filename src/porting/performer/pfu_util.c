@@ -122,6 +122,9 @@ static void on_keyboard(unsigned char key, int x, int y)
 {
     (void)x; (void)y;
     update_modifiers();
+    /* the keys of the vehicles are not perfly's */
+    if (pfuiVehicleKey(key))
+        return;
     add_key(key);
 }
 

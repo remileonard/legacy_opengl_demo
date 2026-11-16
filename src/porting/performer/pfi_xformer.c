@@ -44,6 +44,7 @@ struct pfiXformer {
     float tbh, tbp;
     pfVec3 tbtrans;
     float drive_height;
+    int following;          /* the eye follows a vehicle of the paths */
 };
 
 void pfiInit(void) {}
@@ -131,6 +132,9 @@ int pfiGetXformerCurModelIndex(pfiXformer *x) { return x->model; }
 
 pfiInputXform *pfiGetXformerCurModel(pfiXformer *x)
 {
+    /* a followed vehicle moves the eye like a travel model */
+    if (x->following)
+        return &x->fly;
     return x->model == PFITDF_TRACKBALL ? &x->tb : x->model == PFITDF_DRIVE ? &x->drive : &x->fly;
 }
 
@@ -172,7 +176,7 @@ void pfiGetXformerCoord(pfiXformer *x, pfCoord *coord) { *coord = x->coord; }
 
 void pfiGetXformerMat(pfiXformer *x, pfMatrix m)
 {
-    pfMakeCoordMat(m, x->model == PFITDF_TRACKBALL ? &x->reset : &x->coord);
+    pfMakeCoordMat(m, x->model == PFITDF_TRACKBALL && !x->following ? &x->reset : &x->coord);
 }
 
 void pfiEnableXformerCollision(pfiXformer *x) { x->collide = 1; }
@@ -207,7 +211,7 @@ int pfiCollideXformer(pfiXformer *x)
     pfVec3 dir, nrm;
     float len, d, margin = PF_MAX2(0.05f, x->bs.radius * 0.0005f);
     int hit = 0;
-    if (!x->collide || x->model == PFITDF_TRACKBALL || !x->node)
+    if (!x->collide || x->model == PFITDF_TRACKBALL || !x->node || x->following)
         return 0;
     pfSubVec3(dir, x->coord.xyz, x->prev.xyz);
     len = pfNormalizeVec3(dir);
@@ -247,6 +251,34 @@ void pfiUpdateXformer(pfiXformer *x)
     x->last_t = now;
     if (dt > 0.25f)
         dt = 0.25f;
+    if (pfuiFollowedVehicle() >= 0) {
+        if (!x->following && x->model == PFITDF_TRACKBALL) {
+            /* the vehicles are outside the trackball: the scene comes back */
+            x->tbh = x->tbp = 0;
+            pfSetVec3(x->tbtrans, 0, 0, 0);
+            update_dcs(x);
+        }
+        x->following = 1;
+        x->speed = 0;
+        pfuiFollowEye(&x->coord);
+        x->prev = x->coord;
+        x->buttons = m ? m->flags & PFUDEV_MOUSE_DOWN_MASK : 0;
+        return;
+    }
+    if (x->following) {
+        x->following = 0;
+        x->prev = x->coord;
+        /* the drive finds the ground again under the eye */
+        x->drive_height = -1;
+        if (x->model == PFITDF_DRIVE)
+            x->coord.hpr[1] = x->coord.hpr[2] = 0;
+        /* the trackball looks again from where it was reset */
+        if (x->model == PFITDF_TRACKBALL && x->chan) {
+            pfMatrix rm;
+            pfMakeCoordMat(rm, &x->reset);
+            pfChanViewMat(x->chan, rm);
+        }
+    }
     if (!x->collide)
         x->prev = x->coord;
     if (!m)
