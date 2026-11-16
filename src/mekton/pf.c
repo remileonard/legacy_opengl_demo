@@ -1152,12 +1152,23 @@ static unsigned long be32(const unsigned char *p)
 }
 
 /* SGI .rgb reader; RGBA words in memory order R, G, B, A */
+/* a 16 bit channel to 8 bits */
+static unsigned char sgi16(unsigned int v, unsigned long pixmax)
+{
+    if (pixmax == 0 || pixmax > 65535)
+        pixmax = 65535;
+    if (v > pixmax)
+        v = (unsigned int)pixmax;
+    return (unsigned char)(v * 255UL / pixmax);
+}
+
 static unsigned int *read_rgb(const char *path, int *w, int *h, int *comps)
 {
     FILE *fp = fopen(path, "rb");
     unsigned char *file, *img;
     long size;
     int rle, bpc, xs, ys, zs, x, y, z;
+    unsigned long pixmax;
 
     if (!fp)
         return NULL;
@@ -1180,10 +1191,12 @@ static unsigned int *read_rgb(const char *path, int *w, int *h, int *comps)
     xs = be16(file + 6);
     ys = be16(file + 8);
     zs = be16(file + 10);
+    pixmax = be32(file + 16);
     if (zs < 1)
         zs = 1;
-    if (bpc != 1 || xs == 0 || ys == 0 || zs > 4 ||
-        (!rle && 512L + (long)xs * ys * zs > size) ||
+    /* one or two bytes per channel; two are scaled from 0..pixmax */
+    if ((bpc != 1 && bpc != 2) || xs == 0 || ys == 0 || zs > 4 || xs > 65536 ||
+        (!rle && 512L + (long)xs * ys * zs * bpc > size) ||
         (rle && 512L + 8L * ys * zs > size)) {
         free(file);
         return NULL;
@@ -1203,7 +1216,27 @@ static unsigned int *read_rgb(const char *path, int *w, int *h, int *comps)
                 int n = 0;
                 if (start + len > (unsigned long)size)
                     continue;
-                while (s < e && n < xs) {
+                if (bpc == 2) {
+                    /* the counts and the values are shorts */
+                    while (s + 1 < e && n < xs) {
+                        int c = be16(s), cnt = c & 0x7f;
+                        s += 2;
+                        if (!cnt)
+                            break;
+                        if (c & 0x80) {
+                            while (cnt-- && s + 1 < e && n < xs) {
+                                row[n++] = sgi16(be16(s), pixmax);
+                                s += 2;
+                            }
+                        } else if (s + 1 < e) {
+                            unsigned char v = sgi16(be16(s), pixmax);
+                            s += 2;
+                            while (cnt-- && n < xs)
+                                row[n++] = v;
+                        }
+                    }
+                }
+                while (bpc == 1 && s < e && n < xs) {
                     int c = *s++, cnt = c & 0x7f;
                     if (!cnt)
                         break;
@@ -1218,6 +1251,10 @@ static unsigned int *read_rgb(const char *path, int *w, int *h, int *comps)
                 }
                 while (n < xs)
                     row[n++] = 0;
+            } else if (bpc == 2) {
+                const unsigned char *src = file + 512 + ((size_t)z * ys + y) * xs * 2;
+                for (x = 0; x < xs; x++)
+                    row[x] = sgi16(be16(src + 2 * x), pixmax);
             } else {
                 memcpy(row, file + 512 + ((size_t)z * ys + y) * xs, xs);
             }

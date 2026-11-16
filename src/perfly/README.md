@@ -116,8 +116,23 @@ The `.flt` loader reads:
 - subfaces, drawn as decals;
 - billboard faces, turned toward the eye around Z.
 
-It skips the transform records that only describe a matrix, the light
-source palette and the `.attr` files of the textures.
+It skips the transform records that only describe a matrix and the light
+source palette.
+
+The texture attribute files (`name.rgb.attr`) give the wrap of the
+textures. The mountain walls of the toon and town skies clamp their v
+coordinate, which goes slightly past 1. With the default repeat, a dark
+band from the bottom of the image showed along the top of the walls.
+
+Textures are searched in this order:
+
+1. the name as written (absolute, or relative to the `.flt` file);
+2. its base name on the file path (`-F`).
+
+So the absolute paths of the machines where the databases were made
+(`/usr/mg/Flt/Txt/...`, `/show/town/pftexture/...`) still find their
+image in the texture folder. Images shared by several files are loaded
+once.
 
 A face is lit when it has a material: its color is then the face color
 times the diffuse color of the material. Faces without a material keep
@@ -132,6 +147,18 @@ repository):
 perfly -N -L -E tag -l 0 -d -s 3.75 -d -P 3 -p 2500,2500,2 -g 2 \
     -F toon/pftoon:toon/pftexture:toon/pfmodel toon/pftoon/toon.flt
 ```
+
+The town of the same demos (`orig/`, OpenFlight version 11 and 12) runs
+the same way:
+
+```
+perfly -N -L -E tag -l 2 -d -p 2500,2500,2 -g 2 \
+    -F orig/pftown:orig/pftexture:orig/pfmodel orig/pftown/town.flt
+```
+
+The `.path` files of `orig/pfpath` are motion paths, for a later perfly
+(`perfly -A model.flt,tour.path,Tour`). The perfly of Performer 2.0 has no
+paths: its `-A` is the welcome text.
 
 ## Controls
 

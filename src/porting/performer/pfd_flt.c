@@ -475,7 +475,10 @@ static pfNode *external_ref(FltFile *f, const char *name)
     nm[sizeof(nm) - 1] = '\0';
     if ((lt = strchr(nm, '<')) != NULL)
         *lt = '\0';
-    sprintf(path, "%s%s", f->dir, nm);
+    if (nm[0] == '/')
+        strcpy(path, nm);
+    else
+        sprintf(path, "%s%s", f->dir, nm);
     if (!pfFindFile(path, found, R_OK)) {
         base = strrchr(nm, '/');
         if (!pfFindFile(base ? base + 1 : nm, found, R_OK)) {
@@ -500,9 +503,65 @@ static pfNode *external_ref(FltFile *f, const char *name)
     }
 }
 
+#ifndef GL_CLAMP_TO_EDGE
+#define GL_CLAMP_TO_EDGE 0x812F
+#endif
+
+/*
+ * The texture attribute file next to an image (name.attr): the wrap of
+ * u at 40 and of v at 44 (0 repeat, 1 clamp, 3 the method at 36).
+ */
+static void read_attr(pfTexture *t, const char *image)
+{
+    char path[4096];
+    unsigned char a[48];
+    FILE *fp;
+    int k, method;
+    sprintf(path, "%.4000s.attr", image);
+    if ((fp = fopen(path, "rb")) == NULL)
+        return;
+    if (fread(a, 1, sizeof(a), fp) == sizeof(a)) {
+        method = (int)sbe32(a + 36);
+        for (k = 0; k < 2; k++) {
+            int w = (int)sbe32(a + 40 + 4 * k);
+            if (w == 3)
+                w = method;
+            if (k == 0)
+                t->wrap_s = w == 1 ? GL_CLAMP_TO_EDGE : 0;
+            else
+                t->wrap_t = w == 1 ? GL_CLAMP_TO_EDGE : 0;
+        }
+    }
+    fclose(fp);
+}
+
+/* the images used by several files are loaded once */
+static struct { char path[512]; pfTexture *tex; } texcache[512];
+static int ntexcache;
+
+static pfTexture *cached_texture(const char *path)
+{
+    pfTexture *t;
+    int i;
+    for (i = 0; i < ntexcache; i++)
+        if (strcmp(texcache[i].path, path) == 0)
+            return texcache[i].tex;
+    t = pfNewTex(NULL);
+    if (!pfLoadTexFile(t, path)) {
+        free(t);
+        return NULL;
+    }
+    read_attr(t, path);
+    if (ntexcache < 512 && strlen(path) < sizeof(texcache[0].path)) {
+        strcpy(texcache[ntexcache].path, path);
+        texcache[ntexcache++].tex = t;
+    }
+    return t;
+}
+
 static void load_texture(FltFile *f, const unsigned char *r, int len)
 {
-    char name[256], path[2048];
+    char name[256], path[2048], found[4096];
     int idx, namelen = f->version >= 13 ? 200 : 80;
     pfTexture *t;
     const char *ext;
@@ -513,15 +572,23 @@ static void load_texture(FltFile *f, const unsigned char *r, int len)
     idx = (int)sbe32(r + 4 + namelen);
     if (idx < 0 || idx >= 1024)
         return;
-    t = pfNewTex(NULL);
-    sprintf(path, "%s%s", f->dir, name);
-    if (!pfLoadTexFile(t, path)) {
+    /* the name as given (absolute, or next to the file), then its base
+     * name on the file path: the absolute paths of the machines where the
+     * databases were made (/usr/mg/..., /show/...) are not there */
+    if (name[0] == '/')
+        strcpy(path, name);
+    else
+        sprintf(path, "%s%s", f->dir, name);
+    if (!pfFindFile(path, found, R_OK)) {
         const char *base = strrchr(name, '/');
-        if (!pfLoadTexFile(t, base ? base + 1 : name)) {
-            free(t);
+        if (!pfFindFile(base ? base + 1 : name, found, R_OK)) {
+            pfNotify(PFNFY_NOTICE, PFNFY_RESOURCE, "pfdLoadFile_flt: texture %s not found", name);
             return;
         }
     }
+    t = cached_texture(found);
+    if (!t)
+        return;
     f->textures[idx] = t;
     ext = strrchr(name, '.');
     f->alphatex[idx] = t->comps == 2 || t->comps == 4 ||
