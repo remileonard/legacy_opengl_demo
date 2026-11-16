@@ -290,6 +290,16 @@ int getgdesc(int descriptor) {
             return 1;  // Valeur maximale de profondeur
         case GD_FOGVERTEX:
             return 1;  // On considère que le fog par vertex est disponible
+        case GD_CLIPPLANES: {
+            GLint n = 0;
+            glGetIntegerv(GL_MAX_CLIP_PLANES, &n);
+            return n;
+        }
+        case GD_BITS_ACBUF: {
+            GLint bits = 0;
+            glGetIntegerv(GL_ACCUM_RED_BITS, &bits);
+            return bits;
+        }
         default:
             return 0;
     }

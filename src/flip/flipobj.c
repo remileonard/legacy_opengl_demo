@@ -37,6 +37,13 @@ flipobj *readflipobj(char *name) {
     int32_t magic; // champ "colors"/magic ignoré
     int32_t *ip;
 
+    if (is_yaodl_file(name)) {
+        obj = readyaodl(name);
+        swirl_randomize(obj);
+        find_edges(obj);
+        return obj;
+    }
+
     inf = fopen(name, "rb");
     if (!inf) {
         fprintf(stderr, "readflipobj: can't open input file %s\n", name);
@@ -54,7 +61,7 @@ flipobj *readflipobj(char *name) {
         exit(1);
     }
 
-    obj = (flipobj *)malloc(sizeof(flipobj));
+    obj = (flipobj *)calloc(1, sizeof(flipobj));
     if (!obj) {
         fprintf(stderr, "readflipobj: malloc flipobj FAILED\n");
         fclose(inf);
@@ -151,6 +158,12 @@ void drawflipobj(flipobj *obj) {
     } else {
         int i;
 
+        if (obj->wire) {
+            /* lines without normals of the YAODL files */
+            glPushAttrib(GL_LIGHTING_BIT | GL_CURRENT_BIT);
+            glDisable(GL_LIGHTING);
+            glColor3fv(obj->wirecolor);
+        }
         for (i = 0; i < obj->nedges; i++) {
             bgnline();
             n3f(obj->edge[i].v0 - 4);
@@ -159,6 +172,8 @@ void drawflipobj(flipobj *obj) {
             v3f(obj->edge[i].v1);
             endline();
         }
+        if (obj->wire)
+            glPopAttrib();
     }
 }
 

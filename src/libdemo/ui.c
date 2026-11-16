@@ -38,6 +38,7 @@ int ui_noisy = FALSE;
 /* States global to only this file */
 static int exitflag = FALSE;   /* Becomes 1 when user quits */
 static int activeflag = TRUE;  /* User interface active */
+static int swapflag = FALSE;   /* Left and middle buttons swapped */
 static int rotateflag = FALSE; /* When rotating with middle mouse */
 static int zoomflag = FALSE;   /* Left AND Middle, zoom */
 static int panflag = FALSE;    /* Left mouse, pan */
@@ -118,10 +119,10 @@ static void ui_init() {
         qdevice(CURSORY);
 
         add_event(ANY, REDRAW, gid, ui_redraw, NULL);
-        add_event(ANY, LEFTMOUSE, DOWN, ui_lmdown, NULL);
-        add_event(ANY, LEFTMOUSE, UP, ui_lmup, NULL);
-        add_event(ANY, MIDDLEMOUSE, DOWN, ui_mmdown, NULL);
-        add_event(ANY, MIDDLEMOUSE, UP, ui_mmup, NULL);
+        add_event(ANY, LEFTMOUSE, DOWN, swapflag ? ui_mmdown : ui_lmdown, NULL);
+        add_event(ANY, LEFTMOUSE, UP, swapflag ? ui_mmup : ui_lmup, NULL);
+        add_event(ANY, MIDDLEMOUSE, DOWN, swapflag ? ui_lmdown : ui_mmdown, NULL);
+        add_event(ANY, MIDDLEMOUSE, UP, swapflag ? ui_lmup : ui_mmup, NULL);
         add_event(ANY, CURSORX, ANY, ui_schedulemouse, NULL);
         add_event(ANY, CURSORY, ANY, ui_schedulemouse, NULL);
 
@@ -243,6 +244,8 @@ static void figure_ui_noisy() {
     ui_noisy = zoomflag | panflag | rotateflag | sbflag;
     ui_quiet = !ui_noisy;
 }
+
+void ui_swap_buttons(int flag) { swapflag = flag; }
 
 void ui_active(int flag) {
     activeflag = flag;

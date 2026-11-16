@@ -62,6 +62,12 @@ void ui(void (*fn)(float *, float *));
 void ui_active(int);
 
 /*
+ *	Call ui_swap_buttons(TRUE) before ui() to swap the left and middle
+ * buttons: rotations with the left button, pan with the middle one.
+ */
+void ui_swap_buttons(int);
+
+/*
  *	Call ui_exit when it is time for the interface to go away permanently.
  */
 void ui_exit(void);

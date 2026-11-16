@@ -2,3 +2,5 @@ Smooth
 	.menu. ./data/buttonfly_linux/m_smooth
 Flip
 	.menu. ./data/buttonfly_linux/m_flip
+Powerflip
+	.menu. ./data/buttonfly_linux/m_powerflip

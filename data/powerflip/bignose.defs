@@ -1,0 +1,5 @@
+(group
+	(indexpolygons (vertices vertex_coords : t_xz, n), i)
+	: (textures "/usr/demos/General_Demos/powerflip/data/gavin.rgb"),
+	  colors 1.0 1.0 1.0,
+),

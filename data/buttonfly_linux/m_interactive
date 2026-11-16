@@ -31,8 +31,16 @@ Space
 	.color. .9 .5 .9
 	.highcolor. 1.0 .7 1.0
 FSN
-	interactive/fsn
+	interactive/fsn ./
+	.color. .9 .5 .9
+	.highcolor. 1.0 .7 1.0
+Certain
+	interactive/cimpact data/certain
 	.color. .9 .5 .9
 	.highcolor. 1.0 .7 1.0
 Flight
 	.menu. data/buttonfly_linux/m_flight
+F-18
+	.menu. data/buttonfly_linux/m_f18
+Perfly
+	.menu. data/buttonfly_linux/m_perfly

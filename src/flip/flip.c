@@ -541,7 +541,7 @@ void parse_args(int argc, char **argv)
         }
         /* Set-up defaults */
         fobj[whichobj]->display = TRUE;
-        fobj[whichobj]->type = POLYGONS; /* draw polygons */
+        fobj[whichobj]->type = fobj[whichobj]->wire ? LINES : POLYGONS; /* draw polygons */
         fobj[whichobj]->select = FALSE;
         fobj[whichobj]->material = 2;
         fobj[whichobj]->ablend = FALSE;

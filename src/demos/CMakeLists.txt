@@ -35,3 +35,7 @@ foreach(target ${SIMPLE_EXECUTABLES})
         target_link_options(${target} PRIVATE ${OPENGL_LDFLAGS} ${GLUT_LDFLAGS})
     endif()
 endforeach()
+
+if(MSVC)
+    target_compile_options(road PRIVATE /FImath.h)
+endif()
