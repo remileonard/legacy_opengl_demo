@@ -115,6 +115,9 @@ static void update_dcs(pfiXformer *x)
 
 void pfiSelectXformerModel(pfiXformer *x, int model)
 {
+    /* past the 3 models: the vehicles of the paths, followed over the
+     * model in use */
+    pfuiSelectMotion(model);
     if (model < 0 || model >= PFITDF_NUM_MODELS)
         return;
     if (model != x->model)
@@ -128,7 +131,11 @@ void pfiSelectXformerModel(pfiXformer *x, int model)
     }
 }
 
-int pfiGetXformerCurModelIndex(pfiXformer *x) { return x->model; }
+int pfiGetXformerCurModelIndex(pfiXformer *x)
+{
+    int f = pfuiFollowModel();
+    return f >= 0 ? f : x->model;
+}
 
 pfiInputXform *pfiGetXformerCurModel(pfiXformer *x)
 {

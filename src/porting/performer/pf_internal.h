@@ -168,6 +168,9 @@ void pfuiUpdateVehicles(void);
 int pfuiFollowedVehicle(void);
 int pfuiFollowEye(pfCoord *eye);
 int pfuiVehicleKey(int key);
+void pfuiSelectMotion(int model);
+int pfuiFollowModel(void);
+int pfuiVehicleMenu(pfuWidget *w, pfuGUIString **strs, int **vals, int n);
 void pfuiDrawVehicleName(pfChannel *chan);
 /* the bounding sphere of a graph under a matrix (pf_scene.c) */
 int pfiNodeBound(pfNode *n, pfSphere *s);

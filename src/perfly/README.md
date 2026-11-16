@@ -134,10 +134,20 @@ So the absolute paths of the machines where the databases were made
 image in the texture folder. Images shared by several files are loaded
 once.
 
-A face is lit when it has a material: its color is then the face color
-times the diffuse color of the material. Faces without a material keep
-their color, unlit. Textures with an alpha channel (`.rgba`, `.inta`) are
-cut out on their alpha.
+A face is lit when it has a material. The material's ambient and diffuse
+colors are then multiplied by the face color. Unlit (lighting off, or a
+face without a material), the face shows its own color. Some materials are
+emissive (the Mobil sign, the blimp of the town): they glow, with the same
+color in every lighting mode.
+
+Skipping the transform records and the light source palette loses
+nothing in the toon and town databases:
+
+- every transform record (translate, rotate...) comes with the matrix
+  record that holds the whole transformation, which is what the loader
+  uses;
+- toon.flt holds a light source palette (one white infinite light), but no
+  light source record uses it.
 
 The *toon* town of the Performer "friends" demos runs with its original
 command, from the folder that holds `toon/` (its data is not in this
@@ -197,6 +207,11 @@ Keys, taken before perfly sees them:
 | --- | --- |
 | `v` | follow the next vehicle, then none |
 | `V` | chase view (behind and above) or on-board view |
+
+The Motion menu of the GUI lists them too: Follow (chase view) and Ride
+(on board) for each vehicle, after Trackball, Drive and Fly. The layer
+extends the menu when perfly makes it, so `gui.c` is unchanged. The keys go
+through the menu, so the menu shows the vehicle that the keys select.
 
 The name of the followed vehicle is shown at the bottom of the view. When
 it is left, trackball mode comes back to its view, and drive and fly modes

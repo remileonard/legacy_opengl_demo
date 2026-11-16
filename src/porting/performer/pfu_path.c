@@ -59,6 +59,12 @@ typedef struct {
 static Vehicle vehicles[MAX_VEHICLES];
 static int nvehicles, attached;
 static int follow = -1, onboard;
+/* the motion model under the vehicles, and the Motion menu of the GUI */
+static int base_model;
+static pfuWidget *motion;
+
+#define PFUI_FOLLOW 100     /* + vehicle: the chase view */
+#define PFUI_RIDE 200       /* + vehicle: the view on board */
 static double last_update = -1;
 
 /* --- paths ---------------------------------------------------------------- */
@@ -388,26 +394,96 @@ int pfuiFollowEye(pfCoord *eye)
 }
 
 /* v and V; 1 when the key was taken */
+/* the motion models numbered past the 3 of perfly: the vehicles */
+void pfuiSelectMotion(int model)
+{
+    int f = -1, ob = onboard;
+    if (model >= PFUI_RIDE && model - PFUI_RIDE < nvehicles) {
+        f = model - PFUI_RIDE;
+        ob = 1;
+    } else if (model >= PFUI_FOLLOW && model - PFUI_FOLLOW < nvehicles) {
+        f = model - PFUI_FOLLOW;
+        ob = 0;
+    } else {
+        base_model = model;
+    }
+    if (f >= 0 && !vehicles[f].ok)
+        f = -1;
+    if (f != follow || (f >= 0 && ob != onboard)) {
+        if (f >= 0)
+            pfNotify(PFNFY_NOTICE, PFNFY_PRINT, "following %s (%s view)", vehicles[f].name,
+                     ob ? "on board" : "chase");
+        else if (follow >= 0)
+            pfNotify(PFNFY_NOTICE, PFNFY_PRINT, "following nothing");
+    }
+    follow = f;
+    onboard = ob;
+}
+
+/* the index of the motion model with the vehicles, -1: none followed */
+int pfuiFollowModel(void)
+{
+    if (pfuiFollowedVehicle() < 0)
+        return -1;
+    return (onboard ? PFUI_RIDE : PFUI_FOLLOW) + follow;
+}
+
+/* the Motion menu of perfly gets an entry to follow and one to ride each
+ * vehicle; strs and vals are given back extended, n their count */
+int pfuiVehicleMenu(pfuWidget *w, pfuGUIString **strs, int **vals, int n)
+{
+    static pfuGUIString s[64];
+    static int v[64];
+    static char names[2 * MAX_VEHICLES][80];
+    int i, k = 0;
+    if (!nvehicles || n != 3 || n + 2 * nvehicles > 64)
+        return n;
+    for (i = 0; i < n; i++) {
+        s[i] = (*strs)[i];
+        v[i] = *vals ? (*vals)[i] : i;
+    }
+    for (i = 0; i < nvehicles; i++) {
+        if (!vehicles[i].ok)
+            continue;
+        sprintf(names[k], "Follow %.60s", vehicles[i].name);
+        s[n] = names[k++];
+        v[n++] = PFUI_FOLLOW + i;
+        sprintf(names[k], "Ride %.60s", vehicles[i].name);
+        s[n] = names[k++];
+        v[n++] = PFUI_RIDE + i;
+    }
+    *strs = s;
+    *vals = v;
+    motion = w;
+    return n;
+}
+
+/* v and V; 1 when the key was taken */
 int pfuiVehicleKey(int key)
 {
-    int i;
+    int i, f = follow, ob = onboard, model;
     if (!nvehicles || (key != 'v' && key != 'V'))
         return 0;
     if (key == 'V') {
-        onboard = !onboard;
+        ob = !ob;
     } else {
         /* the next vehicle that moves, then none */
         for (i = 0; i <= nvehicles; i++) {
-            follow = follow + 1 >= nvehicles ? -1 : follow + 1;
-            if (follow < 0 || vehicles[follow].ok)
+            f = f + 1 >= nvehicles ? -1 : f + 1;
+            if (f < 0 || vehicles[f].ok)
                 break;
         }
     }
-    if (pfuiFollowedVehicle() >= 0)
-        pfNotify(PFNFY_NOTICE, PFNFY_PRINT, "following %s (%s view)", vehicles[follow].name,
-                 onboard ? "on board" : "chase");
-    else if (key == 'v')
-        pfNotify(PFNFY_NOTICE, PFNFY_PRINT, "following nothing");
+    model = f < 0 ? base_model : (ob ? PFUI_RIDE : PFUI_FOLLOW) + f;
+    if (f < 0)
+        onboard = ob;
+    if (motion) {
+        /* through the menu of perfly, which changes the motion model */
+        pfuWidgetValue(motion, (float)model);
+        pfuGetWidgetActionFunc(motion)(motion);
+    } else {
+        pfuiSelectMotion(model);
+    }
     return 1;
 }
 

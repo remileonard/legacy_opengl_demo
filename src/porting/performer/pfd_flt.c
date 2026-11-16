@@ -53,6 +53,8 @@ typedef struct {
 /* the geosets made under a node */
 typedef struct {
     int texture, material, drawtype, transp, decal, alphatex;
+    int vcolors;                /* lit with the vertex colors */
+    float color[4];             /* the face color its material modulates */
     int nv, max;
     float *co, *no, *tc, *cl;
 } FltBatch;
@@ -265,7 +267,7 @@ static void add_face(FltFile *f, FltBuilder *bu, FltFace *fc)
     FltBatch *b = NULL, local;
     float fn[3], col[4];
     double center[3];
-    int i, k, transp, decal = fc->subface > 0, alphatex, billboard, lines, points;
+    int i, k, transp, decal = fc->subface > 0, alphatex, billboard, lines, points, vcolors;
     const FltMaterial *m = fc->material >= 0 && fc->material < f->nmaterials ? &f->materials[fc->material] : NULL;
 
     if (fc->n < (fc->drawtype >= 8 ? 1 : fc->drawtype >= 2 ? 2 : 3))
@@ -290,6 +292,8 @@ static void add_face(FltFile *f, FltBuilder *bu, FltFace *fc)
     }
     pfNormalizeVec3(fn);
 
+    /* a lit face with vertex colors uses them as its diffuse color */
+    vcolors = m && (fc->lightmode == 1 || fc->lightmode == 3) && fc->n && fc->v[0].hascolor;
     if (billboard) {
         memset(&local, 0, sizeof(local));
         b = &local;
@@ -298,7 +302,8 @@ static void add_face(FltFile *f, FltBuilder *bu, FltFace *fc)
             FltBatch *c = &bu->batches[i];
             if (c->texture == fc->texture && c->material == (m ? fc->material : -1) &&
                 c->drawtype == (points ? 8 : lines ? 2 : fc->drawtype) && c->transp == transp &&
-                c->decal == decal && c->alphatex == alphatex) {
+                c->decal == decal && c->alphatex == alphatex && c->vcolors == vcolors &&
+                (!m || vcolors || memcmp(c->color, fc->color, sizeof(c->color)) == 0)) {
                 b = c;
                 break;
             }
@@ -315,6 +320,8 @@ static void add_face(FltFile *f, FltBuilder *bu, FltFace *fc)
     b->transp = transp;
     b->decal = decal;
     b->alphatex = alphatex;
+    b->vcolors = vcolors;
+    memcpy(b->color, fc->color, sizeof(b->color));
 
     if (lines) {
         /* the edges, as pairs of vertices (draw type 3: open) */
@@ -335,11 +342,10 @@ static void add_face(FltFile *f, FltBuilder *bu, FltFace *fc)
                 memcpy(col, v->color, sizeof(col));
             else
                 memcpy(col, fc->color, sizeof(col));
-            if (m) {
+            /* unlit, the face color; lit, the material times it */
+            if (vcolors)
                 for (k = 0; k < 3; k++)
                     col[k] *= m->dif[k];
-                col[3] *= m->alpha;
-            }
             batch_vertex(b, v, nrm, col, billboard ? center : NULL);
         }
     }
@@ -381,14 +387,18 @@ static pfGeoState *batch_gstate(FltFile *f, const FltBatch *b)
     }
     if (m) {
         pfMaterial *mtl = pfNewMtl(NULL);
-        memcpy(mtl->ambient, m->amb, sizeof(pfVec3));
-        memcpy(mtl->diffuse, m->dif, sizeof(pfVec3));
+        int k;
+        /* the face color modulates the ambient and diffuse colors */
+        for (k = 0; k < 3; k++) {
+            mtl->ambient[k] = m->amb[k] * b->color[k];
+            mtl->diffuse[k] = m->dif[k] * b->color[k];
+        }
         memcpy(mtl->specular, m->spec, sizeof(pfVec3));
         memcpy(mtl->emission, m->emis, sizeof(pfVec3));
         mtl->shininess = m->shininess;
-        mtl->alpha = m->alpha;
-        /* the vertex colors are the face colors times the diffuse color */
-        mtl->colormode = 1;
+        mtl->alpha = m->alpha * b->color[3];
+        /* with vertex colors, they are the ambient and diffuse colors */
+        mtl->colormode = b->vcolors;
         gs->frontmtl = mtl;
     }
     return gs;

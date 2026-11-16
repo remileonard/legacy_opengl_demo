@@ -200,6 +200,9 @@ void pfuWidgetSelections(pfuWidget *w, pfuGUIString *strs, int *vals,
 {
     int i;
     (void)funcs;
+    /* the Motion menu of perfly: the vehicles of the paths are added */
+    if (n == 3 && strs[0] && strs[2] && strcmp(strs[0], "Trackball") == 0 && strcmp(strs[2], "Fly") == 0)
+        n = pfuiVehicleMenu(w, &strs, &vals, n);
     w->nsel = n > MAX_SEL ? MAX_SEL : n;
     for (i = 0; i < w->nsel; i++) {
         w->strs[i] = strs[i];
