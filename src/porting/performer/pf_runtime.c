@@ -573,11 +573,14 @@ static pfChanFuncType chan_func(pfChannel *c, int trav)
 void pfChanScene(pfChannel *c, pfScene *s)
 {
     src(c, PFCHAN_SCENE)->scene = s;
+    /* the worlds of the face demo, when a file "paths" is here */
+    pfuiFaceAttach(s, c);
     /* the vehicles of the paths go into the first scene */
     pfuiAttachVehicles(s);
 }
 pfScene *pfGetChanScene(pfChannel *c) { return src(c, PFCHAN_SCENE)->scene; }
 void pfChanESky(pfChannel *c, pfEarthSky *es) { src(c, PFCHAN_EARTHSKY)->esky = es; }
+pfEarthSky *pfiChanESky(pfChannel *c) { return src(c, PFCHAN_EARTHSKY)->esky; }
 
 void pfChanNearFar(pfChannel *c, float n, float f)
 {

@@ -45,6 +45,8 @@ The layer is made of these files:
 | `pfu_util.c` | window input as Performer events (`pfuMouse`, `pfuEventStream`), messages, draw styles, scene-graph display, SGI image snapshots, texture lists, side-by-side channels (MCO) |
 | `pfu_gui.c` | the GUI panel and its widgets: buttons, switches, menu buttons, radio buttons, linear and log sliders, message bar |
 | `pfi_xformer.c` | the `pfiTDFXformer`: trackball, drive and fly, with collisions |
+| `pfu_path.c` | the vehicles on `.path` files |
+| `pfu_face.c` | the worlds of `perfly.face` (see below) |
 
 Everything runs in one process. `pfConfig` forks nothing. `pfFrame` calls
 the APP, CULL and DRAW callbacks of the channels one after the other,
@@ -222,6 +224,79 @@ through the menu, so the menu shows the vehicle that the keys select.
 The name of the followed vehicle is shown at the bottom of the view. When
 it is left, trackball mode comes back to its view, and drive and fly modes
 go on from where the eye is.
+
+## The face demo (`perfly.face`)
+
+`perfly.face` is the perfly of the "Earth to Matterhorn" demo: a zoom from
+space down to a mountain through a chain of textured worlds. It is a
+perfly built with extra code, and that code is not in the sources, so the
+layer rebuilds it from the IRIX executable. As in the original, it turns on
+only when a file named `paths` is in the current folder; without it,
+perfly is the normal one.
+
+The demo is started from its folder with the files of the worlds, in the
+order of `paths`:
+
+```
+cd face
+perfly earth.pfb 3010_mix.pfb trans_1.pfb trans_2.pfb europe.pfb ...
+```
+
+`paths` splits these files into worlds. Each world starts with
+`world n`, followed by its tags:
+
+| Tag | Meaning | Default |
+| --- | --- | --- |
+| `files n` | the next n files of the command line | |
+| `numTextures n` | the next n textures of `texture.config` | |
+| `textureOrder i ...` | the texture of each geoset, in the order of the graph; -1 means none | geoset k takes texture k |
+| `lighting 0/1` | the lighting of the textured geosets | 0 |
+| `center x y z` | the center of the tether | 0 0 0 |
+| `minRadius`, `maxRadius` | the limits of the radius | 0, 5000 |
+| `inRadius`, `outRadius` | going below the inner radius enters the next world; going above the outer one returns to the previous world | 20, 5000 |
+| `inAround`, `inTilt`, `outAround`, `outTilt` | the eye when entering the world from the next world (in) or the previous one (out) | 0 |
+| `nearMinAround` ... `farMaxTilt` | the limits of the angles at the inner (near) and the outer (far) radius, interpolated in between | -180, 180 |
+| `nearClip`, `farClip` | the clip planes | 1, 100 |
+| `skyColor r g b` | the clear color | 0 0 0 |
+| `scaleLinearVelocity` | the zoom speed: 1 crosses the world in 5 seconds | 1 |
+| `maxAngularVelocity` | the turning speed | 30 |
+| `tileSize`, `minRoll`, `maxRoll`, `maxRollVelocity` | read and unused (texture paging, roll) | |
+
+After the last world, zooming in goes back to world 0. In a transition
+world (two files, outer radius at most 3), the first geoset of the second
+picture fades out as the eye goes in.
+
+`texture.config` lists the textures: their count, the count of layouts,
+the layouts (letter, width, height and mipmap levels), then one line per
+texture with its file name and its layout. `%d` in the name is the
+folder of a mipmap level, 1 being the largest
+(`textures.%d/earthR.sgi.5551E`). The largest level found is loaded, and
+OpenGL makes the smaller ones. When no level is found, the file is looked
+up by its name alone, then without `.5551E` (`earthR.sgi`), so a picture
+converted to a format the layer reads can stand in for it.
+
+The `.5551E` images are 16-bit RGBA 5551 pictures. The original scrambles
+them. The file starts with `SEn`, the count of inserted bytes, the width
+and the height (big-endian integers). Every byte is XOR'ed with 13 plus
+its position. Runs of junk bytes are inserted between runs of picture
+bytes, and the picture is written from its last byte back to its first.
+The layer decodes them as the original did.
+
+The original pages its textures into texture memory a tile at a time. The
+layer loads each texture whole, the first time its world is shown.
+
+Controls of the tether:
+
+| Input | Action |
+| --- | --- |
+| left button / Page Up | go in |
+| right button (or Ctrl + left) / Page Down | go out |
+| mouse away from the center, while a button is held | turn around and tilt |
+| arrows | turn around and tilt |
+
+These controls are the layer's own. The original's tether motion
+(`pfiInputXformTether`) is in an IRIX library this repository does not
+have, so it is not a copy of the original.
 
 ## Controls
 

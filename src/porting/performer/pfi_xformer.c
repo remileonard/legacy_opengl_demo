@@ -258,6 +258,30 @@ void pfiUpdateXformer(pfiXformer *x)
     x->last_t = now;
     if (dt > 0.25f)
         dt = 0.25f;
+    if (pfuiFaceActive()) {
+        int inside = 0;
+        pfChannel *c = x->chan ? x->chan : pfiChan(0);
+        if (c)
+            pfiChanRect(c, &cx, &cy, &cw, &ch);
+        buttons = m ? m->flags & PFUDEV_MOUSE_DOWN_MASK : 0;
+        if (m && buttons && !x->buttons)
+            x->inside = m->xclick >= cx && m->xclick < cx + cw && m->yclick >= cy &&
+                        m->yclick < cy + ch && !pfuInGUI(m->xclick, m->yclick);
+        inside = m && (!buttons || x->inside);
+        x->buttons = buttons;
+        x->speed = 0;
+        if (pfuiFaceEye(m, inside, cx, cy, cw, ch, dt, &x->coord)) {
+            /* the eye on its tether is shown like a followed vehicle */
+            if (!x->following && x->model == PFITDF_TRACKBALL) {
+                x->tbh = x->tbp = 0;
+                pfSetVec3(x->tbtrans, 0, 0, 0);
+                update_dcs(x);
+            }
+            x->following = 1;
+            x->prev = x->coord;
+            return;
+        }
+    }
     if (pfuiFollowedVehicle() >= 0) {
         if (!x->following && x->model == PFITDF_TRACKBALL) {
             /* the vehicles are outside the trackball: the scene comes back */

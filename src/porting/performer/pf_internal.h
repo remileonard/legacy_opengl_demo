@@ -172,6 +172,12 @@ void pfuiSelectMotion(int model);
 int pfuiFollowModel(void);
 int pfuiVehicleMenu(pfuWidget *w, pfuGUIString **strs, int **vals, int n);
 void pfuiDrawVehicleName(pfChannel *chan);
+/* the worlds of perfly.face (pfu_face.c) */
+void pfuiFaceAttach(pfScene *scene, pfChannel *chan);
+int pfuiFaceActive(void);
+int pfuiFaceSpecial(int key, int down);
+int pfuiFaceEye(pfuMouse *m, int inside, int cx, int cy, int cw, int ch, float dt, pfCoord *eye);
+pfEarthSky *pfiChanESky(pfChannel *c);
 /* the bounding sphere of a graph under a matrix (pf_scene.c) */
 int pfiNodeBound(pfNode *n, pfSphere *s);
 

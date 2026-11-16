@@ -133,6 +133,9 @@ static void on_special(int key, int x, int y)
     int dev = 0;
     (void)x; (void)y;
     update_modifiers();
+    /* the keys of the tether of the face demo */
+    if (pfuiFaceSpecial(key, 1))
+        return;
     if (key >= GLUT_KEY_F1 && key <= GLUT_KEY_F12)
         dev = PFUDEV_F1KEY + key - GLUT_KEY_F1;
     else switch (key) {
@@ -148,6 +151,12 @@ static void on_special(int key, int x, int y)
     }
     if (dev)
         add_dev(dev, 1);
+}
+
+static void on_special_up(int key, int x, int y)
+{
+    (void)x; (void)y;
+    pfuiFaceSpecial(key, 0);
 }
 
 static void on_mouse(int button, int state, int x, int y)
@@ -209,6 +218,7 @@ void pfuiWinCreated(pfPipeWindow *pw)
     glutSetWindow(pw->glutwin);
     glutKeyboardFunc(on_keyboard);
     glutSpecialFunc(on_special);
+    glutSpecialUpFunc(on_special_up);
     glutMouseFunc(on_mouse);
     glutMotionFunc(on_motion);
     glutPassiveMotionFunc(on_motion);
