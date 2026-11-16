@@ -1,0 +1,28 @@
+San Diego
+	interactive/perfly.exe -f -E skygrnd -p -25887,-30000,4000 -e 0,-20,0 data/f18/models/all_terrain.dwb
+	.color. .5 .9 .9
+	.highcolor. .7 1.0 1.0
+Long Beach
+	interactive/perfly.exe -f -E skygrnd -p 0,-20000,3000 -e 0,-15,0 data/f18/models/longbeach_terrain.dwb
+	.color. .5 .9 .9
+	.highcolor. .7 1.0 1.0
+F-18
+	interactive/perfly.exe data/f18/models/f18.dwb
+	.color. .5 .9 .9
+	.highcolor. .7 1.0 1.0
+Mekton Colony
+	interactive/perfly.exe -E skygrnd data/mekton/models/colony_city.pfb
+	.color. .5 .9 .9
+	.highcolor. .7 1.0 1.0
+Mekton Vantage
+	interactive/perfly.exe data/mekton/models/vantage.pfb
+	.color. .5 .9 .9
+	.highcolor. .7 1.0 1.0
+Galleon
+	interactive/perfly.exe data/smooth/galleon.obj
+	.color. .5 .9 .9
+	.highcolor. .7 1.0 1.0
+Cow
+	interactive/perfly.exe data/smooth/cow.obj
+	.color. .5 .9 .9
+	.highcolor. .7 1.0 1.0

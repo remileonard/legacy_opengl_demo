@@ -135,6 +135,17 @@ A 1996 F-18 demo built on IRIS Performer 2.2 and Coryphaeus EasyScene. `f18` run
 
 See [src/f18/README.md](src/f18/README.md) for the file format and the controls. The F-18 data files are in `data/f18`.
 
+### 🛫 Perfly (IRIS Performer 2.0)
+The database fly-through of IRIS Performer 2.0. Its original sources and the code shared by the Performer samples are built unchanged, on a Performer compatibility layer over OpenGL and freeglut (`src/porting/performer`). It reuses the scene graph of Mekton and the loaders of Mekton and the F-18 demo. Features:
+- Loads `.pfb` (Mekton), `.dwb` (F-18) and `.obj` (Wavefront) files
+- Trackball, drive and fly motion with collisions
+- The GUI panel of libpfutil: buttons, menus, switches, sliders
+- Earth/sky modes, fog, time of day, eye or sun lighting
+- Draw styles (points, lines, dashed, haloed, hidden, scribed), statistics, scene-graph display, snapshots
+- Several channels side by side
+
+See [src/perfly/README.md](src/perfly/README.md) for the options, the controls and what differs from Performer.
+
 
 ## Prerequisites
 
@@ -290,6 +301,8 @@ legacy_opengl_demo/
     ├── mekton/            # Mekton game and scene viewer (IRIS Performer .pfb loader)
     ├── cimpact/           # Certain Impact game and model viewer (Vega .fst loader)
     ├── f18/               # F-18 demo: EasyScene scripts, Designer's Workbench .dwb loader, viewer
+    ├── perfly/            # Performer 2.0 perfly and its common code, unchanged
+    ├── porting/performer/ # IRIS Performer 2.0 layer (libpf, libpfutil, libpfui, libpfdu) for perfly
     ├── libtk/             # TK toolkit (X11/GLX to GLUT port)
     ├── roller_coaster/    # Roller coaster simulation
     └── smooth/            # Model viewer

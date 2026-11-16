@@ -48,6 +48,7 @@ add_subdirectory(src/fsn)
 add_subdirectory(src/mekton)
 add_subdirectory(src/cimpact)
 add_subdirectory(src/f18)
+add_subdirectory(src/perfly)
 
 set (BUTTON_FLY
     buttonfly
@@ -69,6 +70,7 @@ set(LEGACY_INTERACTIVE
     mekton
     mekton_view
     objviewer
+    perfly
     powerflip
     road
     smooth

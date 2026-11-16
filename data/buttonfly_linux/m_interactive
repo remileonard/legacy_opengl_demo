@@ -42,3 +42,5 @@ Flight
 	.menu. data/buttonfly_linux/m_flight
 F-18
 	.menu. data/buttonfly_linux/m_f18
+Perfly
+	.menu. data/buttonfly_linux/m_perfly

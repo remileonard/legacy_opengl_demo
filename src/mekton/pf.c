@@ -407,6 +407,16 @@ static int is_group(const pfNode *n)
            n->type != PFNODE_LSOURCE;
 }
 
+/* a pfLightSource given in place of its node */
+static pfNode *child_node(pfNode *c)
+{
+    if (c && c->type == PFLSOURCE_OBJECT)
+        return pfLSourceNode((pfLightSource *)c);
+    return c;
+}
+
+int pfGetNumParents(const pfNode *n) { return n ? n->nparents : 0; }
+
 int pfAddChild(pfNode *g, pfNode *c)
 {
     return pfInsertChild(g, g ? g->nchildren : 0, c);
@@ -415,8 +425,10 @@ int pfAddChild(pfNode *g, pfNode *c)
 int pfInsertChild(pfNode *g, int index, pfNode *c)
 {
     int i;
+    c = child_node(c);
     if (!is_group(g) || !c)
         return -1;
+    c->nparents++;
     if (g->nchildren == g->maxchildren) {
         g->maxchildren = g->maxchildren ? g->maxchildren * 2 : 4;
         g->children = (pfNode **)realloc(g->children, sizeof(pfNode *) * g->maxchildren);
@@ -432,10 +444,12 @@ int pfInsertChild(pfNode *g, int index, pfNode *c)
 int pfRemoveChild(pfNode *g, pfNode *c)
 {
     int i;
+    c = child_node(c);
     if (!g)
         return -1;
     for (i = 0; i < g->nchildren; i++) {
         if (g->children[i] == c) {
+            c->nparents--;
             memmove(g->children + i, g->children + i + 1,
                     sizeof(pfNode *) * (g->nchildren - i - 1));
             g->nchildren--;
@@ -448,10 +462,15 @@ int pfRemoveChild(pfNode *g, pfNode *c)
 int pfReplaceChild(pfNode *g, pfNode *old, pfNode *n)
 {
     int i;
+    old = child_node(old);
+    n = child_node(n);
     if (!g)
         return -1;
     for (i = 0; i < g->nchildren; i++) {
         if (g->children[i] == old) {
+            old->nparents--;
+            if (n)
+                n->nparents++;
             g->children[i] = n;
             return 1;
         }
@@ -503,21 +522,27 @@ pfNode *pfClone(pfNode *n, int mode)
     }
     c->children = NULL;
     c->nchildren = c->maxchildren = 0;
+    c->nparents = 0;
     for (i = 0; i < n->nchildren; i++)
         pfAddChild(c, pfClone(n->children[i], mode));
     return c;
 }
 
-int pfIsOfType(const pfNode *n, pfType type)
+int pfIsOfType(const void *obj, pfType type)
 {
+    const pfNode *n = (const pfNode *)obj;
     if (!n)
         return 0;
     if (type == PFNODE_GROUP)
-        return is_group(n);
+        return n->type >= PFNODE_GROUP && n->type <= PFNODE_LSOURCE && is_group(n);
     return n->type == type;
 }
 
-int pfIsExactType(const pfNode *n, pfType type) { return n && n->type == type; }
+int pfIsExactType(const void *obj, pfType type)
+{
+    const pfNode *n = (const pfNode *)obj;
+    return n && n->type == type;
+}
 
 const char *pfGetNodeName(const pfNode *n) { return n ? n->name : NULL; }
 
@@ -790,10 +815,14 @@ void pfGSetNumPrims(pfGeoSet *g, int n) { g->nprims = n; }
 void pfGSetPrimLengths(pfGeoSet *g, int *lengths) { g->lengths = lengths; }
 void pfGSetAttr(pfGeoSet *g, int attr, int bind, void *alist, unsigned short *ilist)
 {
-    (void)ilist;
     if (attr < 0 || attr > 3)
         return;
     g->attr[attr] = alist;
+    g->ilist[attr] = ilist;
+    if (g->tris && attr == PFGS_COORD3) {
+        free(g->tris);
+        g->tris = NULL;
+    }
     g->bind[attr] = attr == PFGS_COORD3 ? PFGS_PER_VERTEX : bind;
 }
 void pfGSetPntSize(pfGeoSet *g, float s) { g->pntsize = s; }
@@ -863,10 +892,62 @@ void pfPopState(void)
     en_texture = saved_texture;
 }
 
+static int cull_global = PFCF_BACK, cull_forced;
+
+void pfCullFace(int cull) { cull_global = cull; }
+
+void pfOverride(unsigned int mask, unsigned int val)
+{
+    /* the global modes are what pfEnable/pfDisable last set: releasing an
+     * override gives the decision back to the geostates */
+    if (!val) {
+        if (mask & PFSTATE_ENLIGHTING) en_lighting = 1;
+        if (mask & PFSTATE_ENTEXTURE) en_texture = 1;
+    }
+    if (mask & PFSTATE_CULLFACE)
+        cull_forced = val && cull_global == PFCF_OFF;
+}
+
+/* the modes of the geostates that inherit them (pfInheritState) */
+static int inh_lighting, inh_texturing;
+static unsigned int inh_cullface;
+
+void pfInheritState(const pfGeoState *gs)
+{
+    inh_lighting = gs && gs->lighting > 0;
+    inh_texturing = gs && gs->texturing > 0;
+    inh_cullface = gs && gs->cullface != ~0U ? gs->cullface : 0;
+}
+
+static int draw_gsets, draw_prims_n, draw_verts;
+static int force_color;
+static float forced_color[4];
+
+void pfForceColor(const float *rgba)
+{
+    force_color = rgba != NULL;
+    if (rgba)
+        memcpy(forced_color, rgba, sizeof(forced_color));
+}
+
+void pfGetDrawCounts(int *gsets, int *prims, int *verts, int reset)
+{
+    if (gsets) *gsets = draw_gsets;
+    if (prims) *prims = draw_prims_n;
+    if (verts) *verts = draw_verts;
+    if (reset)
+        draw_gsets = draw_prims_n = draw_verts = 0;
+}
+
 static void apply_gstate(const pfGeoState *gs)
 {
-    int lighting = gs && gs->lighting > 0 && en_lighting && !(gs->lpoint > 0);
-    int texturing = gs && gs->texturing > 0 && gs->texture && en_texture;
+    int lighting = gs && (gs->lighting > 0 || (gs->lighting < 0 && inh_lighting)) &&
+                   en_lighting && !(gs->lpoint > 0);
+    int texturing = gs && (gs->texturing > 0 || (gs->texturing < 0 && inh_texturing)) &&
+                    gs->texture && en_texture;
+    unsigned int cullface = gs ? (gs->cullface == ~0U ? inh_cullface : gs->cullface) : 0;
+    if (force_color)
+        lighting = texturing = 0;
 
     if (lighting) {
         glEnable(GL_LIGHTING);
@@ -907,9 +988,9 @@ static void apply_gstate(const pfGeoState *gs)
     } else {
         glDisable(GL_TEXTURE_2D);
     }
-    if (gs && gs->cullface && gs->cullface != ~0U) {
+    if (cullface && cullface != ~0U && !cull_forced) {
         glEnable(GL_CULL_FACE);
-        glCullFace(gs->cullface);
+        glCullFace(cullface);
     } else {
         glDisable(GL_CULL_FACE);
     }
@@ -932,8 +1013,13 @@ static const float *gattr(const pfGeoSet *g, int a, int idx, int n)
         return NULL;
     if (g->bind[a] == PFGS_OVERALL)
         idx = 0;
+    if (g->ilist[a])
+        idx = g->ilist[a][idx];
     return (const float *)g->attr[a] + idx * n;
 }
+
+/* the coordinate of vertex i, through the index list */
+#define GCOORD(g, co, i) ((co) + 3 * ((g)->ilist[PFGS_COORD3] ? (g)->ilist[PFGS_COORD3][i] : (i)))
 
 static void draw_prims(const pfGeoSet *g)
 {
@@ -958,7 +1044,9 @@ static void draw_prims(const pfGeoSet *g)
         return;
     batch = mode == GL_POINTS || mode == GL_LINES || mode == GL_TRIANGLES || mode == GL_QUADS;
     glShadeModel(g->flatshade || flat ? GL_FLAT : GL_SMOOTH);
-    if (!g->attr[PFGS_COLOR4] || g->bind[PFGS_COLOR4] == PFGS_OFF)
+    if (force_color)
+        glColor4fv(forced_color);
+    else if (!g->attr[PFGS_COLOR4] || g->bind[PFGS_COLOR4] == PFGS_OFF)
         glColor4f(1, 1, 1, 1);
     if (g->linewidth > 0)
         glLineWidth(g->linewidth);
@@ -977,7 +1065,7 @@ static void draw_prims(const pfGeoSet *g)
         }
         if (!batch)
             glBegin(mode);
-        if (g->bind[PFGS_COLOR4] == PFGS_OVERALL || g->bind[PFGS_COLOR4] == PFGS_PER_PRIM) {
+        if (!force_color && (g->bind[PFGS_COLOR4] == PFGS_OVERALL || g->bind[PFGS_COLOR4] == PFGS_PER_PRIM)) {
             if ((c = gattr(g, PFGS_COLOR4, p, 4)) != NULL) glColor4fv(c);
         }
         if (g->bind[PFGS_NORMAL3] == PFGS_OVERALL || g->bind[PFGS_NORMAL3] == PFGS_PER_PRIM) {
@@ -985,13 +1073,13 @@ static void draw_prims(const pfGeoSet *g)
         }
         for (k = 0; k < n; k++, vtx++) {
             int ai = flat ? fvtx + (k < skip ? 0 : k - skip) : vtx;
-            if (g->bind[PFGS_COLOR4] == PFGS_PER_VERTEX && (c = gattr(g, PFGS_COLOR4, ai, 4)) != NULL)
+            if (!force_color && g->bind[PFGS_COLOR4] == PFGS_PER_VERTEX && (c = gattr(g, PFGS_COLOR4, ai, 4)) != NULL)
                 glColor4fv(c);
             if (g->bind[PFGS_NORMAL3] == PFGS_PER_VERTEX && (c = gattr(g, PFGS_NORMAL3, ai, 3)) != NULL)
                 glNormal3fv(c);
             if (g->bind[PFGS_TEXCOORD2] == PFGS_PER_VERTEX && (c = gattr(g, PFGS_TEXCOORD2, vtx, 2)) != NULL)
                 glTexCoord2fv(c);
-            glVertex3fv((const float *)g->attr[PFGS_COORD3] + 3 * vtx);
+            glVertex3fv(GCOORD(g, (const float *)g->attr[PFGS_COORD3], vtx));
         }
         if (flat)
             fvtx += n > skip ? n - skip : 0;
@@ -1011,6 +1099,9 @@ void pfDrawGSet(pfGeoSet *g)
     if (g->gstate)
         apply_gstate(g->gstate);
     draw_prims(g);
+    draw_gsets++;
+    draw_prims_n += g->nprims;
+    draw_verts += gset_vertex_count(g);
 }
 
 /* --- textures ----------------------------------------------------------- */
@@ -1021,6 +1112,8 @@ void pfFilePath(const char *path)
 {
     strncpy(file_path, path, sizeof(file_path) - 1);
 }
+
+const char *pfGetFilePath(void) { return file_path; }
 
 int pfFindFile(const char *file, char *path, int amode)
 {
@@ -1205,9 +1298,14 @@ void pfTexFilter(pfTexture *t, int filt, int val) { (void)t; (void)filt; (void)v
 static pfLightSource *lights[MAX_LIGHTS];
 static int nlights;
 
+static int lsource_on;
+void pfLSourceDefaultOn(int on) { lsource_on = on; }
+
 pfLightSource *pfNewLSource(void)
 {
     pfLightSource *l = (pfLightSource *)calloc(1, sizeof(pfLightSource));
+    l->type = PFLSOURCE_OBJECT;
+    l->on = lsource_on;
     l->pos[2] = 1;
     pfSetVec3(l->diffuse, 1, 1, 1);
     pfSetVec3(l->specular, 1, 1, 1);
@@ -1232,9 +1330,11 @@ void pfLSourceOff(pfLightSource *l) { l->on = 0; }
 
 pfNode *pfLSourceNode(pfLightSource *l)
 {
-    pfNode *n = new_node(PFNODE_LSOURCE);
-    n->lsource = l;
-    return n;
+    if (!l->node) {
+        l->node = new_node(PFNODE_LSOURCE);
+        l->node->lsource = l;
+    }
+    return l->node;
 }
 
 /* lights are placed with the matrix in effect where their node is found */
@@ -1308,11 +1408,12 @@ static void gset_center(pfGeoSet *g)
     if (!co || n <= 0)
         return;
     for (k = 0; k < 3; k++)
-        lo[k] = hi[k] = co[k];
+        lo[k] = hi[k] = GCOORD(g, co, 0)[k];
     for (i = 1; i < n; i++)
         for (k = 0; k < 3; k++) {
-            if (co[3 * i + k] < lo[k]) lo[k] = co[3 * i + k];
-            if (co[3 * i + k] > hi[k]) hi[k] = co[3 * i + k];
+            const float *v = GCOORD(g, co, i);
+            if (v[k] < lo[k]) lo[k] = v[k];
+            if (v[k] > hi[k]) hi[k] = v[k];
         }
     for (k = 0; k < 3; k++)
         g->center[k] = (lo[k] + hi[k]) / 2;
@@ -1449,6 +1550,30 @@ static void draw_node(pfNode *n, int depth)
         glPopMatrix();
 }
 
+static void place_lights(pfNode *n, int depth)
+{
+    int i;
+    if (!n || depth > 64 || !n->travmask[PFTRAV_DRAW])
+        return;
+    if (n->type == PFNODE_DCS || n->type == PFNODE_SCS) {
+        glPushMatrix();
+        glMultMatrixf(&n->mat[0][0]);
+    }
+    if (n->type == PFNODE_LSOURCE)
+        place_light(n->lsource);
+    if (n->type == PFNODE_SWITCH && n->switchval != PFSWITCH_ON) {
+        if (n->switchval >= 0 && n->switchval < n->nchildren)
+            place_lights(n->children[n->switchval], depth + 1);
+    } else {
+        for (i = 0; i < n->nchildren; i++)
+            place_lights(n->children[i], depth + 1);
+    }
+    if (n->type == PFNODE_DCS || n->type == PFNODE_SCS)
+        glPopMatrix();
+}
+
+void pfPlaceLights(pfNode *root) { place_lights(root, 0); }
+
 static void update_node(pfNode *n, double t, int depth)
 {
     int i;
@@ -1567,9 +1692,9 @@ static void isect_gset(IsectState *st, pfNode *geode, pfGeoSet *g, pfMatrix m, i
         build_tris(g);
     for (t = 0; t < g->ntris; t++) {
         pfVec3 a, b, c, e1, e2, nrm;
-        pfXformPt3(a, co + 3 * g->tris[3 * t], m);
-        pfXformPt3(b, co + 3 * g->tris[3 * t + 1], m);
-        pfXformPt3(c, co + 3 * g->tris[3 * t + 2], m);
+        pfXformPt3(a, GCOORD(g, co, g->tris[3 * t]), m);
+        pfXformPt3(b, GCOORD(g, co, g->tris[3 * t + 1]), m);
+        pfXformPt3(c, GCOORD(g, co, g->tris[3 * t + 2]), m);
         pfSubVec3(e1, b, a);
         pfSubVec3(e2, c, a);
         pfCrossVec3(nrm, e1, e2);
@@ -1789,7 +1914,58 @@ static pfNode *build_node(PfbFile *f, int idx, pfNode **made, pfGeoSet **gsets, 
     return n;
 }
 
+typedef pfNode *(*pfLoaderFunc)(const char *);
+static struct { char ext[16]; pfLoaderFunc load; } loaders[16];
+static int nloaders;
+
+static const char *file_ext(const char *file)
+{
+    const char *dot = strrchr(file, '.'), *sl = strrchr(file, '/');
+    return dot && (!sl || dot > sl) ? dot + 1 : "";
+}
+
+static int same_ext(const char *a, const char *b)
+{
+    for (; *a && *b; a++, b++)
+        if ((*a | 0x20) != (*b | 0x20))
+            return 0;
+    return *a == *b;
+}
+
+void pfdRegisterLoader(const char *ext, pfNode *(*load)(const char *file))
+{
+    int i;
+    for (i = 0; i < nloaders; i++)
+        if (same_ext(loaders[i].ext, ext))
+            break;
+    if (i == nloaders) {
+        if (nloaders == 16)
+            return;
+        nloaders++;
+    }
+    strncpy(loaders[i].ext, ext, sizeof(loaders[i].ext) - 1);
+    loaders[i].load = load;
+}
+
+pfLoaderFunc pfdFindLoader(const char *file)
+{
+    const char *ext = file_ext(file);
+    int i;
+    for (i = 0; i < nloaders; i++)
+        if (same_ext(loaders[i].ext, ext))
+            return loaders[i].load;
+    return NULL;
+}
+
+static pfNode *load_pfb(const char *file);
+
 pfNode *pfdLoadFile(const char *file)
+{
+    pfLoaderFunc load = pfdFindLoader(file);
+    return load ? load(file) : load_pfb(file);
+}
+
+static pfNode *load_pfb(const char *file)
 {
     static const int prim_map[10] = {
         PFGS_TRIFANS, PFGS_TRISTRIPS, PFGS_TRIS, PFGS_POINTS, PFGS_LINES,

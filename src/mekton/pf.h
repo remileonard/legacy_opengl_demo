@@ -6,8 +6,8 @@
  * code reads like the original. Only one process and one channel are
  * supported.
  */
-#ifndef PF_H
-#define PF_H
+#ifndef MEKTON_PF_H
+#define MEKTON_PF_H
 
 #include <stddef.h>
 
@@ -145,6 +145,7 @@ typedef struct pfGeoSet {
     int *lengths;
     void *attr[4];         /* indexed by PFGS_COLOR4 ... PFGS_COORD3 */
     int bind[4];
+    unsigned short *ilist[4]; /* index lists of the attributes, NULL: none */
     int nverts;            /* number of coordinates */
     int flatshade;
     float linewidth, pntsize;
@@ -237,6 +238,12 @@ typedef struct pfNode {
     pfVec3 lodcenter;
     /* layer: PFDECAL_* mode, children 1..n are decals on child 0 */
     int layermode;
+    /* number of groups the node is a child of */
+    int nparents;
+    /* bounding sphere set by the application (pfNodeBSphere), center and
+     * radius; bsphmode 0: computed from the geometry */
+    float bsph[4];
+    int bsphmode;
 } pfNode;
 
 typedef pfNode pfGroup, pfDCS, pfSCS, pfSwitch, pfSequence, pfGeode, pfScene, pfMorph;
@@ -270,8 +277,10 @@ int pfAddGSet(pfNode *geode, pfGeoSet *g);
 int pfGetNumGSets(const pfNode *geode);
 pfGeoSet *pfGetGSet(const pfNode *geode, int i);
 pfNode *pfClone(pfNode *n, int mode);
-int pfIsOfType(const pfNode *n, pfType type);
-int pfIsExactType(const pfNode *n, pfType type);
+/* n: a node, or any object whose first member is its int type */
+int pfIsOfType(const void *n, pfType type);
+int pfIsExactType(const void *n, pfType type);
+int pfGetNumParents(const pfNode *n);
 const char *pfGetNodeName(const pfNode *n);
 pfNode *pfFindNode(pfNode *n, const char *name);
 
@@ -366,7 +375,12 @@ void *pfGet(void *path, int i);
 #define PFLT_DIFFUSE 0x1201
 #define PFLT_SPECULAR 0x1202
 
+/* the type of a pfLightSource given to pfAddChild in place of its node */
+#define PFLSOURCE_OBJECT 0x4c53
+
 typedef struct pfLightSource {
+    int type;              /* PFLSOURCE_OBJECT */
+    pfNode *node;          /* its node, made on first use */
     pfVec4 pos;
     pfVec3 ambient, diffuse, specular;
     int on;
@@ -378,12 +392,22 @@ void pfLSourceColor(pfLightSource *l, int which, float r, float g, float b);
 void pfLSourceOn(pfLightSource *l);
 void pfLSourceOff(pfLightSource *l);
 pfNode *pfLSourceNode(pfLightSource *l);
+/* the light sources made from now on are on (Performer) or off (default) */
+void pfLSourceDefaultOn(int on);
+/* places the light sources of a graph before it is drawn */
+void pfPlaceLights(pfNode *root);
 
 /* --- loading and drawing ------------------------------------------------ */
 
 void pfFilePath(const char *path);
+const char *pfGetFilePath(void);
 int pfFindFile(const char *file, char *path, int amode);
+/* loads a file with the loader registered for its extension, else as .pfb */
 pfNode *pfdLoadFile(const char *file);
+/* registers the loader of a file extension (without the dot) */
+void pfdRegisterLoader(const char *ext, pfNode *(*load)(const char *file));
+/* the loader registered for the extension of a file, NULL: none */
+pfNode *(*pfdFindLoader(const char *file))(const char *);
 pfTexture *pfNewTex(void *arena);
 int pfLoadTexFile(pfTexture *t, const char *file);
 void pfGetTexImage(pfTexture *t, unsigned int **image, int *comp, int *ns, int *nt, int *nr);
@@ -395,6 +419,26 @@ void pfDisable(int what);
 int pfGetEnable(int what);
 void pfPushState(void);
 void pfPopState(void);
+
+#define PFSTATE_CULLFACE 0x20
+#define PFCF_OFF 0
+#define PFCF_BACK 1
+#define PFCF_FRONT 2
+#define PFCF_BOTH 3
+/* the global face culling: PFCF_BACK leaves it to the geostates, PFCF_OFF
+ * with pfOverride(PFSTATE_CULLFACE, 1) turns it off everywhere */
+void pfCullFace(int cull);
+/* val 1: the global lighting, texturing and face culling set with
+ * pfEnable/pfDisable/pfCullFace win over the geostates for the modes of
+ * mask; val 0: the geostates decide again */
+void pfOverride(unsigned int mask, unsigned int val);
+/* the lighting, texturing and face culling of the geostates that inherit
+ * them (Performer's scene geostate), NULL: off */
+void pfInheritState(const pfGeoState *gs);
+/* draws the geosets unlit, untextured, in one color (NULL: their own) */
+void pfForceColor(const float *rgba);
+/* what pfDrawGSet drew since the last reset */
+void pfGetDrawCounts(int *gsets, int *prims, int *verts, int reset);
 
 /* draws a scene with the current OpenGL projection and modelview */
 void pfDrawScene(pfNode *root, double time);
